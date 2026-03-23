@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "Bash(npm install:*)",
+      "Bash(where node:*)",
+      "Bash(where npm:*)",
+      "Bash(echo PATH=$PATH)",
+      "Read(//c/Program Files/nodejs/**)",
+      "Read(//c/Users/J. Bazalo/AppData/Roaming/**)",
+      "Read(//c/Program Files/**)"
+    ]
+  }
+}
