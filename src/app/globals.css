@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ───────────────────────────────────── */
+:root {
+  --bg: #050d05;
+  --bg2: #0a180a;
+  --card: rgba(255,255,255,0.045);
+  --card2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-a: rgba(168,255,62,0.22);
+  --accent: #a8ff3e;
+  --accent-d: rgba(168,255,62,0.12);
+  --accent-g: rgba(168,255,62,0.35);
+  --text: #f0f0f0;
+  --muted: rgba(240,240,240,0.42);
+  --red: #ff5c5c;
+  --orange: #ff9030;
+  --gold: #ffd700;
+  --nav-h: 72px;
+  --header-h: 56px;
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --comm-color: #a8ff3e;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+/* ── Reset ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overflow-y: scroll;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding-top: var(--safe-top);
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(168,255,62,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,255,62,0.018) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ── Typography ──────────────────────────────────────── */
+.font-bebas { font-family: 'Bebas Neue', cursive; }
+.font-barlow { font-family: 'Barlow', sans-serif; }
+
+/* ── View transitions ────────────────────────────────── */
+.view-enter {
+  animation: viewIn 0.28s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Skeleton loading ────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--card) 25%,
+    var(--card2) 50%,
+    var(--card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-s);
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Toast ───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: calc(var(--safe-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  background: var(--bg2);
+  border: 1px solid var(--border-a);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: var(--radius-m);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-width: 90%;
+  text-align: center;
+  font-family: 'Barlow', sans-serif;
+  backdrop-filter: blur(12px);
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── XP Bar ──────────────────────────────────────────── */
+.xp-bar {
+  height: 4px;
+  background: var(--card2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--comm-color, var(--accent));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Safe area utilities ─────────────────────────────── */
+.pb-nav {
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom, 0px) + 20px);
+}
