@@ -193,7 +193,7 @@ Cada PR generará un **Preview Deploy** con URL temporal.
 furbito/
 ├── .env.example           # Template de variables de entorno
 ├── .gitignore             # Archivos a ignorar en git
-├── next.config.ts         # Configuración de Next.js
+├── next.config.mjs        # Configuración de Next.js
 ├── package.json           # Dependencias y scripts
 ├── postcss.config.js      # PostCSS (para Tailwind)
 ├── tailwind.config.ts     # Colores, fuentes, breakpoints
@@ -244,7 +244,8 @@ furbito/
     ├── SETUP.md           # Guía de setup
     ├── ARCHITECTURE.md    # Arquitectura técnica
     ├── SUBIR_DESDE_CERO.md # Este documento
-    └── WARROOM_ROADMAP_30D.md # Roadmap de 30 días
+    ├── WARROOM_ROADMAP_30D.md # Roadmap de 30 días
+    └── GUIA_CODIGO.md     # Guía completa del código (para principiantes)
 ```
 
 ---

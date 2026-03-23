@@ -30,8 +30,14 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 
       {/* Panel */}
       <div
-        className="relative w-full max-w-app rounded-t-l sm:rounded-l p-6 max-h-[90vh] overflow-y-auto"
-        style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
+        className="relative w-full max-w-app rounded-t-l sm:rounded-l p-6 max-h-[90vh] overflow-y-auto overscroll-contain"
+        style={{
+          background: 'var(--bg2)',
+          border: '1px solid var(--border)',
+          paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}
@@ -42,8 +48,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             <h2 className="font-bebas text-2xl tracking-wider">{title}</h2>
             <button
               onClick={onClose}
-              className="text-xl leading-none"
-              style={{ color: 'var(--muted)' }}
+              className="text-xl leading-none flex items-center justify-center w-11 h-11 rounded-full"
+              style={{ color: 'var(--muted)', background: 'var(--card)' }}
             >
               ✕
             </button>

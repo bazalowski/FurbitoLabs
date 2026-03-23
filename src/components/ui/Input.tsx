@@ -29,11 +29,12 @@ export function Input({ label, hint, error, className, ...props }: InputProps) {
       <input
         {...props}
         className={cn(
-          'w-full px-4 py-3 rounded-m text-base font-semibold outline-none placeholder:opacity-30',
+          'w-full px-4 py-3 rounded-m text-base font-semibold outline-none placeholder:opacity-30 min-h-[44px]',
           'focus:border-[var(--accent)] transition-colors',
+          'appearance-none',
           className
         )}
-        style={inputStyle}
+        style={{ ...inputStyle, fontSize: '16px' }}
       />
       {hint && !error && <p className="text-xs" style={{ color: 'var(--muted)' }}>{hint}</p>}
       {error && <p className="text-xs font-semibold" style={{ color: 'var(--red)' }}>{error}</p>}
@@ -52,10 +53,11 @@ export function Textarea({ label, hint, className, ...props }: TextareaProps) {
       <textarea
         {...props}
         className={cn(
-          'w-full px-4 py-3 rounded-m text-base font-semibold outline-none placeholder:opacity-30 resize-none',
+          'w-full px-4 py-3 rounded-m text-base font-semibold outline-none placeholder:opacity-30 resize-none min-h-[44px]',
+          'appearance-none',
           className
         )}
-        style={inputStyle}
+        style={{ ...inputStyle, fontSize: '16px' }}
       />
       {hint && <p className="text-xs" style={{ color: 'var(--muted)' }}>{hint}</p>}
     </div>
@@ -72,8 +74,8 @@ export function Select({ label, className, children, ...props }: React.SelectHTM
       )}
       <select
         {...props}
-        className={cn('w-full px-4 py-3 rounded-m text-base font-semibold outline-none', className)}
-        style={inputStyle}
+        className={cn('w-full px-4 py-3 rounded-m text-base font-semibold outline-none min-h-[44px] appearance-none', className)}
+        style={{ ...inputStyle, fontSize: '16px' }}
       >
         {children}
       </select>

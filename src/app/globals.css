@@ -30,18 +30,44 @@
   --safe-bottom: env(safe-area-inset-bottom);
 }
 
+/* ── Light Theme ─────────────────────────────────────── */
+:root[data-theme="light"] {
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --card: rgba(0,0,0,0.04);
+  --card2: rgba(0,0,0,0.07);
+  --border: #e0e0e0;
+  --border-a: rgba(90,143,0,0.28);
+  --accent: #5a8f00;
+  --accent-d: rgba(90,143,0,0.1);
+  --accent-g: rgba(90,143,0,0.3);
+  --text: #1a1a1a;
+  --muted: #666666;
+  --red: #d32f2f;
+  --orange: #e67700;
+  --gold: #b8860b;
+}
+
+:root[data-theme="light"] body::before {
+  background-image:
+    linear-gradient(rgba(90,143,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90,143,0,0.04) 1px, transparent 1px);
+}
+
 /* ── Reset ───────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 html {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overflow-y: scroll;
+  overscroll-behavior: none;
 }
 
 html, body {
@@ -56,6 +82,9 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   padding-top: var(--safe-top);
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+  font-size: 14px;
 }
 
 /* Grid background */
@@ -153,4 +182,25 @@ body::before {
 /* ── Safe area utilities ─────────────────────────────── */
 .pb-nav {
   padding-bottom: calc(var(--nav-h) + var(--safe-bottom, 0px) + 20px);
+}
+
+/* ── Mobile touch targets ────────────────────────────── */
+button, [role="button"], input[type="submit"], input[type="button"] {
+  min-height: 44px;
+}
+
+/* ── iOS input zoom prevention ───────────────────────── */
+input, select, textarea {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Mobile-optimized scrollbar ──────────────────────── */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Overscroll containment for modals ───────────────── */
+.overscroll-contain {
+  overscroll-behavior: contain;
 }

@@ -40,6 +40,7 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
     { value: 'balanced', label: '⚖️ Equilibrado', desc: 'Maximiza el equilibrio por nivel' },
     { value: 'random',   label: '🎲 Aleatorio',   desc: 'Sorteo completamente aleatorio' },
     { value: 'snake',    label: '🐍 Snake draft', desc: 'Serpenteo por nivel 1-2-2-1...' },
+    { value: 'captains', label: '👑 Capitanes',   desc: 'Los 2 mejores son capitanes y eligen alternando' },
   ]
 
   return (

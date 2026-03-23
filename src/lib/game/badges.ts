@@ -116,6 +116,146 @@ export const BADGE_DEFS: Record<string, BadgeDef> = {
   pistas_10:         { icon: '🧭', name: 'Navegante',  desc: '10 pistas registradas',            xp: 200 },
   jugar_3_pistas:    { icon: '🏃', name: 'Nómada',     desc: 'Juega en 3 pistas distintas',      xp: 100 },
   jugar_5_pistas:    { icon: '🌍', name: 'Trotamundos', desc: 'Juega en 5 pistas diferentes',   xp: 250 },
+
+  // ── Racha (Streak) badges ──────────────────────────
+  racha_2:           { icon: '🔥', name: 'Racha imparable', desc: '2 partidos seguidos ganados',  xp: 30  },
+  racha_5:           { icon: '🔥', name: 'En llamas',       desc: '5 partidos seguidos ganados',  xp: 75  },
+  racha_10:          { icon: '🔥', name: 'Invencible',      desc: '10 partidos seguidos ganados', xp: 200 },
+  racha_3:           { icon: '⚡', name: 'Enchufado',       desc: '3 partidos seguidos ganados',  xp: 50  },
+  racha_7:           { icon: '💫', name: 'Imparable',       desc: '7 partidos seguidos ganados',  xp: 125 },
+  racha_15:          { icon: '👑', name: 'Dinastía',        desc: '15 partidos seguidos ganados', xp: 400 },
+  racha_20:          { icon: '🏆', name: 'Hegemonía',       desc: '20 partidos seguidos ganados', xp: 600 },
+
+  // ── Social badges (need external detection) ────────
+  // NOTE: These badges need external detection context (voting system)
+  primer_voto:       { icon: '📝', name: 'Crítico',         desc: 'Primera valoración dada',          xp: 25  },
+  votado_10:         { icon: '⭐', name: 'Popular',         desc: 'Valorado por 10 personas',         xp: 50  },
+  rating_5:          { icon: '💯', name: 'Perfección',      desc: 'Rating medio de 5.0',              xp: 100 },
+  votado_25:         { icon: '🌟', name: 'Famoso',          desc: 'Valorado por 25 personas',         xp: 100 },
+  votado_50:         { icon: '💎', name: 'Celebridad',      desc: 'Valorado por 50 personas',         xp: 200 },
+  rating_4_5:        { icon: '📈', name: 'Excelente',       desc: 'Rating medio de 4.5+',             xp: 75  },
+  votos_dados_10:    { icon: '🗳️', name: 'Evaluador',      desc: '10 valoraciones dadas',            xp: 30  },
+  votos_dados_50:    { icon: '📊', name: 'Analista',        desc: '50 valoraciones dadas',            xp: 75  },
+  votos_dados_100:   { icon: '🔬', name: 'Estadístico',     desc: '100 valoraciones dadas',           xp: 150 },
+
+  // ── Pistas badges (need external detection) ────────
+  // NOTE: These badges need external detection context (pista tracking)
+  pista_nueva:       { icon: '🧭', name: 'Explorador',      desc: 'Añadió su primera pista',          xp: 25  },
+  pista_10:          { icon: '🌍', name: 'Nómada',          desc: 'Jugó en 10 pistas diferentes',     xp: 100 },
+  pista_15:          { icon: '✈️', name: 'Viajero',         desc: 'Jugó en 15 pistas diferentes',     xp: 200 },
+  pista_20:          { icon: '🌏', name: 'Globetrotter',    desc: 'Jugó en 20 pistas diferentes',     xp: 350 },
+  pista_favorita_10: { icon: '🏠', name: 'Local',           desc: '10 partidos en la misma pista',    xp: 50  },
+  pista_favorita_25: { icon: '🏡', name: 'Habitante',       desc: '25 partidos en la misma pista',    xp: 100 },
+  pista_favorita_50: { icon: '🏰', name: 'Señor del Campo', desc: '50 partidos en la misma pista',    xp: 200 },
+
+  // ── Time badges (need external detection) ──────────
+  // NOTE: These badges need external detection context (match time data)
+  madrugador:        { icon: '🌅', name: 'Madrugador',      desc: 'Partido antes de las 10am',        xp: 30  },
+  nocturno:          { icon: '🌙', name: 'Nocturno',        desc: 'Partido después de las 21h',       xp: 30  },
+  fin_de_semana:     { icon: '📅', name: 'Weekender',       desc: '20 partidos en fin de semana',     xp: 75  },
+  lunes_guerrero:    { icon: '💪', name: 'Lunes guerrero',  desc: 'Partido un lunes',                 xp: 25  },
+  navidad:           { icon: '🎄', name: 'Navideño',        desc: 'Partido en Navidad',               xp: 50  },
+  nochevieja:        { icon: '🎆', name: 'Fin de Año',      desc: 'Partido en Nochevieja',            xp: 50  },
+  ano_nuevo:         { icon: '🎉', name: 'Año Nuevo',       desc: 'Partido el 1 de enero',            xp: 50  },
+  mediodia:          { icon: '☀️', name: 'Mediodía',        desc: 'Partido a las 12:00',              xp: 25  },
+  finde_10:          { icon: '🗓️', name: 'Fin de semanero', desc: '10 partidos en fin de semana',     xp: 40  },
+  entre_semana_20:   { icon: '📋', name: 'Trabajador',      desc: '20 partidos entre semana',         xp: 50  },
+
+  // ── Milestones XP badges ───────────────────────────
+  xp_250:            { icon: '🎯', name: 'Primer cuarto',   desc: '250 XP acumulados',                xp: 0   },
+  xp_750:            { icon: '⚡', name: 'Tres cuartos',    desc: '750 XP acumulados',                xp: 0   },
+  xp_1500:           { icon: '🔥', name: 'Mil quinientos',  desc: '1500 XP acumulados',               xp: 0   },
+  xp_2000:           { icon: '💥', name: 'Dos mil',         desc: '2000 XP acumulados',               xp: 0   },
+  xp_3000:           { icon: '🌠', name: 'Tres mil',        desc: '3000 XP acumulados',               xp: 0   },
+  xp_4000:           { icon: '🌟', name: 'Cuatro mil',      desc: '4000 XP acumulados',               xp: 0   },
+  xp_7500:           { icon: '💫', name: 'Imponente',       desc: '7500 XP acumulados',               xp: 0   },
+  xp_15000:          { icon: '👑', name: 'Leyenda XP',      desc: '15000 XP acumulados',              xp: 0   },
+  xp_20000:          { icon: '🏛️', name: 'Inmortal XP',    desc: '20000 XP acumulados',              xp: 0   },
+
+  // ── Score-related badges ───────────────────────────
+  goleada_5:         { icon: '💀', name: 'Goleada',         desc: 'Partido con 5+ goles de diferencia', xp: 50  },
+  remontada:         { icon: '⚡', name: 'Remontada',       desc: 'Participó en una remontada',       xp: 75  },
+  empate_0:          { icon: '🧱', name: 'Muralla',         desc: 'Partido terminado 0-0',            xp: 30  },
+  goleada_7:         { icon: '☠️', name: 'Masacre',         desc: 'Partido con 7+ goles de diferencia', xp: 75  },
+  goleada_10:        { icon: '🌋', name: 'Erupción',        desc: 'Partido con 10+ goles de diferencia', xp: 100 },
+  empate_alto:       { icon: '🤯', name: 'Thriller',        desc: 'Empate 5-5 o más',                 xp: 75  },
+  victoria_ajustada: { icon: '😅', name: 'Por los pelos',   desc: 'Victoria por 1 gol',               xp: 25  },
+  muchos_goles:      { icon: '🎊', name: 'Festival de goles', desc: 'Partido con 10+ goles totales', xp: 50  },
+  partido_epico:     { icon: '🔮', name: 'Partido épico',   desc: 'Partido con 15+ goles totales',   xp: 100 },
+
+  // ── Goalkeeper specific badges ─────────────────────
+  portero_3:         { icon: '🧤', name: 'Guardameta',      desc: '3 porterías a cero',               xp: 50  },
+  portero_10:        { icon: '🏰', name: 'Muro infranqueable', desc: '10 porterías a cero',           xp: 150 },
+  parada_doble:      { icon: '🦸', name: 'Héroe',           desc: '2+ paradas de penalti acumuladas', xp: 75  },
+  portero_15:        { icon: '🛡️', name: 'Escudo',         desc: '15 porterías a cero',              xp: 250 },
+  portero_20:        { icon: '⛩️', name: 'Templo',         desc: '20 porterías a cero',              xp: 350 },
+  parada_5:          { icon: '🦸‍♂️', name: 'Superparador', desc: '5 paradas de penalti acumuladas',  xp: 150 },
+  parada_10:         { icon: '🧲', name: 'Imán',            desc: '10 paradas de penalti acumuladas', xp: 300 },
+  portero_invicto_3: { icon: '🔒', name: 'Invicto',         desc: '3 porterías a cero seguidas',      xp: 100 },
+
+  // ── Assist specialist badges ───────────────────────
+  asist_partido_4:   { icon: '🎩', name: 'Asistente de lujo', desc: '4+ asistencias en un partido',  xp: 100 },
+  asist_gol:         { icon: '✨', name: 'Completo',        desc: 'Asistencia + gol en mismo partido', xp: 40  },
+  asist_partido_5:   { icon: '🎪', name: 'Amo del pase',    desc: '5+ asistencias en un partido',    xp: 150 },
+  asist_racha_3:     { icon: '🔗', name: 'Encadenado',      desc: 'Asistencia en 3 partidos seguidos', xp: 60  },
+
+  // ── Combo badges ───────────────────────────────────
+  hat_trick_asist:   { icon: '🌟', name: 'Todocampista',    desc: 'Hat trick + 2 asistencias',        xp: 150 },
+  mvp_hat_trick_clean: { icon: '💫', name: 'Partido perfecto legendario', desc: 'MVP + hat trick + portería a cero', xp: 200 },
+  all_categories:    { icon: '🏆', name: 'Coleccionista',   desc: 'Tiene badge de todas las categorías', xp: 200 },
+  gol_hat_asist_hat: { icon: '🎆', name: 'Doble hat',       desc: '3+ goles y 3+ asistencias en un partido', xp: 175 },
+  mvp_goleada:       { icon: '🏅', name: 'MVP de goleada',  desc: 'MVP en partido con 5+ goles de diferencia', xp: 100 },
+  mvp_remontada:     { icon: '🎖️', name: 'MVP remontada',  desc: 'MVP en una remontada',             xp: 125 },
+  gol_todos_partidos_5: { icon: '🎯', name: 'Consistente', desc: 'Gol en 5 partidos seguidos',       xp: 100 },
+  gol_todos_partidos_10: { icon: '💎', name: 'Máquina',    desc: 'Gol en 10 partidos seguidos',      xp: 200 },
+
+  // ── Dedication badges ──────────────────────────────
+  partidos_150:      { icon: '🎖️', name: 'Veterano total', desc: '150 partidos jugados',             xp: 400 },
+  partidos_250:      { icon: '🏅', name: 'Gladiador',       desc: '250 partidos jugados',             xp: 600 },
+  partidos_300:      { icon: '🥇', name: 'Incansable',      desc: '300 partidos jugados',             xp: 700 },
+  partidos_400:      { icon: '💎', name: 'Diamante puro',   desc: '400 partidos jugados',             xp: 900 },
+  partidos_750:      { icon: '🌟', name: 'Mito',            desc: '750 partidos jugados',             xp: 2000 },
+
+  // ── Goles extra milestones ─────────────────────────
+  goles_75:          { icon: '🎯', name: 'Pichichi',        desc: '75 goles en total',                xp: 150 },
+  goles_150:         { icon: '⚡', name: 'Rayo goleador',   desc: '150 goles en total',               xp: 300 },
+  goles_250:         { icon: '🌋', name: 'Erupción goleadora', desc: '250 goles en total',            xp: 500 },
+  goles_400:         { icon: '🔥', name: 'Fuego eterno',    desc: '400 goles en total',               xp: 750 },
+
+  // ── Asistencias extra milestones ───────────────────
+  asistencias_75:    { icon: '🎭', name: 'Mago del pase',   desc: '75 asistencias en total',          xp: 150 },
+  asistencias_150:   { icon: '🧩', name: 'Arquitecto',      desc: '150 asistencias en total',         xp: 300 },
+
+  // ── MVP extra milestones ───────────────────────────
+  mvp_7:             { icon: '🎖️', name: 'MVP x7',        desc: '7 MVPs',                           xp: 150 },
+  mvp_15:            { icon: '💫', name: 'MVP x15',         desc: '15 MVPs',                          xp: 300 },
+  mvp_30:            { icon: '🏆', name: 'MVP x30',         desc: '30 MVPs',                          xp: 500 },
+  mvp_75:            { icon: '👑', name: 'MVP x75',         desc: '75 MVPs',                          xp: 1000 },
+
+  // ── Special combo milestones ───────────────────────
+  goles_asist_100:   { icon: '💎', name: 'Diamante total',  desc: '100 goles + 100 asistencias',      xp: 500 },
+  partidos_50_mvp_25: { icon: '🌟', name: 'Dominante',     desc: '50 partidos y 25 MVPs',            xp: 400 },
+  gol_100_asist_50:  { icon: '🔥', name: 'Todoterreno',    desc: '100 goles y 50 asistencias',       xp: 350 },
+
+  // ── Victory / Defeat badges ────────────────────────
+  primera_victoria:  { icon: '🎉', name: 'Primera victoria', desc: 'Gana tu primer partido',          xp: 25  },
+  victorias_10:      { icon: '🏆', name: 'Ganador',         desc: '10 victorias',                     xp: 75  },
+  victorias_25:      { icon: '🥇', name: 'Campeón',         desc: '25 victorias',                     xp: 150 },
+  victorias_50:      { icon: '👑', name: 'Rey de reyes',    desc: '50 victorias',                     xp: 300 },
+  victorias_100:     { icon: '🏛️', name: 'Conquistador',   desc: '100 victorias',                    xp: 600 },
+  sin_perder_5:      { icon: '🛡️', name: 'Resistente',     desc: '5 partidos sin perder',            xp: 50  },
+  sin_perder_10:     { icon: '🔒', name: 'Inquebrantable',  desc: '10 partidos sin perder',           xp: 125 },
+  derrota_digna:     { icon: '🤝', name: 'Derrota digna',   desc: 'Pierde por 1 gol con 2+ goles propios', xp: 30 },
+
+  // ── Special occasion badges ───────────────────────
+  partido_100_goles_0: { icon: '😤', name: 'Sequía',       desc: '0 goles en 100+ partidos (mín 100)', xp: 50  },
+  gol_1000:          { icon: '🌌', name: 'Mil goles',       desc: '1000 goles en total',              xp: 2000 },
+  asistencias_300:   { icon: '🎼', name: 'Sinfonía',        desc: '300 asistencias en total',         xp: 800 },
+  asistencias_500:   { icon: '🧠', name: 'Genio absoluto',  desc: '500 asistencias en total',         xp: 1500 },
+
+  // ── Meta badges extended ───────────────────────────
+  leyenda_175:       { icon: '🏛️', name: 'Titán',          desc: 'Consigue 175 badges',              xp: 2500 },
+  leyenda_200:       { icon: '👑', name: 'Panteón',         desc: 'Consigue 200 badges',              xp: 3000 },
 }
 
 // ════════════════════════════════════════════════════
@@ -136,7 +276,13 @@ export function calcXP(mp: MatchPlayer, isMVP: boolean): number {
 // ════════════════════════════════════════════════════
 //  Detectar badges nuevos para un jugador
 // ════════════════════════════════════════════════════
-export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): string[] {
+export function detectBadges(
+  player: Player,
+  mp: MatchPlayer,
+  isMVP: boolean,
+  /** Optional match score context for score-related badges */
+  matchScore?: { golesA: number; golesB: number; playerTeam: 'A' | 'B' | null }
+): string[] {
   const existing = new Set(player.badges)
   const newBadges: string[] = []
 
@@ -169,26 +315,40 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   chk('goles_10', player.goles >= 10)
   chk('goles_25', player.goles >= 25)
   chk('goles_50', player.goles >= 50)
+  chk('goles_75', player.goles >= 75)
   chk('goles_100', player.goles >= 100)
+  chk('goles_150', player.goles >= 150)
   chk('goles_200', player.goles >= 200)
+  chk('goles_250', player.goles >= 250)
   chk('goles_300', player.goles >= 300)
+  chk('goles_400', player.goles >= 400)
   chk('goles_500', player.goles >= 500)
+  chk('gol_1000', player.goles >= 1000)
   chk('gol_debut', player.partidos === 1 && g >= 1)
   chk('gol_y_cero', g >= 1 && mp.porteria_cero)
+  chk('gol_50_partidos', player.goles >= 50 && player.goles > player.partidos)
   chk('media_gol', player.partidos >= 10 && player.goles / player.partidos >= 1)
+  chk('partido_100_goles_0', player.partidos >= 100 && player.goles === 0)
 
   // Asistencias del partido
   chk('primera_asistencia', player.asistencias >= 1)
   chk('doble_asist', a >= 2)
   chk('triple_asist', a >= 3)
+  chk('asist_partido_4', a >= 4)
+  chk('asist_partido_5', a >= 5)
 
   // Asistencias acumuladas
   chk('asistencias_10', player.asistencias >= 10)
   chk('asistencias_25', player.asistencias >= 25)
   chk('asistencias_50', player.asistencias >= 50)
+  chk('asistencias_75', player.asistencias >= 75)
   chk('asistencias_100', player.asistencias >= 100)
+  chk('asistencias_150', player.asistencias >= 150)
   chk('asistencias_200', player.asistencias >= 200)
+  chk('asistencias_300', player.asistencias >= 300)
+  chk('asistencias_500', player.asistencias >= 500)
   chk('gol_y_asist', g >= 1 && a >= 1)
+  chk('asist_gol', g >= 1 && a >= 1)
   chk('asist_y_asist', g >= 2 && a >= 2)
   chk('asist_sin_gol', a >= 3 && g === 0)
   chk('asist_debut', player.partidos === 1 && a >= 1)
@@ -212,6 +372,15 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   chk('parada_y_asist', mp.parada_penalti && a >= 1)
   chk('gol_asist_hazana', g >= 1 && a >= 1 && hzC >= 1)
 
+  // Goalkeeper specific
+  chk('portero_3', player.partidos_cero >= 3)
+  chk('portero_10', player.partidos_cero >= 10)
+  chk('portero_15', player.partidos_cero >= 15)
+  chk('portero_20', player.partidos_cero >= 20)
+  // parada_doble: 2+ paradas acumuladas — we check if they already had 1 and now have another
+  chk('parada_doble', mp.parada_penalti && existing.has('parada_penalti'))
+  // parada_5, parada_10 need external tracking of total paradas
+
   // Partidos
   chk('primer_partido', player.partidos >= 1)
   chk('partidos_5', player.partidos >= 5)
@@ -220,17 +389,26 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   chk('partidos_50', player.partidos >= 50)
   chk('partidos_75', player.partidos >= 75)
   chk('partidos_100', player.partidos >= 100)
+  chk('partidos_150', player.partidos >= 150)
   chk('partidos_200', player.partidos >= 200)
+  chk('partidos_250', player.partidos >= 250)
+  chk('partidos_300', player.partidos >= 300)
+  chk('partidos_400', player.partidos >= 400)
   chk('partidos_500', player.partidos >= 500)
+  chk('partidos_750', player.partidos >= 750)
   chk('partidos_1000', player.partidos >= 1000)
 
   // MVP
   chk('primer_mvp', player.mvps >= 1)
   chk('mvp_3', player.mvps >= 3)
   chk('mvp_5', player.mvps >= 5)
+  chk('mvp_7', player.mvps >= 7)
   chk('mvp_10', player.mvps >= 10)
+  chk('mvp_15', player.mvps >= 15)
   chk('mvp_20', player.mvps >= 20)
+  chk('mvp_30', player.mvps >= 30)
   chk('mvp_50', player.mvps >= 50)
+  chk('mvp_75', player.mvps >= 75)
   chk('mvp_100', player.mvps >= 100)
   chk('gol_asist_mvp', isMVP && g >= 1 && a >= 1)
   chk('hat_trick_mvp_combo', isMVP && g >= 3)
@@ -243,11 +421,20 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   // XP y nivel
   const xp = player.xp
   chk('xp_100', xp >= 100)
+  chk('xp_250', xp >= 250)
   chk('xp_500', xp >= 500)
+  chk('xp_750', xp >= 750)
   chk('xp_1000', xp >= 1000)
+  chk('xp_1500', xp >= 1500)
+  chk('xp_2000', xp >= 2000)
   chk('xp_2500', xp >= 2500)
+  chk('xp_3000', xp >= 3000)
+  chk('xp_4000', xp >= 4000)
   chk('xp_5000', xp >= 5000)
+  chk('xp_7500', xp >= 7500)
   chk('xp_10000', xp >= 10000)
+  chk('xp_15000', xp >= 15000)
+  chk('xp_20000', xp >= 20000)
   const lvl = getLevel(xp)
   chk('nivel_2', lvl.level >= 2)
   chk('nivel_3', lvl.level >= 3)
@@ -257,6 +444,27 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   chk('nivel_7', lvl.level >= 7)
   chk('nivel_8', lvl.level >= 8)
 
+  // Score-related badges (require matchScore context)
+  if (matchScore) {
+    const { golesA, golesB, playerTeam } = matchScore
+    const diff = Math.abs(golesA - golesB)
+    const totalGolesMatch = golesA + golesB
+
+    chk('goleada_5', diff >= 5)
+    chk('goleada_7', diff >= 7)
+    chk('goleada_10', diff >= 10)
+    chk('empate_0', golesA === 0 && golesB === 0)
+    chk('empate_alto', golesA === golesB && golesA >= 5)
+    chk('victoria_ajustada', diff === 1 && playerTeam != null &&
+      ((playerTeam === 'A' && golesA > golesB) || (playerTeam === 'B' && golesB > golesA)))
+    chk('muchos_goles', totalGolesMatch >= 10)
+    chk('partido_epico', totalGolesMatch >= 15)
+    // remontada needs more context (half-time scores) — defined but detected externally
+
+    // MVP + score combos
+    chk('mvp_goleada', isMVP && diff >= 5)
+  }
+
   // Combos
   chk('gol_50_mvp_10', player.goles >= 50 && player.mvps >= 10)
   chk('partidos_100_goles_100', player.partidos >= 100 && player.goles >= 100)
@@ -265,11 +473,21 @@ export function detectBadges(player: Player, mp: MatchPlayer, isMVP: boolean): s
   chk('triple_doble', player.goles >= 10 && player.asistencias >= 10 && player.mvps >= 5)
   chk('zero_to_hero', player.goles >= 10)
 
+  // New combo badges
+  chk('hat_trick_asist', g >= 3 && a >= 2)
+  chk('mvp_hat_trick_clean', isMVP && g >= 3 && mp.porteria_cero)
+  chk('gol_hat_asist_hat', g >= 3 && a >= 3)
+  chk('goles_asist_100', player.goles >= 100 && player.asistencias >= 100)
+  chk('partidos_50_mvp_25', player.partidos >= 50 && player.mvps >= 25)
+  chk('gol_100_asist_50', player.goles >= 100 && player.asistencias >= 50)
+
   // Meta
   const total = player.badges.length + newBadges.length
   chk('leyenda_total', total >= 50)
   chk('leyenda_100', total >= 100)
   chk('leyenda_150', total >= 150)
+  chk('leyenda_175', total >= 175)
+  chk('leyenda_200', total >= 200)
 
   return newBadges
 }

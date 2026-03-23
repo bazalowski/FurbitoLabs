@@ -6,6 +6,7 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { COMMUNITY_COLORS } from '@/lib/utils'
 
 interface AjustesPageProps {
@@ -69,6 +70,14 @@ export default function AjustesPage({ params }: AjustesPageProps) {
               </div>
             )}
           </div>
+        </Card>
+
+        {/* Theme */}
+        <Card>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+            Apariencia
+          </p>
+          <ThemeToggle />
         </Card>
 
         {/* Actions */}

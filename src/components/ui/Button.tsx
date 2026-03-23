@@ -14,9 +14,9 @@ const variantStyles: Record<string, React.CSSProperties> = {
 }
 
 const sizeClasses: Record<string, string> = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2.5 text-sm',
-  lg: 'px-5 py-3 text-base',
+  sm: 'px-3 py-2.5 text-xs min-h-[44px]',
+  md: 'px-4 py-2.5 text-sm min-h-[44px]',
+  lg: 'px-5 py-3 text-base min-h-[48px]',
 }
 
 export function Button({
@@ -33,7 +33,7 @@ export function Button({
       {...props}
       disabled={disabled}
       className={cn(
-        'rounded-m font-bold uppercase tracking-wider transition-opacity',
+        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97]',
         sizeClasses[size],
         disabled && 'opacity-50 cursor-not-allowed',
         className

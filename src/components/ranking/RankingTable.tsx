@@ -56,7 +56,7 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-m text-xs font-bold uppercase tracking-wider transition-all"
+            className="flex-shrink-0 px-3 py-2 rounded-m text-xs font-bold uppercase tracking-wider transition-all min-h-[44px] flex items-center active:scale-95"
             style={
               tab === t.key
                 ? { background: communityColor, color: '#050d05' }

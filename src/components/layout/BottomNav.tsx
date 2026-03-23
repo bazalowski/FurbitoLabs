@@ -53,7 +53,7 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e' }: BottomNav
           <Link
             key={item.tab}
             href={item.href}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 flex-1 relative min-h-[44px] transition-all"
+            className="flex flex-col items-center gap-0.5 px-3 py-2 flex-1 relative min-h-[48px] transition-all active:scale-95"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             {active && (
@@ -66,7 +66,7 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e' }: BottomNav
               {item.icon}
             </span>
             <span
-              className="text-[9px] font-bold uppercase tracking-wide max-w-[56px] overflow-hidden text-ellipsis whitespace-nowrap"
+              className="text-[10px] font-bold uppercase tracking-wide max-w-[56px] overflow-hidden text-ellipsis whitespace-nowrap"
               style={{ color: active ? communityColor : 'var(--muted)', transition: 'color .18s' }}
             >
               {item.label}

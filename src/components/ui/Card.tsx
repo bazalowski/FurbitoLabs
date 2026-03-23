@@ -13,7 +13,7 @@ export function Card({ children, className, style, onClick, highlighted }: CardP
     <div
       onClick={onClick}
       className={cn(
-        'rounded-m p-4',
+        'rounded-m p-4 min-w-0',
         onClick && 'cursor-pointer active:scale-[0.98] transition-transform',
         className
       )}

@@ -7,6 +7,7 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { EventCard } from '@/components/events/EventCard'
 import { Header, Logo } from '@/components/layout/Header'
 import { SkeletonCard } from '@/components/ui/Skeleton'
+import { ActivityFeed } from '@/components/feed/ActivityFeed'
 import Link from 'next/link'
 
 interface HomePageProps {
@@ -125,6 +126,9 @@ export default function HomePage({ params }: HomePageProps) {
             </div>
           </div>
         )}
+
+        {/* Activity feed */}
+        <ActivityFeed events={[...upcoming, ...past]} players={players} />
       </div>
     </div>
   )

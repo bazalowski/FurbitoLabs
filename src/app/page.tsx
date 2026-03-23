@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/stores/session'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
+import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import type { Community } from '@/types'
 
 type LoginTab = 'join' | 'create'
@@ -142,6 +143,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      <OnboardingOverlay />
       <div className="w-full max-w-app">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -164,7 +166,7 @@ export default function LoginPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-all"
+                className="flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-all min-h-[44px] active:scale-[0.97]"
                 style={
                   tab === t
                     ? { background: 'var(--accent)', color: '#050d05' }
@@ -225,7 +227,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={joinLoading}
-                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-opacity disabled:opacity-50"
+                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
                 style={{ background: 'var(--accent)', color: '#050d05' }}
               >
                 {joinLoading ? 'Buscando...' : '⚽ Entrar'}
@@ -284,7 +286,7 @@ export default function LoginPage() {
                       key={c}
                       type="button"
                       onClick={() => setNewColor(c)}
-                      className="w-8 h-8 rounded-full border-2 transition-transform"
+                      className="w-10 h-10 rounded-full border-2 transition-transform"
                       style={{
                         background: c,
                         borderColor: newColor === c ? 'white' : 'transparent',
@@ -300,7 +302,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={createLoading}
-                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-opacity disabled:opacity-50"
+                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
                 style={{ background: 'var(--accent)', color: '#050d05' }}
               >
                 {createLoading ? 'Creando...' : '🏟️ Crear comunidad'}
