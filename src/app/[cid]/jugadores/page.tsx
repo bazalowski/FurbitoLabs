@@ -28,7 +28,7 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
   const [teamGenOpen, setTeamGenOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newPosition, setNewPosition] = useState('')
+  const [newPosition, setNewPosition] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
   const isAdmin = session.role === 'admin'
@@ -50,7 +50,7 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
     } else {
       showToast(`✅ ${newName} añadido — Código: ${code}`)
       setNewName('')
-      setNewPosition('')
+      setNewPosition(null)
       setAddOpen(false)
       reload()
     }
@@ -111,27 +111,6 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
             onChange={e => setNewName(e.target.value)}
             placeholder="Nombre del jugador"
           />
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-              Posición (opcional)
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {['portero', 'defensa', 'centrocampista', 'delantero'].map(pos => (
-                <button
-                  key={pos}
-                  onClick={() => setNewPosition(newPosition === pos ? '' : pos)}
-                  className="py-2 rounded-m text-xs font-bold capitalize transition-all"
-                  style={{
-                    background: newPosition === pos ? 'var(--accent)' : 'var(--card)',
-                    color: newPosition === pos ? '#050d05' : 'var(--muted)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {pos}
-                </button>
-              ))}
-            </div>
-          </div>
           <p className="text-xs" style={{ color: 'var(--muted)' }}>
             Se generará un código único para que el jugador pueda identificarse.
           </p>

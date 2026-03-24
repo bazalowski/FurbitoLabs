@@ -14,9 +14,9 @@ const variantStyles: Record<string, React.CSSProperties> = {
 }
 
 const sizeClasses: Record<string, string> = {
-  sm: 'px-3 py-2.5 text-xs min-h-[44px]',
-  md: 'px-4 py-2.5 text-sm min-h-[44px]',
-  lg: 'px-5 py-3 text-base min-h-[48px]',
+  sm: 'px-3 py-3 text-xs min-h-[48px]',
+  md: 'px-4 py-3 text-sm min-h-[48px]',
+  lg: 'px-5 py-3.5 text-base min-h-[52px]',
 }
 
 export function Button({
@@ -33,12 +33,12 @@ export function Button({
       {...props}
       disabled={disabled}
       className={cn(
-        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97]',
+        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97] select-none',
         sizeClasses[size],
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
-      style={{ ...variantStyles[variant], ...style }}
+      style={{ WebkitUserSelect: 'none', userSelect: 'none', ...variantStyles[variant], ...style }}
     >
       {children}
     </button>

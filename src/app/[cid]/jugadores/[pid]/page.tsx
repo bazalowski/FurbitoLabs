@@ -8,7 +8,7 @@ import { useVotes } from '@/hooks/useVotes'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { BadgeList, BadgeChip } from '@/components/ui/Badge'
+import { BadgeChip, BadgeShowcase } from '@/components/ui/Badge'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
@@ -228,14 +228,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         )}
 
         {/* Badges */}
-        {player.badges.length > 0 && (
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-              Badges ({player.badges.length})
-            </p>
-            <BadgeList badges={player.badges} size="sm" />
-          </div>
-        )}
+        <BadgeShowcase unlockedKeys={player.badges} accentColor={session.communityColor} />
       </div>
     </div>
   )

@@ -263,13 +263,13 @@ export const BADGE_DEFS: Record<string, BadgeDef> = {
 // ════════════════════════════════════════════════════
 export function calcXP(mp: MatchPlayer, isMVP: boolean): number {
   let xp = 10 // por participar
-  xp += mp.goles * 15
-  if (mp.goles >= 3) xp += 20 // hat trick bonus
-  xp += mp.asistencias * 10
-  if (isMVP) xp += 20
+  xp += mp.goles * 8
+  if (mp.goles >= 3) xp += 15 // hat trick bonus
+  xp += mp.asistencias * 5
+  if (isMVP) xp += 15
   xp += 5 // por completar el partido
-  if (mp.porteria_cero) xp += 15
-  if (mp.parada_penalti) xp += 25
+  if (mp.porteria_cero) xp += 10
+  if (mp.parada_penalti) xp += 15
   return Math.max(0, xp)
 }
 

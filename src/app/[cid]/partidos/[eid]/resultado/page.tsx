@@ -263,16 +263,16 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                     <div className="flex items-center gap-2 mt-1">
                       <button
                         onClick={() => setGolesA(Math.max(0, golesA - 1))}
-                        className="w-9 h-9 rounded-full text-lg font-bold"
-                        style={{ background: 'var(--card)', color: 'var(--text)' }}
+                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
                       >
                         −
                       </button>
                       <span className="font-bebas text-5xl w-12 text-center">{golesA}</span>
                       <button
                         onClick={() => setGolesA(golesA + 1)}
-                        className="w-9 h-9 rounded-full text-lg font-bold"
-                        style={{ background: session.communityColor, color: '#050d05' }}
+                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
                       >
                         +
                       </button>
@@ -286,16 +286,16 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                     <div className="flex items-center gap-2 mt-1">
                       <button
                         onClick={() => setGolesB(Math.max(0, golesB - 1))}
-                        className="w-9 h-9 rounded-full text-lg font-bold"
-                        style={{ background: 'var(--card)', color: 'var(--text)' }}
+                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
                       >
                         −
                       </button>
                       <span className="font-bebas text-5xl w-12 text-center">{golesB}</span>
                       <button
                         onClick={() => setGolesB(golesB + 1)}
-                        className="w-9 h-9 rounded-full text-lg font-bold"
-                        style={{ background: session.communityColor, color: '#050d05' }}
+                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
                       >
                         +
                       </button>
@@ -381,8 +381,8 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateStat(pid, stat.key, Math.max(0, stat.val - 1))}
-                            className="w-7 h-7 rounded text-sm font-bold"
-                            style={{ background: 'var(--card)', color: 'var(--text)' }}
+                            className="w-10 h-10 rounded text-sm font-bold active:scale-[0.95] select-none"
+                            style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
                           >
                             −
                           </button>
@@ -391,8 +391,8 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                           </span>
                           <button
                             onClick={() => updateStat(pid, stat.key, stat.val + 1)}
-                            className="w-7 h-7 rounded text-sm font-bold"
-                            style={{ background: session.communityColor, color: '#050d05' }}
+                            className="w-10 h-10 rounded text-sm font-bold active:scale-[0.95] select-none"
+                            style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
                           >
                             +
                           </button>
@@ -413,8 +413,11 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                       <button
                         key={toggle.key}
                         onClick={() => updateStat(pid, toggle.key, !toggle.val)}
-                        className="px-2 py-1 rounded text-xs font-bold transition-all"
+                        className="px-3 py-2.5 rounded text-xs font-bold transition-all active:scale-[0.95] select-none"
                         style={{
+                          minHeight: '48px',
+                          WebkitUserSelect: 'none',
+                          userSelect: 'none',
                           background: toggle.val ? session.communityColor : 'var(--card)',
                           color: toggle.val ? '#050d05' : 'var(--muted)',
                           border: `1px solid ${toggle.val ? 'transparent' : 'var(--border)'}`,

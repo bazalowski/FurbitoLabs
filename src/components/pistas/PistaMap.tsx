@@ -8,6 +8,9 @@ interface PistaMapProps {
   height?: number
   userLat?: number
   userLng?: number
+  onMapClick?: (lat: number, lng: number) => void
+  tempMarker?: { lat: number; lng: number } | null
+  onTempMarkerClear?: () => void
 }
 
 const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -15,11 +18,19 @@ const OSM_ATTR = '© OpenStreetMap contributors'
 const SAT_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 const SAT_ATTR = '© Esri — Source: Esri, Maxar, Earthstar Geographics'
 
-export function PistaMap({ pistas, height = 300, userLat, userLng }: PistaMapProps) {
+export function PistaMap({ pistas, height = 300, userLat, userLng, onMapClick, tempMarker, onTempMarkerClear }: PistaMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const instanceRef = useRef<any>(null)
   const tileLayerRef = useRef<any>(null)
+  const tempMarkerRef = useRef<any>(null)
+  const onMapClickRef = useRef(onMapClick)
+  const onTempMarkerClearRef = useRef(onTempMarkerClear)
+  const leafletRef = useRef<any>(null)
   const [satellite, setSatellite] = useState(false)
+
+  // Keep callback refs up to date without re-creating the map
+  onMapClickRef.current = onMapClick
+  onTempMarkerClearRef.current = onTempMarkerClear
 
   useEffect(() => {
     // Leaflet must run only client-side
@@ -27,6 +38,7 @@ export function PistaMap({ pistas, height = 300, userLat, userLng }: PistaMapPro
     if (instanceRef.current) return // already initialized
 
     import('leaflet').then(L => {
+      leafletRef.current = L
       const defaultLat = userLat ?? (pistas[0]?.lat ?? 40.4168)
       const defaultLng = userLng ?? (pistas[0]?.lng ?? -3.7038)
 
@@ -51,6 +63,13 @@ export function PistaMap({ pistas, height = 300, userLat, userLng }: PistaMapPro
           .bindPopup('Tu ubicación')
       }
 
+      // Click-to-add handler
+      map.on('click', (e: any) => {
+        if (onMapClickRef.current) {
+          onMapClickRef.current(e.latlng.lat, e.latlng.lng)
+        }
+      })
+
       instanceRef.current = map
     })
 
@@ -58,8 +77,43 @@ export function PistaMap({ pistas, height = 300, userLat, userLng }: PistaMapPro
       instanceRef.current?.remove()
       instanceRef.current = null
       tileLayerRef.current = null
+      tempMarkerRef.current = null
+      leafletRef.current = null
     }
   }, [pistas, userLat, userLng])
+
+  // Manage temporary marker (red) for click-to-add
+  useEffect(() => {
+    const map = instanceRef.current
+    const L = leafletRef.current
+    if (!map || !L) return
+
+    // Remove previous temp marker
+    if (tempMarkerRef.current) {
+      map.removeLayer(tempMarkerRef.current)
+      tempMarkerRef.current = null
+    }
+
+    if (tempMarker) {
+      const redIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+      })
+      tempMarkerRef.current = L.marker([tempMarker.lat, tempMarker.lng], { icon: redIcon })
+        .addTo(map)
+        .bindPopup('Nueva pista aqui (click para quitar)')
+        .openPopup()
+        .on('click', () => {
+          if (onTempMarkerClearRef.current) {
+            onTempMarkerClearRef.current()
+          }
+        })
+    }
+  }, [tempMarker])
 
   // Swap tile layer when satellite state changes
   useEffect(() => {

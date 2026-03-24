@@ -31,8 +31,22 @@ export default function PistasPage({ params }: PistasPageProps) {
   const [locating, setLocating] = useState(false)
   const [userLat, setUserLat] = useState<number>()
   const [userLng, setUserLng] = useState<number>()
+  const [tempMarker, setTempMarker] = useState<{ lat: number; lng: number } | null>(null)
 
   const canAdd = session.role === 'admin' || session.role === 'player'
+
+  function handleMapClick(clickLat: number, clickLng: number) {
+    if (!canAdd) return
+    setLat(clickLat.toFixed(6))
+    setLng(clickLng.toFixed(6))
+    setTempMarker({ lat: clickLat, lng: clickLng })
+    setAddOpen(true)
+  }
+
+  function closeAddModal() {
+    setAddOpen(false)
+    setTempMarker(null)
+  }
 
   function getMyLocation() {
     if (!navigator.geolocation) { showToast('Geolocalización no disponible'); return }
@@ -71,6 +85,7 @@ export default function PistasPage({ params }: PistasPageProps) {
       setLat('')
       setLng('')
       setAddOpen(false)
+      setTempMarker(null)
       reload()
     }
     setSaving(false)
@@ -91,9 +106,14 @@ export default function PistasPage({ params }: PistasPageProps) {
 
       <div className="px-4 space-y-4 pt-2">
         {/* Map */}
-        {pistas.length > 0 && (
-          <PistaMap pistas={pistas} userLat={userLat} userLng={userLng} />
-        )}
+        <PistaMap
+          pistas={pistas}
+          userLat={userLat}
+          userLng={userLng}
+          onMapClick={canAdd ? handleMapClick : undefined}
+          tempMarker={tempMarker}
+          onTempMarkerClear={closeAddModal}
+        />
 
         {/* Pista list */}
         {loading ? (
@@ -127,7 +147,7 @@ export default function PistasPage({ params }: PistasPageProps) {
       </div>
 
       {/* Add Pista Modal */}
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="📍 Nueva pista">
+      <Modal open={addOpen} onClose={closeAddModal} title="📍 Nueva pista">
         <div className="space-y-4">
           <Input
             label="Nombre de la pista"
