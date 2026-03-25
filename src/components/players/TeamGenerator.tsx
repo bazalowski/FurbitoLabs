@@ -36,39 +36,102 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
     onTeamsGenerated?.(res)
   }
 
-  const modes: { value: TeamMode; label: string; desc: string }[] = [
-    { value: 'balanced', label: '⚖️ Equilibrado', desc: 'Maximiza el equilibrio por nivel' },
-    { value: 'random',   label: '🎲 Aleatorio',   desc: 'Sorteo completamente aleatorio' },
-    { value: 'snake',    label: '🐍 Snake draft', desc: 'Serpenteo por nivel 1-2-2-1...' },
-    { value: 'captains', label: '👑 Capitanes',   desc: 'Los 2 mejores son capitanes y eligen alternando' },
+  const goBack = () => {
+    setResult(null)
+    onTeamsGenerated?.(null)
+  }
+
+  const modes: { value: TeamMode; icon: string; label: string }[] = [
+    { value: 'balanced', icon: '⚖️', label: 'Equilibrado' },
+    { value: 'random',   icon: '🎲', label: 'Aleatorio' },
+    { value: 'snake',    icon: '🐍', label: 'Snake' },
+    { value: 'captains', icon: '👑', label: 'Capitanes' },
   ]
 
+  /* ── Step 2: Result view ─────────────────────────────── */
+  if (result) {
+    return (
+      <div className="space-y-3">
+        {/* Back button */}
+        <button
+          onClick={goBack}
+          className="flex items-center gap-1 text-xs font-bold"
+          style={{ color: communityColor }}
+        >
+          ← Volver a selección
+        </button>
+
+        {/* Balance indicator — compact */}
+        <div
+          className="px-3 py-2 rounded-m text-center"
+          style={{ background: result.bal.color + '22', border: `1px solid ${result.bal.color}44` }}
+        >
+          <p className="font-bold text-xs" style={{ color: result.bal.color }}>
+            {result.bal.label} — {result.bal.msg}
+          </p>
+        </div>
+
+        {/* Teams side by side */}
+        <div className="grid grid-cols-2 gap-2">
+          {(['teamA', 'teamB'] as const).map((team, i) => (
+            <div
+              key={team}
+              className="rounded-m p-2 space-y-1.5"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bebas text-lg tracking-wider">Equipo {i === 0 ? 'A' : 'B'}</span>
+                <span className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>
+                  {i === 0 ? result.sumA : result.sumB} pts
+                </span>
+              </div>
+              {result[team].map(p => (
+                <div key={p.id} className="flex items-center gap-1.5">
+                  <PlayerAvatar player={p} size={24} communityColor={communityColor} />
+                  <span className="text-[11px] font-semibold truncate flex-1">{p.name}</span>
+                  <span className="text-[10px] shrink-0" style={{ color: 'var(--muted)' }}>{p._score.toFixed(1)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <Button onClick={generate} variant="ghost" className="w-full text-sm">
+          🔄 Regenerar
+        </Button>
+      </div>
+    )
+  }
+
+  /* ── Step 1: Mode + Selection + Generate ─────────────── */
   return (
-    <div className="space-y-4">
-      {/* Mode selector */}
-      <div className="space-y-2">
-        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Modo de generación</p>
-        {modes.map(m => (
-          <button
-            key={m.value}
-            onClick={() => { setMode(m.value); setResult(null) }}
-            className="w-full text-left px-3 py-2.5 rounded-m transition-all"
-            style={{
-              background: mode === m.value ? communityColor + '22' : 'var(--card)',
-              border: `1px solid ${mode === m.value ? communityColor + '55' : 'var(--border)'}`,
-            }}
-          >
-            <div className="font-bold text-sm">{m.label}</div>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{m.desc}</div>
-          </button>
-        ))}
+    <div className="space-y-3">
+      {/* Mode selector — horizontal scrollable pills */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>Modo</p>
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
+          {modes.map(m => (
+            <button
+              key={m.value}
+              onClick={() => { setMode(m.value); setResult(null) }}
+              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap"
+              style={{
+                background: mode === m.value ? communityColor + '22' : 'var(--card)',
+                border: `1.5px solid ${mode === m.value ? communityColor : 'var(--border)'}`,
+                color: mode === m.value ? communityColor : 'var(--foreground)',
+              }}
+            >
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Player selection */}
+      {/* Player selection — compact 3-col chip grid */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-            Selecciona jugadores ({selectedIds.size}/{players.length})
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+            Jugadores ({selectedIds.size}/{players.length})
           </p>
           <button
             onClick={() => {
@@ -76,83 +139,42 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
               else setSelectedIds(new Set(players.map(p => p.id)))
               setResult(null)
             }}
-            className="text-xs font-bold"
-            style={{ color: communityColor }}
+            className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{ color: communityColor, background: communityColor + '15' }}
           >
-            {selectedIds.size === players.length ? 'Quitar todos' : 'Todos'}
+            {selectedIds.size === players.length ? 'Ninguno' : 'Todos'}
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {players.map(p => {
             const selected = selectedIds.has(p.id)
             return (
               <button
                 key={p.id}
                 onClick={() => togglePlayer(p.id)}
-                className="flex items-center gap-2 px-3 py-2 rounded-m text-left transition-all"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-m text-left transition-all"
                 style={{
                   background: selected ? communityColor + '22' : 'var(--card)',
-                  border: `1px solid ${selected ? communityColor + '66' : 'var(--border)'}`,
+                  border: `1.5px solid ${selected ? communityColor + '88' : 'var(--border)'}`,
                 }}
               >
-                <PlayerAvatar player={p} size={32} communityColor={communityColor} />
-                <span className="text-xs font-bold truncate">{p.name}</span>
+                <PlayerAvatar player={p} size={24} communityColor={communityColor} />
+                <span className="text-[11px] font-bold truncate">{p.name}</span>
               </button>
             )
           })}
         </div>
       </div>
 
+      {/* Generate button */}
       <Button
         onClick={generate}
         disabled={selectedIds.size < 2}
         className="w-full"
         style={{ background: communityColor, color: '#050d05' }}
       >
-        🎯 Generar equipos ({selectedIds.size} jugadores)
+        🎯 Generar equipos ({selectedIds.size})
       </Button>
-
-      {/* Result */}
-      {result && (
-        <div className="space-y-3">
-          {/* Balance indicator */}
-          <div
-            className="px-4 py-3 rounded-m text-center"
-            style={{ background: result.bal.color + '22', border: `1px solid ${result.bal.color}55` }}
-          >
-            <p className="font-bold text-sm" style={{ color: result.bal.color }}>{result.bal.label}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{result.bal.msg}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {(['teamA', 'teamB'] as const).map((team, i) => (
-              <div
-                key={team}
-                className="rounded-m p-3 space-y-2"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bebas text-xl tracking-wider">Equipo {i === 0 ? 'A' : 'B'}</span>
-                  <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
-                    {i === 0 ? result.sumA : result.sumB} pts
-                  </span>
-                </div>
-                {result[team].map(p => (
-                  <div key={p.id} className="flex items-center gap-2">
-                    <PlayerAvatar player={p} size={28} communityColor={communityColor} />
-                    <span className="text-xs font-semibold truncate">{p.name}</span>
-                    <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>{p._score.toFixed(1)}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          <Button onClick={generate} variant="ghost" className="w-full text-sm">
-            🔄 Regenerar
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

@@ -114,7 +114,7 @@ export interface Session {
 }
 
 // ── Tipos de UI ────────────────────────────────────
-export type NavTab = 'home' | 'partidos' | 'jugadores' | 'ranking' | 'pistas'
+export type NavTab = 'home' | 'partidos' | 'jugadores' | 'ranking' | 'perfil'
 
 export interface TeamGeneratorResult {
   teamA: ScoredPlayer[]

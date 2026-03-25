@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/stores/session'
@@ -32,6 +32,23 @@ export default function LoginPage() {
   // Admin PIN
   const [adminPin, setAdminPin] = useState('')
 
+  // Communities list
+  const [communities, setCommunities] = useState<Community[]>([])
+
+  // Shake animation flag
+  const [shaking, setShaking] = useState(false)
+
+  useEffect(() => {
+    createClient().from('communities').select('id, name, color, pin').then(({ data }) => {
+      if (data) setCommunities(data as Community[])
+    })
+  }, [])
+
+  const triggerShake = useCallback(() => {
+    setShaking(true)
+    setTimeout(() => setShaking(false), 400)
+  }, [])
+
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
     setJoinError('')
@@ -56,12 +73,14 @@ export default function LoginPage() {
     if (error) {
       console.error('[FURBITO] Error al buscar comunidad:', error)
       setJoinError(`Error de conexión: ${error.message}`)
+      triggerShake()
       setJoinLoading(false)
       return
     }
 
     if (!community) {
       setJoinError('PIN incorrecto. Revisa el código de tu comunidad.')
+      triggerShake()
       setJoinLoading(false)
       return
     }
@@ -77,6 +96,7 @@ export default function LoginPage() {
 
       if (!player) {
         setJoinError('Código de jugador no encontrado en esta comunidad.')
+        triggerShake()
         setJoinLoading(false)
         return
       }
@@ -141,19 +161,45 @@ export default function LoginPage() {
     router.push(`/${community.id}`)
   }
 
+  function handleCommunityCard(c: Community) {
+    setPin(c.pin)
+    setTab('join')
+    // Auto-submit after filling PIN
+    setTimeout(() => {
+      const form = document.getElementById('join-form') as HTMLFormElement | null
+      if (form) form.requestSubmit()
+    }, 100)
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
       <OnboardingOverlay />
       <div className="w-full max-w-app">
+
+        {/* Floating football */}
+        <div className="text-center mb-4">
+          <span className="animate-float inline-block text-4xl" role="img" aria-label="football">
+            ⚽
+          </span>
+        </div>
+
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="font-bebas text-5xl tracking-widest" style={{ color: 'var(--accent)' }}>
+        <div className="text-center mb-2">
+          <div
+            className="font-bebas text-6xl tracking-widest"
+            style={{
+              color: 'var(--accent)',
+              textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
+            }}
+          >
             FURB<span style={{ color: 'var(--text)' }}>ITO</span>
           </div>
-          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            Tu comunidad de fútbol
-          </p>
         </div>
+
+        {/* Subtitle */}
+        <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
+          Introduce el PIN de tu comunidad
+        </p>
 
         {/* Card */}
         <div
@@ -161,26 +207,26 @@ export default function LoginPage() {
           style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
         >
           {/* Tabs */}
-          <div className="flex rounded-m overflow-hidden mb-6" style={{ background: 'var(--card)' }}>
+          <div className="flex rounded-m overflow-hidden mb-5" style={{ background: 'var(--card)' }}>
             {(['join', 'create'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-all min-h-[44px] active:scale-[0.97]"
+                className="flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all min-h-[44px] active:scale-[0.97]"
                 style={
                   tab === t
                     ? { background: 'var(--accent)', color: '#050d05' }
                     : { color: 'var(--muted)' }
                 }
               >
-                {t === 'join' ? '🔐 Entrar' : '➕ Crear'}
+                {t === 'join' ? 'Entrar' : 'Crear'}
               </button>
             ))}
           </div>
 
           {/* Join form */}
           {tab === 'join' && (
-            <form onSubmit={handleJoin} className="space-y-4">
+            <form id="join-form" onSubmit={handleJoin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
                   PIN de comunidad
@@ -191,11 +237,12 @@ export default function LoginPage() {
                   onChange={e => setPin(e.target.value)}
                   placeholder="Ej: FURIA24"
                   maxLength={20}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold uppercase tracking-wider outline-none"
+                  className={`w-full px-4 py-4 rounded-m text-center text-xl font-bold uppercase tracking-[0.3em] outline-none ${shaking ? 'animate-shake' : ''}`}
                   style={{
                     background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
+                    border: joinError ? '1px solid var(--red)' : '1px solid var(--border)',
+                    color: 'var(--accent)',
+                    letterSpacing: '0.3em',
                   }}
                   required
                 />
@@ -210,27 +257,27 @@ export default function LoginPage() {
                   onChange={e => setPlayerCode(e.target.value)}
                   placeholder="Ej: AX3K"
                   maxLength={4}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold uppercase tracking-widest outline-none"
+                  className="w-full px-4 py-3 rounded-m text-base font-bold uppercase tracking-widest outline-none text-center"
                   style={{
                     background: 'var(--card)',
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
                   }}
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                <p className="text-xs mt-1 text-center" style={{ color: 'var(--muted)' }}>
                   Déjalo vacío para entrar como invitado
                 </p>
               </div>
               {joinError && (
-                <p className="text-sm font-semibold" style={{ color: 'var(--red)' }}>{joinError}</p>
+                <p className="text-sm font-semibold text-center" style={{ color: 'var(--red)' }}>{joinError}</p>
               )}
               <button
                 type="submit"
                 disabled={joinLoading}
-                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
+                className="w-full py-3.5 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
                 style={{ background: 'var(--accent)', color: '#050d05' }}
               >
-                {joinLoading ? 'Buscando...' : '⚽ Entrar'}
+                {joinLoading ? 'Buscando...' : 'ENTRAR'}
               </button>
             </form>
           )}
@@ -302,17 +349,47 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={createLoading}
-                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
+                className="w-full py-3.5 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
                 style={{ background: 'var(--accent)', color: '#050d05' }}
               >
-                {createLoading ? 'Creando...' : '🏟️ Crear comunidad'}
+                {createLoading ? 'Creando...' : 'Crear comunidad'}
               </button>
             </form>
           )}
         </div>
 
+        {/* Community cards grid */}
+        {communities.length > 0 && (
+          <div className="mt-6">
+            <p className="text-xs font-bold uppercase tracking-wider mb-3 text-center" style={{ color: 'var(--muted)' }}>
+              Comunidades disponibles
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {communities.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => handleCommunityCard(c)}
+                  className="flex items-center gap-2.5 px-4 py-3 rounded-m text-left transition-all active:scale-[0.97]"
+                  style={{
+                    background: 'rgba(255,255,255,0.045)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ background: c.color }}
+                  />
+                  <span className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
+                    {c.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <p className="text-center text-xs mt-6" style={{ color: 'var(--muted)' }}>
-          FURBITO v2.0 · Supabase + Vercel
+          FURBITO v2.1 · Powered by Supabase
         </p>
       </div>
     </div>

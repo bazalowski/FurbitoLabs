@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { NavTab } from '@/types'
+import type { NavTab, Role } from '@/types'
 
 interface NavItem {
   tab: NavTab
@@ -11,33 +12,84 @@ interface NavItem {
   href: string
 }
 
-function buildNav(cid: string): NavItem[] {
+function buildNav(cid: string, role?: Role, playerId?: string | null): NavItem[] {
+  const perfilHref =
+    (role === 'player' || role === 'admin') && playerId
+      ? `/${cid}/jugadores/${playerId}`
+      : `/${cid}/jugadores`
+
+  const perfilLabel = role === 'guest' ? 'Acceder' : 'Perfil'
+
   return [
-    { tab: 'home',      label: 'Inicio',    icon: '🏠', href: `/${cid}` },
-    { tab: 'partidos',  label: 'Partidos',  icon: '⚽', href: `/${cid}/partidos` },
-    { tab: 'jugadores', label: 'Jugadores', icon: '👥', href: `/${cid}/jugadores` },
-    { tab: 'ranking',   label: 'Ranking',   icon: '🏆', href: `/${cid}/ranking` },
-    { tab: 'pistas',    label: 'Pistas',    icon: '🗺️', href: `/${cid}/pistas` },
+    { tab: 'home',      label: 'Inicio',      icon: '\u{1F3E0}', href: `/${cid}` },
+    { tab: 'partidos',  label: 'Partidos',     icon: '\u26BD',    href: `/${cid}/partidos` },
+    { tab: 'jugadores', label: 'Jugadores',    icon: '\u{1F465}', href: `/${cid}/jugadores` },
+    { tab: 'ranking',   label: 'Ranking',      icon: '\u{1F3C6}', href: `/${cid}/ranking` },
+    { tab: 'perfil',    label: perfilLabel,     icon: '\u{1F464}', href: perfilHref },
   ]
 }
 
 interface BottomNavProps {
   communityId: string
   communityColor?: string
+  role?: Role
+  playerId?: string | null
 }
 
-export function BottomNav({ communityId, communityColor = '#a8ff3e' }: BottomNavProps) {
+export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playerId }: BottomNavProps) {
   const pathname = usePathname()
-  const navItems = buildNav(communityId)
+  const navItems = buildNav(communityId, role, playerId)
+  const [hidden, setHidden] = useState(false)
+
+  const lastScrollY = useRef(0)
+  const scrollDelta = useRef(0)
+
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY
+      const diff = currentY - lastScrollY.current
+
+      // Accumulate delta in same direction, reset on direction change
+      if ((diff > 0 && scrollDelta.current < 0) || (diff < 0 && scrollDelta.current > 0)) {
+        scrollDelta.current = 0
+      }
+      scrollDelta.current += diff
+
+      // Scrolling DOWN: hide if delta > 12px and past 100px from top
+      if (scrollDelta.current > 12 && currentY > 100) {
+        setHidden(true)
+        scrollDelta.current = 0
+      }
+
+      // Scrolling UP: show if delta < -12px
+      if (scrollDelta.current < -12) {
+        setHidden(false)
+        scrollDelta.current = 0
+      }
+
+      lastScrollY.current = currentY
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   function isActive(item: NavItem): boolean {
     if (item.tab === 'home') return pathname === `/${communityId}`
+    if (item.tab === 'perfil') {
+      // For perfil tab, match the exact href (player profile or jugadores page for guests)
+      if (item.href.includes('/jugadores/')) {
+        return pathname === item.href
+      }
+      // Guest perfil points to /jugadores which would conflict with jugadores tab
+      return false
+    }
     return pathname.startsWith(item.href)
   }
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex items-start justify-around pt-2 z-50"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex items-start justify-around pt-2 z-50 nav-transition"
       style={{
         height: 'calc(var(--nav-h) + var(--safe-bottom, 0px))',
         paddingBottom: 'var(--safe-bottom)',
@@ -45,6 +97,9 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e' }: BottomNav
         borderTop: '1px solid var(--border)',
         boxShadow: '0 -4px 20px rgba(0,0,0,.4)',
         backdropFilter: 'blur(20px)',
+        transform: hidden
+          ? 'translateX(-50%) translateY(100%)'
+          : 'translateX(-50%) translateY(0)',
       }}
     >
       {navItems.map(item => {

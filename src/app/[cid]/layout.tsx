@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/stores/session'
 import { usePlayer } from '@/hooks/usePlayers'
+import { useCommunity } from '@/hooks/useCommunity'
+import { createClient } from '@/lib/supabase/client'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { RoleBanner } from '@/components/layout/RoleBanner'
-import { ToastProvider } from '@/components/ui/Toast'
+import { ToastProvider, showToast } from '@/components/ui/Toast'
 
 interface CommunityLayoutProps {
   children: React.ReactNode
@@ -18,6 +20,13 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
   const router = useRouter()
   const session = useSession()
   const { player } = usePlayer(session.playerId)
+  const { community } = useCommunity(session.communityId)
+
+  // PIN login modal state
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [pinLoading, setPinLoading] = useState(false)
 
   // Redirect to login if no active community in session
   useEffect(() => {
@@ -34,16 +43,151 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
     }
   }, [session.communityColor])
 
+  async function handlePinSubmit() {
+    if (pinInput.length !== 4) {
+      setPinError('El PIN debe tener 4 digitos')
+      return
+    }
+
+    setPinLoading(true)
+    setPinError('')
+
+    try {
+      const supabase = createClient()
+      const { data: foundPlayer, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('community_id', cid)
+        .eq('code', pinInput)
+        .single()
+
+      if (error || !foundPlayer) {
+        setPinError('PIN no encontrado')
+        setPinLoading(false)
+        return
+      }
+
+      // Determine role: check if this player is the community admin
+      const role = community?.comm_admin_id === foundPlayer.id ? 'admin' : 'player'
+      session.login(cid, session.communityColor, role, foundPlayer.id)
+
+      setShowPinModal(false)
+      setPinInput('')
+      setPinError('')
+      showToast(`Bienvenido, ${foundPlayer.name}!`)
+    } catch {
+      setPinError('Error de conexion')
+    } finally {
+      setPinLoading(false)
+    }
+  }
+
   if (!session.communityId) return null
+
+  const isGuest = session.role === 'guest'
 
   return (
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">
       <RoleBanner role={session.role} playerName={player?.name} />
+
+      {/* PIN Login Button */}
+      <div className="flex justify-end px-4 py-1">
+        {isGuest ? (
+          <button
+            onClick={() => setShowPinModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95"
+            style={{
+              background: session.communityColor,
+              color: '#000',
+            }}
+          >
+            <span>{'\u{1F511}'}</span> Identificarse
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowPinModal(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-full text-sm opacity-50 hover:opacity-80 transition-opacity active:scale-95"
+            style={{ background: 'var(--card)' }}
+            title="Cambiar jugador"
+          >
+            {'\u{1F511}'}
+          </button>
+        )}
+      </div>
+
       <main className="flex-1 pb-nav view-enter">
         {children}
       </main>
-      <BottomNav communityId={session.communityId} communityColor={session.communityColor} />
+
+      <BottomNav
+        communityId={session.communityId}
+        communityColor={session.communityColor}
+        role={session.role}
+        playerId={session.playerId}
+      />
       <ToastProvider />
+
+      {/* PIN Login Modal */}
+      {showPinModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowPinModal(false); setPinInput(''); setPinError('') } }}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-4 animate-slide-up"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="text-lg font-bold text-center">Introduce tu PIN de jugador</h2>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              value={pinInput}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 4)
+                setPinInput(v)
+                setPinError('')
+              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit() }}
+              placeholder="0000"
+              autoFocus
+              className="w-full text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
+              style={{
+                borderColor: pinError ? '#ef4444' : 'var(--border)',
+                color: 'var(--fg)',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ['--tw-ring-color' as any]: session.communityColor,
+              }}
+            />
+
+            {pinError && (
+              <p className="text-xs text-red-400 font-medium">{pinError}</p>
+            )}
+
+            <button
+              onClick={handlePinSubmit}
+              disabled={pinLoading || pinInput.length !== 4}
+              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40"
+              style={{
+                background: session.communityColor,
+                color: '#000',
+              }}
+            >
+              {pinLoading ? 'Verificando...' : 'Entrar'}
+            </button>
+
+            <button
+              onClick={() => { setShowPinModal(false); setPinInput(''); setPinError('') }}
+              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity"
+              style={{ color: 'var(--muted)' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
