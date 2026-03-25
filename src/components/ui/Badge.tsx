@@ -114,6 +114,9 @@ export function BadgeShowcase({ unlockedKeys, accentColor = 'var(--accent)' }: B
   const totalBadges = Object.keys(BADGE_DEFS).length
   const unlockedCount = unlockedKeys.filter(k => BADGE_DEFS[k]).length
   const [expanded, setExpanded] = useState(false)
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null)
+
+  const selectedDef = selectedBadge ? BADGE_DEFS[selectedBadge] : null
 
   return (
     <div>
@@ -150,21 +153,38 @@ export function BadgeShowcase({ unlockedKeys, accentColor = 'var(--accent)' }: B
                   const def = BADGE_DEFS[key]
                   if (!def) return null
                   const unlocked = unlockedSet.has(key)
-                  return (
-                    <div
+                  return unlocked ? (
+                    <button
                       key={key}
-                      className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center"
+                      onClick={() => setSelectedBadge(key)}
+                      className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
                       style={{
                         background: 'var(--card)',
-                        border: unlocked ? `1px solid ${accentColor}44` : '1px solid var(--border)',
-                        opacity: unlocked ? 1 : 0.4,
+                        border: `1px solid ${accentColor}44`,
                       }}
-                      title={`${def.name} — ${def.desc}`}
                     >
-                      <span className="text-lg">{unlocked ? def.icon : '🔒'}</span>
+                      <span className="text-lg">{def.icon}</span>
                       <span
                         className="text-[10px] font-bold leading-tight"
-                        style={{ color: unlocked ? 'var(--fg)' : 'var(--muted)' }}
+                        style={{ color: 'var(--fg)' }}
+                      >
+                        {def.name}
+                      </span>
+                    </button>
+                  ) : (
+                    <div
+                      key={key}
+                      className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px]"
+                      style={{
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        opacity: 0.4,
+                      }}
+                    >
+                      <span className="text-lg">🔒</span>
+                      <span
+                        className="text-[10px] font-bold leading-tight"
+                        style={{ color: 'var(--muted)' }}
                       >
                         {def.name}
                       </span>
@@ -174,6 +194,49 @@ export function BadgeShowcase({ unlockedKeys, accentColor = 'var(--accent)' }: B
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Badge detail modal */}
+      {selectedBadge && selectedDef && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4 select-none"
+          style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedBadge(null) }}
+        >
+          <div
+            className="w-full max-w-[260px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pop relative"
+            style={{ background: 'var(--card)', border: `1px solid ${accentColor}44` }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedBadge(null)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-opacity hover:opacity-80 active:scale-95 min-h-[48px] min-w-[48px]"
+              style={{ color: 'var(--muted)' }}
+            >
+              ✕
+            </button>
+
+            {/* Large emoji */}
+            <span className="text-5xl mt-2">{selectedDef.icon}</span>
+
+            {/* Badge name */}
+            <p className="font-bebas text-xl tracking-wider text-center" style={{ color: accentColor }}>
+              {selectedDef.name}
+            </p>
+
+            {/* Description */}
+            <p className="text-sm text-center leading-snug" style={{ color: 'var(--muted)' }}>
+              {selectedDef.desc}
+            </p>
+
+            {/* XP reward */}
+            {selectedDef.xp > 0 && (
+              <p className="text-xs font-bold" style={{ color: accentColor }}>
+                +{selectedDef.xp} XP
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

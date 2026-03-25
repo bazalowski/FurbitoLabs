@@ -41,3 +41,14 @@ export const useSession = create<SessionState>()(
 export const isAdmin   = (state: SessionState) => state.role === 'admin'
 export const isPlayer  = (state: SessionState) => state.role === 'player' || state.role === 'admin'
 export const isGuest   = (state: SessionState) => state.role === 'guest'
+
+/** Check if a player is an admin for a community (checks admin_ids array + legacy comm_admin_id) */
+export function isPlayerAdmin(
+  playerId: string | null,
+  community: { comm_admin_id?: string | null; admin_ids?: string[] } | null
+): boolean {
+  if (!playerId || !community) return false
+  if (community.admin_ids && community.admin_ids.includes(playerId)) return true
+  if (community.comm_admin_id === playerId) return true
+  return false
+}

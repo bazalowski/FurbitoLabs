@@ -34,9 +34,10 @@ interface RankingTableProps {
   votes: Vote[]
   communityId: string
   communityColor?: string
+  adminIds?: string[]
 }
 
-export function RankingTable({ players, votes, communityId, communityColor = '#a8ff3e' }: RankingTableProps) {
+export function RankingTable({ players, votes, communityId, communityColor = '#a8ff3e', adminIds = [] }: RankingTableProps) {
   const [tab, setTab] = useState<RankTab>('xp')
   const sorted = sortPlayers(players, votes, tab)
 
@@ -102,7 +103,12 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
 
                 {/* Name & level */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate">{player.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-sm truncate">{player.name}</p>
+                    {adminIds.includes(player.id) && (
+                      <span className="text-xs" title="Admin">{'\uD83D\uDC51'}</span>
+                    )}
+                  </div>
                   <p className="text-xs" style={{ color: communityColor }}>
                     {level.icon} {level.name}
                   </p>

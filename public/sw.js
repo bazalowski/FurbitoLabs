@@ -1,24 +1,28 @@
 // ════════════════════════════════════════════════════
 //  FURBITO Service Worker (PWA)
-//  Estrategia: Network-first para la app,
-//  Cache-first para assets estáticos
+//  Cache-first for static assets
+//  Network-first for API/data requests
+//  Offline fallback page
 // ════════════════════════════════════════════════════
 
-const CACHE_NAME = 'furbito-v2'
-const STATIC_ASSETS = [
+const CACHE_NAME = 'furbito-v3'
+const OFFLINE_URL = '/offline.html'
+
+const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
+  OFFLINE_URL,
 ]
 
-// Install
+// ── Install ──────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
   )
   self.skipWaiting()
 })
 
-// Activate — limpiar caches viejos
+// ── Activate — clean old caches ─────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -28,16 +32,85 @@ self.addEventListener('activate', event => {
   self.clients.claim()
 })
 
-// Fetch — Network first, fallback cache
-self.addEventListener('fetch', event => {
-  // No cachear llamadas a Supabase API
-  if (event.request.url.includes('supabase.co')) return
+// ── Helpers ─────────────────────────────────────────
+function isStaticAsset(url) {
+  return /\.(js|css|woff2?|ttf|otf|png|jpe?g|gif|svg|webp|avif|ico)(\?.*)?$/i.test(url.pathname)
+}
 
+function isApiRequest(url) {
+  return url.hostname.includes('supabase.co') ||
+         url.pathname.startsWith('/api/') ||
+         url.pathname.startsWith('/_next/data/')
+}
+
+function isNavigationRequest(request) {
+  return request.mode === 'navigate'
+}
+
+// ── Fetch ───────────────────────────────────────────
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url)
+
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return
+
+  // Skip cross-origin API calls (Supabase, etc.)
+  if (isApiRequest(url)) {
+    // Network-first for API/data requests
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+          }
+          return response
+        })
+        .catch(() => caches.match(event.request))
+    )
+    return
+  }
+
+  // Cache-first for static assets (.js, .css, images, fonts)
+  if (isStaticAsset(url)) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached
+        return fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+          }
+          return response
+        })
+      })
+    )
+    return
+  }
+
+  // Network-first for navigation requests, with offline fallback
+  if (isNavigationRequest(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+          }
+          return response
+        })
+        .catch(() =>
+          caches.match(event.request).then(cached => cached || caches.match(OFFLINE_URL))
+        )
+    )
+    return
+  }
+
+  // Default: network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Guardar en cache si es exitoso
-        if (response.ok && event.request.method === 'GET') {
+        if (response.ok) {
           const clone = response.clone()
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
         }

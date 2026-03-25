@@ -7,7 +7,8 @@ export interface Community {
   name: string
   pin: string
   color: string
-  comm_admin_id: string | null
+  comm_admin_id: string | null          // legacy: primer admin
+  admin_ids: string[]                   // array de IDs de admins (max 3)
   created_at: string
 }
 
@@ -18,6 +19,7 @@ export interface Player {
   code: string
   position: 'portero' | 'defensa' | 'centrocampista' | 'delantero' | null
   avatar: string | null
+  role: 'player' | 'admin'
   xp: number
   partidos: number
   goles: number

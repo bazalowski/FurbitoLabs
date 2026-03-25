@@ -6,6 +6,7 @@ import { useSession } from '@/stores/session'
 import { usePlayer } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { createClient } from '@/lib/supabase/client'
+import { isPlayerAdmin } from '@/stores/session'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { RoleBanner } from '@/components/layout/RoleBanner'
 import { ToastProvider, showToast } from '@/components/ui/Toast'
@@ -67,8 +68,15 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         return
       }
 
-      // Determine role: check if this player is the community admin
-      const role = community?.comm_admin_id === foundPlayer.id ? 'admin' : 'player'
+      // Fetch fresh community data to check admin_ids
+      const { data: freshCommunity } = await supabase
+        .from('communities')
+        .select('comm_admin_id, admin_ids')
+        .eq('id', cid)
+        .single()
+
+      // Determine role: check if this player is a community admin (admin_ids array or legacy comm_admin_id)
+      const role = isPlayerAdmin(foundPlayer.id, freshCommunity ?? community) ? 'admin' : 'player'
       session.login(cid, session.communityColor, role, foundPlayer.id)
 
       setShowPinModal(false)
@@ -124,6 +132,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         communityColor={session.communityColor}
         role={session.role}
         playerId={session.playerId}
+        playerName={player?.name}
       />
       <ToastProvider />
 
@@ -153,6 +162,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
               onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit() }}
               placeholder="0000"
               autoFocus
+              pattern="[0-9]*"
               className="w-full text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
               style={{
                 borderColor: pinError ? '#ef4444' : 'var(--border)',

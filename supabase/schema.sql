@@ -23,7 +23,8 @@ CREATE TABLE communities (
   name          TEXT NOT NULL,
   pin           TEXT NOT NULL,
   color         TEXT NOT NULL DEFAULT '#a8ff3e',
-  comm_admin_id TEXT,                   -- id del jugador con rol admin en la comunidad
+  comm_admin_id TEXT,                   -- id del jugador con rol admin (legacy, primer admin)
+  admin_ids     TEXT[] DEFAULT '{}',   -- array de IDs de admins (max 3)
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -180,3 +181,9 @@ CREATE INDEX idx_votes_community         ON votes(community_id);
 -- ════════════════════════════════════════════════════════════════
 -- Activa en: Supabase → Database → Replication → enable para:
 -- events, confirmations, match_players
+
+-- ════════════════════════════════════════════════════════════════
+--  MIGRATION: admin_ids (ejecutar si ya tienes la BD creada)
+-- ════════════════════════════════════════════════════════════════
+-- ALTER TABLE communities ADD COLUMN IF NOT EXISTS admin_ids TEXT[] DEFAULT '{}';
+-- UPDATE communities SET admin_ids = ARRAY[comm_admin_id] WHERE comm_admin_id IS NOT NULL AND admin_ids = '{}';

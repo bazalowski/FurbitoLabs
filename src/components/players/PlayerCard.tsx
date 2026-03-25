@@ -12,11 +12,13 @@ interface PlayerCardProps {
   communityId: string
   rank?: number
   communityColor?: string
+  adminIds?: string[]
 }
 
-export function PlayerCard({ player, communityId, rank, communityColor = '#a8ff3e' }: PlayerCardProps) {
+export function PlayerCard({ player, communityId, rank, communityColor = '#a8ff3e', adminIds = [] }: PlayerCardProps) {
   const level = getLevel(player.xp)
   const pct = xpPercent(player.xp)
+  const isAdmin = adminIds.includes(player.id)
 
   return (
     <Link href={`/${communityId}/jugadores/${player.id}`}>
@@ -29,17 +31,36 @@ export function PlayerCard({ player, communityId, rank, communityColor = '#a8ff3
         )}
 
         {/* Avatar */}
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0"
-          style={{ background: communityColor + '22', color: communityColor, border: `2px solid ${communityColor}44` }}
-        >
-          {player.avatar ?? initials(player.name)}
+        <div className="relative flex-shrink-0">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg"
+            style={{ background: communityColor + '22', color: communityColor, border: `2px solid ${isAdmin ? 'var(--gold, #ffd700)' : communityColor + '44'}` }}
+          >
+            {player.avatar ?? initials(player.name)}
+          </div>
+          {isAdmin && (
+            <span
+              className="absolute -top-1 -right-1 text-xs"
+              title="Admin"
+              style={{ filter: 'drop-shadow(0 0 2px rgba(255,215,0,0.6))' }}
+            >
+              {'\uD83D\uDC51'}
+            </span>
+          )}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm truncate">{player.name}</span>
+            {isAdmin && (
+              <span
+                className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold, #ffd700)' }}
+              >
+                Admin
+              </span>
+            )}
             {player.vitrina.slice(0, 3).map(b => (
               <span key={b} className="text-sm" title={b}>{/* badge icon */}</span>
             ))}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FURBITO - Sin conexion</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      text-align: center;
+      padding: 2rem;
+    }
+    .container { max-width: 320px; }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.75rem; letter-spacing: 0.1em; }
+    p { color: rgba(240,240,240,0.5); font-size: 0.9rem; line-height: 1.5; margin-bottom: 2rem; }
+    button {
+      background: #a8ff3e;
+      color: #0a0a0a;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#9917;</div>
+    <h1>SIN CONEXION</h1>
+    <p>No hay conexion a internet. Comprueba tu red e intentalo de nuevo.</p>
+    <button onclick="location.reload()">Reintentar</button>
+  </div>
+</body>
+</html>

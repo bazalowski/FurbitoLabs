@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSession } from '@/stores/session'
 import { usePlayers } from '@/hooks/usePlayers'
+import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { PlayerCard } from '@/components/players/PlayerCard'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
@@ -23,6 +24,7 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
   const { cid } = params
   const session = useSession()
   const { players, loading, reload } = usePlayers(cid)
+  const { community } = useCommunity(cid)
   const { votes } = useVotes(cid)
 
   const [teamGenOpen, setTeamGenOpen] = useState(false)
@@ -30,8 +32,10 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
   const [newName, setNewName] = useState('')
   const [newPosition, setNewPosition] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const isAdmin = session.role === 'admin'
+  const adminIds = community?.admin_ids ?? []
 
   async function addPlayer() {
     if (!newName.trim()) return
@@ -46,15 +50,39 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
       position: newPosition || null,
     })
     if (error) {
-      showToast('❌ Error al añadir jugador')
+      showToast('Error al anadir jugador')
     } else {
-      showToast(`✅ ${newName} añadido — Código: ${code}`)
+      showToast(`${newName} anadido - PIN: ${code}`)
       setNewName('')
       setNewPosition(null)
       setAddOpen(false)
       reload()
     }
     setAdding(false)
+  }
+
+  async function deletePlayer(playerId: string, playerName: string) {
+    if (!confirm(`Eliminar a ${playerName}? Esta accion no se puede deshacer.`)) return
+    // Prevent deleting yourself
+    if (playerId === session.playerId) {
+      showToast('No puedes eliminarte a ti mismo')
+      return
+    }
+    // Prevent deleting other admins (only the primary admin can manage admins in settings)
+    if (adminIds.includes(playerId)) {
+      showToast('No puedes eliminar a un admin desde aqui. Usa Ajustes.')
+      return
+    }
+    setDeleting(playerId)
+    const supabase = createClient()
+    const { error } = await supabase.from('players').delete().eq('id', playerId)
+    if (error) {
+      showToast('Error al eliminar jugador')
+    } else {
+      showToast(`${playerName} eliminado`)
+      reload()
+    }
+    setDeleting(null)
   }
 
   return (
@@ -64,11 +92,11 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
         right={
           <div className="flex gap-2">
             <Button size="sm" variant="ghost" onClick={() => setTeamGenOpen(true)}>
-              🎯
+              {'\uD83C\uDFAF'}
             </Button>
             {isAdmin && (
               <Button size="sm" onClick={() => setAddOpen(true)}>
-                + Añadir
+                + Anadir
               </Button>
             )}
           </div>
@@ -80,30 +108,48 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
           Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
         ) : players.length === 0 ? (
           <div className="text-center py-12" style={{ color: 'var(--muted)' }}>
-            <p className="text-3xl mb-3">👥</p>
-            <p className="font-bold">Sin jugadores todavía</p>
-            {isAdmin && <p className="text-sm mt-1">Añade el primer jugador</p>}
+            <p className="text-3xl mb-3">{'\uD83D\uDC65'}</p>
+            <p className="font-bold">Sin jugadores todavia</p>
+            {isAdmin && <p className="text-sm mt-1">Anade el primer jugador</p>}
           </div>
         ) : (
           players.map((p, i) => (
-            <PlayerCard
-              key={p.id}
-              player={p}
-              communityId={cid}
-              rank={i + 1}
-              communityColor={session.communityColor}
-            />
+            <div key={p.id} className="relative group">
+              <PlayerCard
+                player={p}
+                communityId={cid}
+                rank={i + 1}
+                communityColor={session.communityColor}
+                adminIds={adminIds}
+              />
+              {/* Delete button for admins (shown on the right side) */}
+              {isAdmin && p.id !== session.playerId && !adminIds.includes(p.id) && (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); deletePlayer(p.id, p.name) }}
+                  disabled={deleting === p.id}
+                  className="absolute top-1/2 -translate-y-1/2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity active:scale-95"
+                  style={{
+                    background: 'var(--red)',
+                    color: '#fff',
+                    opacity: deleting === p.id ? 0.5 : undefined,
+                  }}
+                  title={`Eliminar a ${p.name}`}
+                >
+                  {'\u2715'}
+                </button>
+              )}
+            </div>
           ))
         )}
       </div>
 
       {/* Team Generator Modal */}
-      <Modal open={teamGenOpen} onClose={() => setTeamGenOpen(false)} title="⚡ Generador de equipos">
+      <Modal open={teamGenOpen} onClose={() => setTeamGenOpen(false)} title={'\u26A1 Generador de equipos'}>
         <TeamGenerator players={players} votes={votes} communityColor={session.communityColor} />
       </Modal>
 
       {/* Add Player Modal */}
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Añadir jugador">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Anadir jugador">
         <div className="space-y-4">
           <Input
             label="Nombre"
@@ -112,10 +158,10 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
             placeholder="Nombre del jugador"
           />
           <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            Se generará un código único para que el jugador pueda identificarse.
+            Se generara un PIN numerico de 4 digitos para que el jugador pueda identificarse.
           </p>
           <Button onClick={addPlayer} disabled={adding || !newName.trim()} className="w-full">
-            {adding ? 'Añadiendo...' : '✅ Añadir jugador'}
+            {adding ? 'Anadiendo...' : 'Anadir jugador'}
           </Button>
         </div>
       </Modal>

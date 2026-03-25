@@ -11,14 +11,9 @@ export function uid(): string {
   return Math.random().toString(36).slice(2, 10)
 }
 
-// ── Player code generator (4 chars, sin ambiguedad) ──
+// ── Player PIN generator (4 digitos numericos) ──
 export function genPlayerCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let code = ''
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return code
+  return String(Math.floor(1000 + Math.random() * 9000))
 }
 
 // ── Iniciales ─────────────────────────────────────────

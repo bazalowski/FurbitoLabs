@@ -2,6 +2,7 @@
 
 import { useSession } from '@/stores/session'
 import { usePlayers } from '@/hooks/usePlayers'
+import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { RankingTable } from '@/components/ranking/RankingTable'
 import { Header } from '@/components/layout/Header'
@@ -15,7 +16,9 @@ export default function RankingPage({ params }: RankingPageProps) {
   const { cid } = params
   const session = useSession()
   const { players, loading } = usePlayers(cid)
+  const { community } = useCommunity(cid)
   const { votes } = useVotes(cid)
+  const adminIds = community?.admin_ids ?? []
 
   return (
     <div className="view-enter">
@@ -37,6 +40,7 @@ export default function RankingPage({ params }: RankingPageProps) {
             votes={votes}
             communityId={cid}
             communityColor={session.communityColor}
+            adminIds={adminIds}
           />
         )}
       </div>

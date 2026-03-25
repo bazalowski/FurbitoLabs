@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [newName, setNewName] = useState('')
   const [newPin, setNewPin] = useState('')
   const [newColor, setNewColor] = useState(COMMUNITY_COLORS[0])
+  const [adminName, setAdminName] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
   const [createError, setCreateError] = useState('')
 
@@ -101,7 +102,8 @@ export default function LoginPage() {
         return
       }
 
-      const isCommAdmin = community.comm_admin_id === player.id
+      const adminIds: string[] = community.admin_ids ?? []
+      const isCommAdmin = adminIds.includes(player.id) || community.comm_admin_id === player.id
       login(community.id, community.color, isCommAdmin ? 'admin' : 'player', player.id)
     } else {
       login(community.id, community.color, 'guest')
@@ -113,7 +115,7 @@ export default function LoginPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!newName.trim() || !newPin.trim()) return
+    if (!newName.trim() || !newPin.trim() || !adminName.trim()) return
     if (newPin.length < 4) { setCreateError('El PIN debe tener al menos 4 caracteres.'); return }
 
     setCreateLoading(true)
@@ -129,20 +131,32 @@ export default function LoginPage() {
 
     if (checkError) {
       console.error('[FURBITO] Error al verificar PIN:', checkError)
-      setCreateError(`Error de conexión con Supabase: ${checkError.message}`)
+      setCreateError(`Error de conexion con Supabase: ${checkError.message}`)
       setCreateLoading(false)
       return
     }
 
     if (existing) {
-      setCreateError('Ese PIN ya está en uso. Elige otro.')
+      setCreateError('Ese PIN ya esta en uso. Elige otro.')
       setCreateLoading(false)
       return
     }
 
+    // Create community
+    const communityId = uid()
+    const playerId = uid()
+    const playerCode = genPlayerCode()
+
     const { data: community, error } = await supabase
       .from('communities')
-      .insert({ id: uid(), name: newName.trim(), pin: newPin.toUpperCase(), color: newColor })
+      .insert({
+        id: communityId,
+        name: newName.trim(),
+        pin: newPin.toUpperCase(),
+        color: newColor,
+        comm_admin_id: playerId,
+        admin_ids: [playerId],
+      })
       .select()
       .single()
 
@@ -151,13 +165,31 @@ export default function LoginPage() {
       setCreateError(
         error
           ? `Error Supabase (${error.code}): ${error.message}`
-          : 'No se recibieron datos. Inténtalo de nuevo.'
+          : 'No se recibieron datos. Intentalo de nuevo.'
       )
       setCreateLoading(false)
       return
     }
 
-    login(community.id, community.color, 'guest')
+    // Create the admin player
+    const { error: playerError } = await supabase.from('players').insert({
+      id: playerId,
+      community_id: communityId,
+      name: adminName.trim(),
+      code: playerCode,
+    })
+
+    if (playerError) {
+      console.error('[FURBITO] Error al crear jugador admin:', playerError)
+      setCreateError(`Comunidad creada pero error al crear jugador: ${playerError.message}`)
+      setCreateLoading(false)
+      return
+    }
+
+    // Show the player's PIN
+    alert(`Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuardalo para poder identificarte.`)
+
+    login(community.id, community.color, 'admin', playerId)
     router.push(`/${community.id}`)
   }
 
@@ -322,6 +354,28 @@ export default function LoginPage() {
                   }}
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
+                  Tu nombre (admin)
+                </label>
+                <input
+                  type="text"
+                  value={adminName}
+                  onChange={e => setAdminName(e.target.value)}
+                  placeholder="Ej: Carlos"
+                  maxLength={30}
+                  className="w-full px-4 py-3 rounded-m text-base font-bold outline-none"
+                  style={{
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                  }}
+                  required
+                />
+                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                  Seras el administrador de la comunidad
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>

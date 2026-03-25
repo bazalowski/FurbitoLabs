@@ -12,13 +12,17 @@ interface NavItem {
   href: string
 }
 
-function buildNav(cid: string, role?: Role, playerId?: string | null): NavItem[] {
+function buildNav(cid: string, role?: Role, playerId?: string | null, playerName?: string | null): NavItem[] {
   const perfilHref =
     (role === 'player' || role === 'admin') && playerId
       ? `/${cid}/jugadores/${playerId}`
       : `/${cid}/jugadores`
 
-  const perfilLabel = role === 'guest' ? 'Acceder' : 'Perfil'
+  const perfilLabel = role === 'guest'
+    ? 'Acceder'
+    : playerName
+      ? playerName.split(' ')[0].slice(0, 8)
+      : 'Perfil'
 
   return [
     { tab: 'home',      label: 'Inicio',      icon: '\u{1F3E0}', href: `/${cid}` },
@@ -34,11 +38,12 @@ interface BottomNavProps {
   communityColor?: string
   role?: Role
   playerId?: string | null
+  playerName?: string | null
 }
 
-export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playerId }: BottomNavProps) {
+export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playerId, playerName }: BottomNavProps) {
   const pathname = usePathname()
-  const navItems = buildNav(communityId, role, playerId)
+  const navItems = buildNav(communityId, role, playerId, playerName)
   const [hidden, setHidden] = useState(false)
 
   const lastScrollY = useRef(0)

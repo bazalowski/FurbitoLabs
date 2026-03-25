@@ -22,7 +22,7 @@ export default function PartidosPage({ params }: PartidosPageProps) {
   const { players } = usePlayers(cid)
   const [tab, setTab] = useState<Tab>('proximos')
 
-  const canCreate = session.role === 'admin' || session.role === 'player'
+  const canCreate = session.role === 'admin'
   const shown = tab === 'proximos' ? upcoming : past
 
   return (
