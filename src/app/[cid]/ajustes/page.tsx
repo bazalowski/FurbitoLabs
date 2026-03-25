@@ -8,7 +8,6 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { showToast } from '@/components/ui/Toast'
@@ -30,6 +29,7 @@ export default function AjustesPage({ params }: AjustesPageProps) {
 
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [adminLoading, setAdminLoading] = useState(false)
+  const [showExitModal, setShowExitModal] = useState(false)
 
   const isAdmin = session.role === 'admin'
   const adminIds = community?.admin_ids ?? []
@@ -224,15 +224,17 @@ export default function AjustesPage({ params }: AjustesPageProps) {
           <ThemeToggle />
         </Card>
 
-        {/* Actions */}
-        <div className="space-y-2">
-          <Button variant="secondary" className="w-full" onClick={() => router.push('/')}>
-            Cambiar de comunidad
-          </Button>
-          <Button variant="danger" className="w-full" onClick={handleLogout}>
-            Cerrar sesion
-          </Button>
-        </div>
+        {/* Exit community */}
+        <Card>
+          <button
+            onClick={() => setShowExitModal(true)}
+            className="w-full flex items-center gap-3 py-3 px-1 rounded-m text-sm font-bold transition-all active:scale-[0.98] select-none"
+            style={{ color: 'var(--muted)', minHeight: '48px' }}
+          >
+            <span className="text-lg select-none">{'\u{1F6AA}'}</span>
+            <span>Salir de la comunidad</span>
+          </button>
+        </Card>
 
         {/* App info */}
         <div className="text-center pt-4" style={{ color: 'var(--muted)' }}>
@@ -280,6 +282,53 @@ export default function AjustesPage({ params }: AjustesPageProps) {
           )}
         </div>
       </Modal>
+
+      {/* Exit Confirmation Modal */}
+      {showExitModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExitModal(false) }}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 animate-slide-up"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <span className="text-3xl select-none">{'\u{1F6AA}'}</span>
+            <h2 className="text-lg font-bold text-center" style={{ color: 'var(--fg)' }}>
+              {'\u00BF'}Seguro que quieres salir?
+            </h2>
+            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
+              Volver{'\u00E1'}s a la pantalla de selecci{'\u00F3'}n de comunidad.
+            </p>
+
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
+                style={{
+                  background: 'var(--border)',
+                  color: 'var(--fg)',
+                  minHeight: '48px',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
+                style={{
+                  background: 'var(--muted)',
+                  color: 'var(--bg)',
+                  minHeight: '48px',
+                }}
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

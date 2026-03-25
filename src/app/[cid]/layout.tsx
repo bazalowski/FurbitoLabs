@@ -29,6 +29,14 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
   const [pinError, setPinError] = useState('')
   const [pinLoading, setPinLoading] = useState(false)
 
+  // Exit confirmation modal state
+  const [showExitModal, setShowExitModal] = useState(false)
+
+  function handleExit() {
+    session.logout()
+    router.push('/')
+  }
+
   // Redirect to login if no active community in session
   useEffect(() => {
     if (!session.communityId || session.communityId !== cid) {
@@ -98,8 +106,8 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">
       <RoleBanner role={session.role} playerName={player?.name} />
 
-      {/* PIN Login Button */}
-      <div className="flex justify-end px-4 py-1">
+      {/* PIN Login Button + Exit Button */}
+      <div className="flex justify-end items-center gap-2 px-4 py-1">
         {isGuest ? (
           <button
             onClick={() => setShowPinModal(true)}
@@ -121,6 +129,16 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
             {'\u{1F511}'}
           </button>
         )}
+
+        {/* Exit community button */}
+        <button
+          onClick={() => setShowExitModal(true)}
+          className="flex items-center justify-center w-8 h-8 rounded-full text-sm opacity-40 hover:opacity-70 transition-opacity active:scale-95 select-none"
+          style={{ background: 'var(--card)' }}
+          title="Salir de la comunidad"
+        >
+          {'\u{1F6AA}'}
+        </button>
       </div>
 
       <main className="flex-1 pb-nav view-enter">
@@ -195,6 +213,51 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Exit Confirmation Modal */}
+      {showExitModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExitModal(false) }}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 animate-slide-up"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <span className="text-3xl select-none">{'\u{1F6AA}'}</span>
+            <h2 className="text-lg font-bold text-center" style={{ color: 'var(--fg)' }}>
+              {'\u00BF'}Seguro que quieres salir?
+            </h2>
+            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
+              Volver{'\u00E1'}s a la pantalla de selecci{'\u00F3'}n de comunidad.
+            </p>
+
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
+                style={{
+                  background: 'var(--border)',
+                  color: 'var(--fg)',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleExit}
+                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
+                style={{
+                  background: 'var(--muted)',
+                  color: 'var(--bg)',
+                }}
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       )}
