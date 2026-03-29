@@ -10,6 +10,8 @@ import { isPlayerAdmin } from '@/stores/session'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { RoleBanner } from '@/components/layout/RoleBanner'
 import { ToastProvider, showToast } from '@/components/ui/Toast'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { NotificationPrompt } from '@/components/notifications/NotificationPrompt'
 
 interface CommunityLayoutProps {
   children: React.ReactNode
@@ -31,6 +33,9 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
 
   // Exit confirmation modal state
   const [showExitModal, setShowExitModal] = useState(false)
+
+  // Push notifications
+  const push = usePushNotifications(session.playerId, session.communityId)
 
   function handleExit() {
     session.logout()
@@ -155,6 +160,14 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         playerName={player?.name}
       />
       <ToastProvider />
+
+      {/* Push Notification Prompt */}
+      {push.showPrompt && (
+        <NotificationPrompt
+          onAccept={push.subscribe}
+          onDismiss={push.dismissPrompt}
+        />
+      )}
 
       {/* PIN Login Modal */}
       {showPinModal && (

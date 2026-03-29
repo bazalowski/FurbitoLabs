@@ -119,3 +119,49 @@ self.addEventListener('fetch', event => {
       .catch(() => caches.match(event.request))
   )
 })
+
+// ── Push Notifications ─────────────────────────────────
+self.addEventListener('push', event => {
+  if (!event.data) return
+
+  let data
+  try {
+    data = event.data.json()
+  } catch {
+    data = { title: 'FURBITO', body: event.data.text() }
+  }
+
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
+    tag: data.tag || 'furbito-notification',
+    data: { url: data.url || '/' },
+    vibrate: [100, 50, 100],
+    actions: data.actions || [],
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'FURBITO', options)
+  )
+})
+
+// ── Notification Click — navega a la URL del evento ────
+self.addEventListener('notificationclick', event => {
+  event.notification.close()
+
+  const url = event.notification.data?.url || '/'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      // Si ya hay una pestaña abierta, enfocarla y navegar
+      const existing = clients.find(c => c.url.includes(self.location.origin))
+      if (existing) {
+        existing.navigate(url)
+        return existing.focus()
+      }
+      // Si no, abrir nueva pestaña
+      return self.clients.openWindow(url)
+    })
+  )
+})

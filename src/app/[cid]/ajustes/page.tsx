@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/stores/session'
 import { useCommunity } from '@/hooks/useCommunity'
@@ -12,6 +12,8 @@ import { Modal } from '@/components/ui/Modal'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { getPreferences, updatePreferences } from '@/lib/notifications/push-manager'
 
 const MAX_ADMINS = 3
 
@@ -30,6 +32,24 @@ export default function AjustesPage({ params }: AjustesPageProps) {
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [adminLoading, setAdminLoading] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
+
+  // Push notifications
+  const push = usePushNotifications(session.playerId, session.communityId)
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({
+    event_created: true,
+    event_reminder: true,
+    match_finished: true,
+    badge_earned: true,
+  })
+
+  // Load notification preferences
+  useEffect(() => {
+    if (session.playerId && session.communityId) {
+      getPreferences(session.playerId, session.communityId).then(prefs => {
+        if (prefs) setNotifPrefs(prefs)
+      })
+    }
+  }, [session.playerId, session.communityId])
 
   const isAdmin = session.role === 'admin'
   const adminIds = community?.admin_ids ?? []
@@ -223,6 +243,92 @@ export default function AjustesPage({ params }: AjustesPageProps) {
           </p>
           <ThemeToggle />
         </Card>
+
+        {/* Notifications */}
+        {session.playerId && (
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                {'\uD83D\uDD14'} Notificaciones
+              </p>
+              {push.supported && !push.subscribed && (
+                <button
+                  onClick={push.subscribe}
+                  className="px-2.5 py-1.5 rounded-m text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                  style={{
+                    background: 'rgba(168,255,62,0.12)',
+                    color: 'var(--accent)',
+                    border: '1px solid rgba(168,255,62,0.3)',
+                    minHeight: '36px',
+                  }}
+                >
+                  Activar
+                </button>
+              )}
+            </div>
+
+            {!push.supported ? (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Tu navegador no soporta notificaciones push.
+              </p>
+            ) : push.permission === 'denied' ? (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Notificaciones bloqueadas. Activalas desde los ajustes del navegador.
+              </p>
+            ) : !push.subscribed ? (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Activa las notificaciones para recibir avisos de partidos y logros.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {([
+                  { key: 'event_created', label: 'Nuevo partido creado', emoji: '\u26BD' },
+                  { key: 'event_reminder', label: 'Recordatorio 24h antes', emoji: '\u23F0' },
+                  { key: 'match_finished', label: 'Resultado final', emoji: '\uD83C\uDFC6' },
+                  { key: 'badge_earned', label: 'Insignia desbloqueada', emoji: '\uD83C\uDFC5' },
+                ] as const).map(item => (
+                  <label
+                    key={item.key}
+                    className="flex items-center justify-between py-1 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2 text-sm">
+                      <span aria-hidden="true">{item.emoji}</span>
+                      {item.label}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={notifPrefs[item.key] !== false}
+                      onChange={async (e) => {
+                        const newPrefs = { ...notifPrefs, [item.key]: e.target.checked }
+                        setNotifPrefs(newPrefs)
+                        if (session.playerId && session.communityId) {
+                          await updatePreferences(session.playerId, session.communityId, newPrefs)
+                        }
+                      }}
+                      className="w-5 h-5 rounded accent-[var(--accent)] cursor-pointer"
+                    />
+                  </label>
+                ))}
+
+                <button
+                  onClick={async () => {
+                    await push.unsubscribe()
+                    showToast('Notificaciones desactivadas')
+                  }}
+                  className="w-full mt-2 py-2 rounded-m text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                  style={{
+                    background: 'rgba(239,68,68,0.08)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239,68,68,0.2)',
+                    minHeight: '40px',
+                  }}
+                >
+                  Desactivar notificaciones
+                </button>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Exit community */}
         <Card>
