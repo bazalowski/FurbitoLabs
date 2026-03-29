@@ -108,12 +108,16 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'modal-title' : undefined}
       onClick={onClose}
     >
       {/* Backdrop */}
       <div
         ref={backdropRef}
         className="absolute inset-0 animate-fade-in"
+        aria-hidden="true"
         style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       />
 
@@ -141,10 +145,11 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 
         {title && (
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-bebas text-2xl tracking-wider">{title}</h2>
+            <h2 id="modal-title" className="font-bebas text-2xl tracking-wider">{title}</h2>
             <button
               onClick={onClose}
-              className="text-xl leading-none flex items-center justify-center w-11 h-11 rounded-full"
+              aria-label="Cerrar"
+              className="text-xl leading-none flex items-center justify-center w-11 h-11 rounded-full cursor-pointer"
               style={{ color: 'var(--muted)', background: 'var(--card)' }}
             >
               ✕

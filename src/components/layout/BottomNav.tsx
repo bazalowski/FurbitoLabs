@@ -94,6 +94,7 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
 
   return (
     <nav
+      aria-label="Navegación principal"
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app flex items-start justify-around pt-2 z-50 nav-transition"
       style={{
         height: 'calc(var(--nav-h) + var(--safe-bottom, 0px))',
@@ -113,6 +114,8 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
           <Link
             key={item.tab}
             href={item.href}
+            aria-label={item.label}
+            aria-current={active ? 'page' : undefined}
             className="flex flex-col items-center gap-0.5 px-3 py-2 flex-1 relative min-h-[48px] transition-all active:scale-95"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >

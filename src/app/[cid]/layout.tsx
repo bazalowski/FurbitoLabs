@@ -122,7 +122,8 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         ) : (
           <button
             onClick={() => setShowPinModal(true)}
-            className="flex items-center justify-center w-8 h-8 rounded-full text-sm opacity-50 hover:opacity-80 transition-opacity active:scale-95"
+            aria-label="Cambiar jugador"
+            className="flex items-center justify-center w-10 h-10 rounded-full text-sm opacity-50 hover:opacity-80 transition-opacity active:scale-95 cursor-pointer"
             style={{ background: 'var(--card)' }}
             title="Cambiar jugador"
           >
@@ -133,7 +134,8 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         {/* Exit community button */}
         <button
           onClick={() => setShowExitModal(true)}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-sm opacity-40 hover:opacity-70 transition-opacity active:scale-95 select-none"
+          aria-label="Salir de la comunidad"
+          className="flex items-center justify-center w-10 h-10 rounded-full text-sm opacity-40 hover:opacity-70 transition-opacity active:scale-95 select-none cursor-pointer"
           style={{ background: 'var(--card)' }}
           title="Salir de la comunidad"
         >
@@ -162,12 +164,17 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
           onClick={(e) => { if (e.target === e.currentTarget) { setShowPinModal(false); setPinInput(''); setPinError('') } }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pin-modal-title"
             className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-4 animate-slide-up"
             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
           >
-            <h2 className="text-lg font-bold text-center">Introduce tu PIN de jugador</h2>
+            <h2 id="pin-modal-title" className="text-lg font-bold text-center">Introduce tu PIN de jugador</h2>
 
+            <label htmlFor="pin-input" className="sr-only">PIN de 4 dígitos</label>
             <input
+              id="pin-input"
               type="text"
               inputMode="numeric"
               maxLength={4}
@@ -181,6 +188,8 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
               placeholder="0000"
               autoFocus
               pattern="[0-9]*"
+              aria-describedby={pinError ? 'pin-error' : undefined}
+              aria-invalid={!!pinError}
               className="w-full text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
               style={{
                 borderColor: pinError ? '#ef4444' : 'var(--border)',
@@ -191,7 +200,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
             />
 
             {pinError && (
-              <p className="text-xs text-red-400 font-medium">{pinError}</p>
+              <p id="pin-error" role="alert" className="text-xs text-red-400 font-medium">{pinError}</p>
             )}
 
             <button
@@ -225,11 +234,14 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
           onClick={(e) => { if (e.target === e.currentTarget) setShowExitModal(false) }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exit-modal-title"
             className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 animate-slide-up"
             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
           >
-            <span className="text-3xl select-none">{'\u{1F6AA}'}</span>
-            <h2 className="text-lg font-bold text-center" style={{ color: 'var(--fg)' }}>
+            <span className="text-3xl select-none" aria-hidden="true">{'\u{1F6AA}'}</span>
+            <h2 id="exit-modal-title" className="text-lg font-bold text-center" style={{ color: 'var(--fg)' }}>
               {'\u00BF'}Seguro que quieres salir?
             </h2>
             <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>

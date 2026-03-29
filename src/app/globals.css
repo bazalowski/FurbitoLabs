@@ -16,7 +16,7 @@
   --accent-d: rgba(168,255,62,0.12);
   --accent-g: rgba(168,255,62,0.35);
   --text: #f0f0f0;
-  --muted: rgba(240,240,240,0.42);
+  --muted: rgba(240,240,240,0.55);
   --red: #ff5c5c;
   --orange: #ff9030;
   --gold: #ffd700;
@@ -281,6 +281,40 @@ a:active {
   [role="button"]:hover,
   a:hover {
     opacity: 0.85;
+  }
+}
+
+/* ── Focus visible for keyboard navigation ──────── */
+:focus-visible {
+  outline: 2px solid var(--comm-color, var(--accent));
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--comm-color, var(--accent));
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+/* ── Reduced motion ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .view-enter,
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-pop,
+  .animate-float {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

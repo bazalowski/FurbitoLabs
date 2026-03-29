@@ -33,9 +33,9 @@ export function Button({
       {...props}
       disabled={disabled}
       className={cn(
-        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97] select-none',
+        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97] select-none cursor-pointer',
         sizeClasses[size],
-        disabled && 'opacity-50 cursor-not-allowed',
+        disabled && 'opacity-50 !cursor-not-allowed',
         className
       )}
       style={{ WebkitUserSelect: 'none', userSelect: 'none', ...variantStyles[variant], ...style }}

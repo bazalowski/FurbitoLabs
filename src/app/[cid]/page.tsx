@@ -94,7 +94,7 @@ export default function HomePage({ params }: HomePageProps) {
         {/* 4 Main Action Cards (2x2 grid) */}
         <div className="grid grid-cols-2 gap-3">
           {/* Jugadores */}
-          <Link href={`/${cid}/jugadores`} className="select-none">
+          <Link href={`/${cid}/jugadores`} className="select-none cursor-pointer">
             <div
               className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
@@ -107,7 +107,7 @@ export default function HomePage({ params }: HomePageProps) {
 
           {/* Valorar */}
           {isLoggedIn ? (
-            <Link href={`/${cid}/valorar`} className="select-none">
+            <Link href={`/${cid}/valorar`} className="select-none cursor-pointer">
               <div
                 className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
                 style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
@@ -131,7 +131,7 @@ export default function HomePage({ params }: HomePageProps) {
           {/* Equipos */}
           <button
             onClick={() => setShowTeams(prev => !prev)}
-            className="select-none text-left w-full"
+            className="select-none text-left w-full cursor-pointer"
           >
             <div
               className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
@@ -147,7 +147,7 @@ export default function HomePage({ params }: HomePageProps) {
           </button>
 
           {/* Mapa */}
-          <Link href={`/${cid}/pistas`} className="select-none">
+          <Link href={`/${cid}/pistas`} className="select-none cursor-pointer">
             <div
               className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}

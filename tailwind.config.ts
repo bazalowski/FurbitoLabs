@@ -22,7 +22,7 @@ const config: Config = {
           red: '#ff5c5c',
           orange: '#ff9030',
           gold: '#ffd700',
-          muted: 'rgba(240,240,240,0.42)',
+          muted: 'rgba(240,240,240,0.55)',
           border: 'rgba(255,255,255,0.08)',
           'border-a': 'rgba(168,255,62,0.22)',
           card: 'rgba(255,255,255,0.045)',

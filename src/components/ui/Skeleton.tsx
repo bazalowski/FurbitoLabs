@@ -10,6 +10,9 @@ export function Skeleton({ className, height }: SkeletonProps) {
     <div
       className={cn('skeleton', className)}
       style={{ height: height ?? '1rem' }}
+      aria-busy="true"
+      aria-label="Cargando"
+      role="status"
     />
   )
 }
