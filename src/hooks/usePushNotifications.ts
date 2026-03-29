@@ -63,12 +63,21 @@ export function usePushNotifications(
   async function subscribe() {
     if (!playerId || !communityId) return
 
-    const sub = await subscribeToPush(playerId, communityId)
-    if (sub) {
-      setSubscribed(true)
-      setPermission('granted')
-      setShowPrompt(false)
+    try {
+      const sub = await subscribeToPush(playerId, communityId)
+      if (sub) {
+        setSubscribed(true)
+        setPermission('granted')
+      } else {
+        // Permiso denegado o error — actualizar estado
+        setPermission(getPermissionStatus())
+      }
+    } catch {
+      setPermission(getPermissionStatus())
     }
+    // Siempre cerrar el prompt y marcar como visto
+    setShowPrompt(false)
+    localStorage.setItem(PROMPT_DISMISSED_KEY, '1')
   }
 
   async function unsubscribe() {
