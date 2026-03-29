@@ -6,57 +6,64 @@ interface NotificationPromptProps {
 }
 
 /**
- * Banner educativo que pide permiso para enviar notificaciones.
+ * Modal centrado que pide permiso para enviar notificaciones.
  * Se muestra una vez al jugador identificado.
  */
 export function NotificationPrompt({ onAccept, onDismiss }: NotificationPromptProps) {
   return (
     <div
-      className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-app z-[60] animate-slide-up"
-      role="alert"
+      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss() }}
     >
       <div
-        className="rounded-xl p-4 flex flex-col gap-3"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notif-prompt-title"
+        className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-4 animate-slide-up"
         style={{
           background: 'var(--bg2, #0a1a0a)',
           border: '1px solid var(--border-a)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
       >
-        <div className="flex items-start gap-3">
-          <span className="text-2xl flex-shrink-0" aria-hidden="true">
-            {'\uD83D\uDD14'}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold" style={{ color: 'var(--fg)' }}>
-              Activa las notificaciones
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-              Te avisamos de nuevos partidos, resultados y logros.
-            </p>
-          </div>
-        </div>
+        <span className="text-4xl select-none" aria-hidden="true">
+          {'\uD83D\uDD14'}
+        </span>
 
-        <div className="flex gap-2">
+        <h2
+          id="notif-prompt-title"
+          className="text-lg font-bold text-center"
+          style={{ color: 'var(--fg)' }}
+        >
+          Activa las notificaciones
+        </h2>
+
+        <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
+          Te avisamos de nuevos partidos, resultados y logros.
+        </p>
+
+        <div className="flex gap-3 w-full">
           <button
+            type="button"
             onClick={onDismiss}
-            className="flex-1 py-2.5 rounded-m text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+            className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 cursor-pointer select-none"
             style={{
-              background: 'var(--card)',
-              color: 'var(--muted)',
-              border: '1px solid var(--border)',
-              minHeight: '44px',
+              background: 'var(--border)',
+              color: 'var(--fg)',
+              minHeight: '48px',
             }}
           >
             Ahora no
           </button>
           <button
+            type="button"
             onClick={onAccept}
-            className="flex-1 py-2.5 rounded-m text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+            className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 cursor-pointer select-none"
             style={{
               background: 'var(--comm-color, var(--accent))',
               color: '#050d05',
-              minHeight: '44px',
+              minHeight: '48px',
             }}
           >
             Activar
