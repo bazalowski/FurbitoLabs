@@ -7,6 +7,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { showToast } from '@/components/ui/Toast'
 import { uid } from '@/lib/utils'
+import { notifyEventCreated } from '@/lib/notifications/notification-service'
 import type { Event, Pista, NewEventForm } from '@/types'
 
 interface EventFormProps {
@@ -39,6 +40,7 @@ export function EventForm({ communityId, pistas, event, onDone, onCancel }: Even
       : DEFAULTS
   )
   const [loading, setLoading] = useState(false)
+  const session = useSession()
 
   const set = (key: keyof NewEventForm, value: string | number | boolean) =>
     setForm(f => ({ ...f, [key]: value }))
@@ -66,8 +68,15 @@ export function EventForm({ communityId, pistas, event, onDone, onCancel }: Even
       await supabase.from('events').update(payload).eq('id', event.id)
       showToast('✅ Evento actualizado')
     } else {
-      await supabase.from('events').insert({ id: uid(), ...payload })
+      const newId = uid()
+      await supabase.from('events').insert({ id: newId, ...payload })
       showToast('✅ Evento creado')
+      notifyEventCreated(
+        communityId,
+        payload.titulo,
+        `/${communityId}/partidos/${newId}`,
+        session.playerId ?? ''
+      )
     }
 
     setLoading(false)

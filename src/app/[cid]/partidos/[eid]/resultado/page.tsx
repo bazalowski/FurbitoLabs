@@ -16,6 +16,7 @@ import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { Modal } from '@/components/ui/Modal'
 import { calcXP, detectBadges, BADGE_DEFS } from '@/lib/game/badges'
 import { uid } from '@/lib/utils'
+import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
 
 interface ResultadoPageProps {
@@ -134,6 +135,14 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP)
       const allBadges = [...player.badges, ...newBadges]
 
+      // Notificar badges nuevas al jugador actual
+      if (newBadges.length > 0 && pid === session.playerId) {
+        newBadges.forEach(key => {
+          const def = BADGE_DEFS[key]
+          if (def) notifyBadgeEarned(pid, def.name, def.icon)
+        })
+      }
+
       // Sum badge XP
       const badgeXP = newBadges.reduce((sum, key) => {
         return sum + (BADGE_DEFS[key]?.xp ?? 0)
@@ -151,6 +160,10 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     }
 
     showToast('🏁 Resultado guardado')
+
+    // Notificar resultado
+    notifyMatchFinished(cid, event.titulo, golesA, golesB, `/${cid}/partidos/${eid}`)
+
     reloadPlayers()
     router.push(`/${cid}/partidos/${eid}`)
     setSaving(false)
