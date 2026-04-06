@@ -10,7 +10,9 @@
       "Read(//c/Users/J. Bazalo/AppData/Roaming/**)",
       "Read(//c/Program Files/**)",
       "mcp__07b02598-0c26-41e5-af50-8b0cb5d88b63__use_figma",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git add:*)"
     ]
   }
 }
