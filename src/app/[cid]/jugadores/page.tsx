@@ -121,6 +121,7 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
                 rank={i + 1}
                 communityColor={session.communityColor}
                 adminIds={adminIds}
+                votes={votes}
               />
               {/* Delete button for admins (shown on the right side) */}
               {isAdmin && p.id !== session.playerId && !adminIds.includes(p.id) && (

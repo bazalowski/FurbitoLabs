@@ -105,48 +105,14 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
 
   if (!session.communityId) return null
 
-  const isGuest = session.role === 'guest'
-
   return (
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">
-      <RoleBanner role={session.role} playerName={player?.name} />
-
-      {/* PIN Login Button + Exit Button */}
-      <div className="flex justify-end items-center gap-2 px-4 py-1">
-        {isGuest ? (
-          <button
-            onClick={() => setShowPinModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95"
-            style={{
-              background: session.communityColor,
-              color: '#000',
-            }}
-          >
-            <span>{'\u{1F511}'}</span> Identificarse
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowPinModal(true)}
-            aria-label="Cambiar jugador"
-            className="flex items-center justify-center w-10 h-10 rounded-full text-sm opacity-50 hover:opacity-80 transition-opacity active:scale-95 cursor-pointer"
-            style={{ background: 'var(--card)' }}
-            title="Cambiar jugador"
-          >
-            {'\u{1F511}'}
-          </button>
-        )}
-
-        {/* Exit community button */}
-        <button
-          onClick={() => setShowExitModal(true)}
-          aria-label="Salir de la comunidad"
-          className="flex items-center justify-center w-10 h-10 rounded-full text-sm opacity-40 hover:opacity-70 transition-opacity active:scale-95 select-none cursor-pointer"
-          style={{ background: 'var(--card)' }}
-          title="Salir de la comunidad"
-        >
-          {'\u{1F6AA}'}
-        </button>
-      </div>
+      <RoleBanner
+        role={session.role}
+        playerName={player?.name}
+        onPinClick={() => setShowPinModal(true)}
+        onExitClick={() => setShowExitModal(true)}
+      />
 
       <main className="flex-1 pb-nav view-enter">
         {children}

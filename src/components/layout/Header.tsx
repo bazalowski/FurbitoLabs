@@ -9,18 +9,24 @@ interface HeaderProps {
 export function Header({ title, left, right }: HeaderProps) {
   return (
     <header
-      className="flex items-center justify-between px-4 gap-2 flex-shrink-0"
-      style={{ height: 'var(--header-h)' }}
+      className="sticky top-0 z-40 flex items-center justify-between px-4 gap-2 flex-shrink-0"
+      style={{
+        height: 'var(--header-h)',
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         {left}
         {title && (
           typeof title === 'string'
-            ? <h1 className="font-bebas text-2xl tracking-wider">{title}</h1>
+            ? <h1 className="font-bebas text-2xl tracking-wider truncate">{title}</h1>
             : title
         )}
       </div>
-      {right && <div className="flex items-center gap-2">{right}</div>}
+      {right && <div className="flex items-center gap-2 flex-shrink-0">{right}</div>}
     </header>
   )
 }
