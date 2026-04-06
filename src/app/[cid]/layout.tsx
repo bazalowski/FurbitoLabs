@@ -8,7 +8,6 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { createClient } from '@/lib/supabase/client'
 import { isPlayerAdmin } from '@/stores/session'
 import { BottomNav } from '@/components/layout/BottomNav'
-import { RoleBanner } from '@/components/layout/RoleBanner'
 import { ToastProvider, showToast } from '@/components/ui/Toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { NotificationPrompt } from '@/components/notifications/NotificationPrompt'
@@ -107,12 +106,28 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
 
   return (
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">
-      <RoleBanner
-        role={session.role}
-        playerName={player?.name}
-        onPinClick={() => setShowPinModal(true)}
-        onExitClick={() => setShowExitModal(true)}
-      />
+      {/* PIN / Exit — iconos fijos sobre el header, esquina superior derecha */}
+      <div
+        className="fixed top-0 right-0 z-50 flex items-center gap-1 pr-2"
+        style={{ height: 'var(--header-h)' }}
+      >
+        <button
+          onClick={() => setShowPinModal(true)}
+          aria-label="Cambiar jugador"
+          title="Cambiar jugador"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-sm opacity-40 hover:opacity-80 active:scale-90 transition-opacity"
+        >
+          🔑
+        </button>
+        <button
+          onClick={() => setShowExitModal(true)}
+          aria-label="Salir de la comunidad"
+          title="Salir de la comunidad"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-sm opacity-40 hover:opacity-80 active:scale-90 transition-opacity"
+        >
+          🚪
+        </button>
+      </div>
 
       <main className="flex-1 pb-nav view-enter">
         {children}
