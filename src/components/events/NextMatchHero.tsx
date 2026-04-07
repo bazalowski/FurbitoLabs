@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
-import type { Event, Player } from '@/types'
+import type { Event } from '@/types'
 
 interface NextMatchHeroProps {
   event: Event

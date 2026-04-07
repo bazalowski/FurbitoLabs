@@ -60,9 +60,9 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
     : top3
 
   const podiumMeta = [
-    { pos: 2, medal: '🥈', height: 'h-24', labelColor: '#94a3b8' },
-    { pos: 1, medal: '🥇', height: 'h-32', labelColor: '#ffd700' },
-    { pos: 3, medal: '🥉', height: 'h-20', labelColor: '#cd7f32' },
+    { pos: 2, medal: '🥈', height: 96, labelColor: '#94a3b8' },
+    { pos: 1, medal: '🥇', height: 128, labelColor: '#ffd700' },
+    { pos: 3, medal: '🥉', height: 80, labelColor: '#cd7f32' },
   ]
 
   return (
@@ -133,8 +133,9 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
 
                 {/* Podium plinth */}
                 <div
-                  className={`w-full ${meta.height} rounded-t-m`}
+                  className="w-full rounded-t-m"
                   style={{
+                    height: meta.height,
                     background: isFirst ? communityColor + '22' : 'var(--card)',
                     border: `1px solid ${isFirst ? communityColor + '44' : 'var(--border)'}`,
                     borderBottom: 'none',

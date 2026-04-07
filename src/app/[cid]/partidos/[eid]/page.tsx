@@ -107,6 +107,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   // ── Equipos tab content ────────────────────────────────────────
   function renderEquipos() {
+    if (!event) return null
     const teamA = (event.equipo_a ?? []).map(id => players.find(p => p.id === id)).filter(Boolean) as typeof players
     const teamB = (event.equipo_b ?? []).map(id => players.find(p => p.id === id)).filter(Boolean) as typeof players
 
@@ -152,6 +153,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   // ── Resultado tab content ──────────────────────────────────────
   function renderResultado() {
+    if (!event) return null
     return (
       <div className="space-y-4">
         {/* Score */}
@@ -280,6 +282,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   // ── Convocados tab content ─────────────────────────────────────
   function renderConvocados() {
+    if (!event) return null
     return (
       <div className="space-y-4">
         {/* Confirmation bar */}
