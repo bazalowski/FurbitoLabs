@@ -42,13 +42,15 @@ export default function HomePage({ params }: HomePageProps) {
   return (
     <div className="view-enter">
       <Header
-        title={<Logo />}
-        right={
-          community && (
-            <span className="text-sm font-bold" style={{ color: 'var(--muted)' }}>
-              {community.name}
-            </span>
-          )
+        title={
+          <div className="flex items-center gap-3">
+            <Logo />
+            {community && (
+              <span className="text-xs font-bold truncate max-w-[140px]" style={{ color: 'var(--muted)' }}>
+                {community.name}
+              </span>
+            )}
+          </div>
         }
       />
 

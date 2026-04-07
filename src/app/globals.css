@@ -81,7 +81,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  padding-top: var(--safe-top);
+  /* padding-top eliminado — el notch lo gestiona el navegador */
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
   font-size: 14px;

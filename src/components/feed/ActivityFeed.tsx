@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Event, Player } from '@/types'
 
 type ActivityType = 'match_result' | 'badge_earned' | 'player_joined'
@@ -86,45 +86,53 @@ function buildActivities(events: Event[], players: Player[]): ActivityItem[] {
 
 export function ActivityFeed({ events, players, maxItems = 10 }: ActivityFeedProps) {
   const activities = useMemo(() => buildActivities(events, players).slice(0, maxItems), [events, players, maxItems])
+  const [open, setOpen] = useState(false)
 
   if (activities.length === 0) return null
 
   return (
     <div>
-      <p
-        className="text-xs font-bold uppercase tracking-wider mb-2"
-        style={{ color: 'var(--muted)' }}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between py-2 active:opacity-70 transition-opacity"
       >
-        Actividad reciente
-      </p>
-      <div
-        className="rounded-m overflow-hidden"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        {activities.map((item, i) => (
-          <div
-            key={item.id}
-            className="flex items-start gap-3 px-4 py-3"
-            style={{
-              borderTop: i > 0 ? '1px solid var(--border)' : undefined,
-            }}
-          >
-            <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate">{item.title}</p>
-              <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
-                {item.description}
-              </p>
-            </div>
-            <span
-              className="text-xs flex-shrink-0 mt-0.5"
-              style={{ color: 'var(--muted)' }}
+        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+          Actividad reciente ({activities.length})
+        </span>
+        <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+      {open && (
+        <div
+          className="rounded-m overflow-hidden"
+          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+        >
+          {activities.map((item, i) => (
+            <div
+              key={item.id}
+              className="flex items-start gap-3 px-4 py-3"
+              style={{
+                borderTop: i > 0 ? '1px solid var(--border)' : undefined,
+              }}
             >
-              {item.time}
-            </span>
-          </div>
-        ))}
-      </div>
+              <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">{item.title}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
+                  {item.description}
+                </p>
+              </div>
+              <span
+                className="text-xs flex-shrink-0 mt-0.5"
+                style={{ color: 'var(--muted)' }}
+              >
+                {item.time}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
