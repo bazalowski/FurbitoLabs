@@ -8,16 +8,22 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { useVotes } from '@/hooks/useVotes'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
-import { Modal } from '@/components/ui/Modal'
 import { calcXP, detectBadges, BADGE_DEFS } from '@/lib/game/badges'
 import { uid } from '@/lib/utils'
 import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
+
+type Step = 'marcador' | 'stats' | 'resumen'
+
+const STEP_META: { key: Step; label: string }[] = [
+  { key: 'marcador', label: 'Marcador' },
+  { key: 'stats',    label: 'Stats' },
+  { key: 'resumen',  label: 'Confirmar' },
+]
 
 interface ResultadoPageProps {
   params: { cid: string; eid: string }
@@ -38,10 +44,11 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
   const [mvpId, setMvpId] = useState<string | null>(null)
   const [stats, setStats] = useState<Record<string, MatchPlayerStats>>({})
   const [saving, setSaving] = useState(false)
-  const [step, setStep] = useState<'equipos' | 'resultado' | 'stats'>('equipos')
+  const [step, setStep] = useState<Step>('marcador')
   const [genOpen, setGenOpen] = useState(false)
 
-  // Jugadores confirmados (solo 'si')
+  const communityColor = session.communityColor
+
   const confirmados = useMemo(() => {
     if (!event?.confirmations) return []
     return event.confirmations
@@ -60,38 +67,48 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
   }
 
   function updateStat(pid: string, key: keyof MatchPlayerStats, value: number | boolean) {
-    setStats(prev => ({
-      ...prev,
-      [pid]: { ...initStats(pid), [key]: value },
-    }))
+    setStats(prev => ({ ...prev, [pid]: { ...initStats(pid), [key]: value } }))
   }
 
-  function handleTeamsSet(a: string[], b: string[]) {
-    setEquipoA(a)
-    setEquipoB(b)
-    // Init stats for all players
+  function togglePlayer(pid: string, team: 'A' | 'B') {
+    const inA = equipoA.includes(pid)
+    const inB = equipoB.includes(pid)
+    if (team === 'A') {
+      setEquipoA(prev => inA ? prev.filter(id => id !== pid) : [...prev, pid])
+      if (inB) setEquipoB(prev => prev.filter(id => id !== pid))
+    } else {
+      setEquipoB(prev => inB ? prev.filter(id => id !== pid) : [...prev, pid])
+      if (inA) setEquipoA(prev => prev.filter(id => id !== pid))
+    }
+  }
+
+  function handleTeamsGenerated(a: string[], b: string[]) {
+    setEquipoA(a); setEquipoB(b)
     const init: Record<string, MatchPlayerStats> = {}
     ;[...a, ...b].forEach(pid => { init[pid] = initStats(pid) })
-    setStats(init)
-    setStep('resultado')
+    setStats(prev => ({ ...init, ...prev }))
+    setGenOpen(false)
   }
 
+  // ── Auto-validation ────────────────────────────────────────────
+  const totalGolesA = equipoA.reduce((sum, pid) => sum + (stats[pid]?.goles ?? 0), 0)
+  const totalGolesB = equipoB.reduce((sum, pid) => sum + (stats[pid]?.goles ?? 0), 0)
+  const totalIndividual = totalGolesA + totalGolesB
+  const totalMatch = golesA + golesB
+  const goalsMatch = totalIndividual === totalMatch
+  const hasStats = allPlayers.length > 0
+
+  // ── Save ───────────────────────────────────────────────────────
   async function saveResultado() {
     if (!event) return
     setSaving(true)
     const supabase = createClient()
 
-    // 1. Update event with result
     await supabase.from('events').update({
-      finalizado: true,
-      goles_a: golesA,
-      goles_b: golesB,
-      equipo_a: equipoA,
-      equipo_b: equipoB,
-      mvp_id: mvpId,
+      finalizado: true, goles_a: golesA, goles_b: golesB,
+      equipo_a: equipoA, equipo_b: equipoB, mvp_id: mvpId,
     }).eq('id', eid)
 
-    // 2. Insert match_players + update player stats + detect badges
     for (const pid of allPlayers) {
       const ps = initStats(pid)
       const equipo = equipoA.includes(pid) ? 'A' : 'B'
@@ -100,70 +117,45 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       if (!player) continue
 
       const mpData = {
-        id: uid(),
-        event_id: eid,
-        player_id: pid,
-        goles: ps.goles,
-        asistencias: ps.asistencias,
-        porteria_cero: ps.porteria_cero,
-        parada_penalti: ps.parada_penalti,
-        chilena: ps.chilena,
-        olimpico: ps.olimpico,
-        tacon: ps.tacon,
-        equipo,
-        xp_ganado: 0,
+        id: uid(), event_id: eid, player_id: pid,
+        goles: ps.goles, asistencias: ps.asistencias,
+        porteria_cero: ps.porteria_cero, parada_penalti: ps.parada_penalti,
+        chilena: ps.chilena, olimpico: ps.olimpico, tacon: ps.tacon,
+        equipo, xp_ganado: 0,
       }
-
-      // Calc XP
       const xpGanado = calcXP(mpData as any, isMVP)
       mpData.xp_ganado = xpGanado
-
       await supabase.from('match_players').upsert(mpData)
 
-      // Update player stats
       const updatedPlayer = {
         ...player,
-        partidos: player.partidos + 1,
-        goles: player.goles + ps.goles,
+        partidos: player.partidos + 1, goles: player.goles + ps.goles,
         asistencias: player.asistencias + ps.asistencias,
         mvps: player.mvps + (isMVP ? 1 : 0),
         partidos_cero: player.partidos_cero + (ps.porteria_cero ? 1 : 0),
         xp: player.xp + xpGanado,
       }
-
-      // Detect new badges
       const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP)
       const allBadges = [...player.badges, ...newBadges]
 
-      // Notificar badges nuevas al jugador actual
       if (newBadges.length > 0 && pid === session.playerId) {
         newBadges.forEach(key => {
           const def = BADGE_DEFS[key]
           if (def) notifyBadgeEarned(pid, def.name, def.icon)
         })
       }
-
-      // Sum badge XP
-      const badgeXP = newBadges.reduce((sum, key) => {
-        return sum + (BADGE_DEFS[key]?.xp ?? 0)
-      }, 0)
+      const badgeXP = newBadges.reduce((sum, key) => sum + (BADGE_DEFS[key]?.xp ?? 0), 0)
 
       await supabase.from('players').update({
-        partidos: updatedPlayer.partidos,
-        goles: updatedPlayer.goles,
-        asistencias: updatedPlayer.asistencias,
-        mvps: updatedPlayer.mvps,
+        partidos: updatedPlayer.partidos, goles: updatedPlayer.goles,
+        asistencias: updatedPlayer.asistencias, mvps: updatedPlayer.mvps,
         partidos_cero: updatedPlayer.partidos_cero,
-        xp: updatedPlayer.xp + badgeXP,
-        badges: allBadges,
+        xp: updatedPlayer.xp + badgeXP, badges: allBadges,
       }).eq('id', pid)
     }
 
     showToast('🏁 Resultado guardado')
-
-    // Notificar resultado
     notifyMatchFinished(cid, event.titulo, golesA, golesB, `/${cid}/partidos/${eid}`)
-
     reloadPlayers()
     router.push(`/${cid}/partidos/${eid}`)
     setSaving(false)
@@ -173,197 +165,229 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     return <div className="p-4" style={{ color: 'var(--muted)' }}>Solo admin puede registrar resultados</div>
   }
 
+  const stepIndex = STEP_META.findIndex(s => s.key === step)
+
   return (
     <div className="view-enter">
       <Header
-        title="Registrar resultado"
-        left={
-          <button onClick={() => router.back()} style={{ color: 'var(--muted)' }}>←</button>
-        }
+        title="Resultado"
+        left={<button onClick={() => router.back()} style={{ color: 'var(--muted)' }}>←</button>}
       />
 
-      <div className="px-4 space-y-4 pt-2">
-        {/* Step 1: Teams */}
-        {step === 'equipos' && (
+      <div className="px-4 pt-3 pb-28 space-y-5">
+
+        {/* ── Stepper ─────────────────────────────────────── */}
+        <div className="flex items-center gap-0">
+          {STEP_META.map((s, i) => {
+            const done = i < stepIndex
+            const active = i === stepIndex
+            return (
+              <div key={s.key} className="flex items-center flex-1 last:flex-none">
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                    style={{
+                      background: done ? communityColor : active ? communityColor : 'var(--card)',
+                      color: done || active ? '#000' : 'var(--muted)',
+                      border: done || active ? 'none' : '1px solid var(--border)',
+                    }}
+                  >
+                    {done ? '✓' : i + 1}
+                  </div>
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide"
+                    style={{ color: active ? communityColor : 'var(--muted)' }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+                {i < STEP_META.length - 1 && (
+                  <div
+                    className="flex-1 h-0.5 mx-1 mb-4 transition-all"
+                    style={{ background: done ? communityColor : 'var(--border)' }}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Step 1: Marcador ──────────────────────────── */}
+        {step === 'marcador' && (
           <div className="space-y-4">
-            <Card>
-              <p className="font-bold text-sm mb-2">Selecciona los equipos</p>
-              <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-                Puedes usar el generador automatico o arrastrar manualmente
+            {/* Score */}
+            <div
+              className="rounded-m p-5"
+              style={{ background: 'var(--card)', border: `1px solid ${communityColor}33` }}
+            >
+              <p className="text-xs font-bold uppercase tracking-wider text-center mb-4" style={{ color: 'var(--muted)' }}>
+                Marcador final
               </p>
-              <Button className="w-full" onClick={() => setGenOpen(true)}>
-                ⚡ Generar equipos
-              </Button>
-            </Card>
-
-            {/* Manual selection */}
-            <div className="grid grid-cols-2 gap-3">
-              {['A', 'B'].map(team => {
-                const teamPlayers = team === 'A' ? equipoA : equipoB
-                return (
-                  <Card key={team}>
-                    <p className="font-bebas text-xl text-center tracking-wider mb-2" style={{ color: session.communityColor }}>
-                      Equipo {team}
-                    </p>
-                    {teamPlayers.map(pid => {
-                      const p = players.find(pl => pl.id === pid)
-                      if (!p) return null
-                      return (
-                        <div key={pid} className="flex items-center gap-2 py-1">
-                          <PlayerAvatar player={p} size={24} communityColor={session.communityColor} />
-                          <span className="text-xs font-semibold truncate">{p.name}</span>
-                        </div>
-                      )
-                    })}
-                    {teamPlayers.length === 0 && (
-                      <p className="text-xs text-center py-3" style={{ color: 'var(--muted)' }}>Sin jugadores</p>
-                    )}
-                  </Card>
-                )
-              })}
-            </div>
-
-            {/* Add players manually */}
-            <Card>
-              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-                Jugadores disponibles
-              </p>
-              <div className="space-y-1">
-                {confirmados.filter(p => !allPlayers.includes(p.id)).map(p => (
-                  <div key={p.id} className="flex items-center gap-2">
-                    <PlayerAvatar player={p} size={28} communityColor={session.communityColor} />
-                    <span className="text-xs font-semibold flex-1">{p.name}</span>
-                    <button
-                      onClick={() => setEquipoA(prev => [...prev, p.id])}
-                      className="text-xs px-2 py-1 rounded font-bold"
-                      style={{ background: 'var(--card)', color: session.communityColor }}
-                    >
-                      → A
-                    </button>
-                    <button
-                      onClick={() => setEquipoB(prev => [...prev, p.id])}
-                      className="text-xs px-2 py-1 rounded font-bold"
-                      style={{ background: 'var(--card)', color: session.communityColor }}
-                    >
-                      → B
-                    </button>
+              <div className="flex items-center justify-center gap-4">
+                {([
+                  { label: 'Equipo A', val: golesA, set: setGolesA },
+                  { label: 'Equipo B', val: golesB, set: setGolesB },
+                ] as const).map((team, i) => (
+                  <div key={team.label} className="flex-1 text-center">
+                    <p className="text-xs font-bold mb-3" style={{ color: communityColor }}>{team.label}</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => team.set(Math.max(0, team.val - 1))}
+                        className="w-11 h-11 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: 'var(--card2)', color: 'var(--fg)' }}
+                      >−</button>
+                      <span className="font-bebas text-5xl w-10 text-center" style={{ color: communityColor }}>
+                        {team.val}
+                      </span>
+                      <button
+                        onClick={() => team.set(team.val + 1)}
+                        className="w-11 h-11 rounded-full text-lg font-bold active:scale-[0.95] select-none"
+                        style={{ background: communityColor, color: '#050d05' }}
+                      >+</button>
+                    </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
 
-            {allPlayers.length >= 2 && (
-              <Button className="w-full" onClick={() => setStep('resultado')}>
-                Siguiente →
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Step 2: Score */}
-        {step === 'resultado' && (
-          <div className="space-y-4">
-            <Card highlighted>
-              <div className="text-center">
-                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>
-                  Marcador final
+            {/* Teams */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                  Asignar jugadores
                 </p>
-                <div className="flex items-center justify-center gap-4">
-                  <div className="text-center">
-                    <p className="font-bebas text-sm tracking-wider" style={{ color: session.communityColor }}>
-                      Equipo A
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        onClick={() => setGolesA(Math.max(0, golesA - 1))}
-                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
-                        style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
-                      >
-                        −
-                      </button>
-                      <span className="font-bebas text-5xl w-12 text-center">{golesA}</span>
-                      <button
-                        onClick={() => setGolesA(golesA + 1)}
-                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
-                        style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <span className="font-bebas text-3xl" style={{ color: 'var(--muted)' }}>—</span>
-                  <div className="text-center">
-                    <p className="font-bebas text-sm tracking-wider" style={{ color: session.communityColor }}>
-                      Equipo B
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        onClick={() => setGolesB(Math.max(0, golesB - 1))}
-                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
-                        style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
-                      >
-                        −
-                      </button>
-                      <span className="font-bebas text-5xl w-12 text-center">{golesB}</span>
-                      <button
-                        onClick={() => setGolesB(golesB + 1)}
-                        className="w-12 h-12 rounded-full text-lg font-bold active:scale-[0.95] select-none"
-                        style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setGenOpen(true)}
+                  className="text-xs font-bold px-3 py-1.5 rounded-m active:scale-95"
+                  style={{ background: communityColor + '22', color: communityColor }}
+                >
+                  ⚡ Auto-generar
+                </button>
               </div>
-            </Card>
 
-            {/* MVP selection */}
-            <Card>
-              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-                👑 MVP del partido
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {allPlayers.map(pid => {
-                  const p = players.find(pl => pl.id === pid)
-                  if (!p) return null
-                  const isSelected = mvpId === pid
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {[
+                  { label: 'Equipo A', ids: equipoA },
+                  { label: 'Equipo B', ids: equipoB },
+                ].map(({ label, ids }) => (
+                  <div key={label} className="rounded-m p-3 min-h-[80px]"
+                    style={{ background: 'var(--card)', border: `1px solid ${communityColor}22` }}>
+                    <p className="text-xs font-bold mb-2 text-center" style={{ color: communityColor }}>{label}</p>
+                    {ids.map(pid => {
+                      const p = players.find(pl => pl.id === pid)
+                      return p ? (
+                        <div key={pid} className="flex items-center gap-1.5 mb-1">
+                          <PlayerAvatar player={p} size={22} communityColor={communityColor} />
+                          <span className="text-xs truncate">{p.name}</span>
+                        </div>
+                      ) : null
+                    })}
+                    {ids.length === 0 && (
+                      <p className="text-[10px] text-center mt-2" style={{ color: 'var(--muted)' }}>Sin jugadores</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Player assignment list */}
+              <div className="rounded-m overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                {confirmados.map((p, i) => {
+                  const inA = equipoA.includes(p.id)
+                  const inB = equipoB.includes(p.id)
                   return (
-                    <button
-                      key={pid}
-                      onClick={() => setMvpId(isSelected ? null : pid)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-m text-xs font-bold transition-all"
-                      style={{
-                        background: isSelected ? session.communityColor : 'var(--card)',
-                        color: isSelected ? '#050d05' : 'var(--muted)',
-                        border: `1px solid ${isSelected ? 'transparent' : 'var(--border)'}`,
-                      }}
+                    <div key={p.id}
+                      className="flex items-center gap-2 px-3 py-2.5"
+                      style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
                     >
-                      <PlayerAvatar player={p} size={20} communityColor={session.communityColor} />
-                      {p.name}
-                    </button>
+                      <PlayerAvatar player={p} size={28} communityColor={communityColor} />
+                      <span className="text-xs font-semibold flex-1 truncate">{p.name}</span>
+                      <div className="flex gap-1">
+                        {(['A', 'B'] as const).map(t => {
+                          const active = t === 'A' ? inA : inB
+                          return (
+                            <button key={t}
+                              onClick={() => togglePlayer(p.id, t)}
+                              className="w-9 h-9 rounded-m text-xs font-bold transition-all active:scale-95"
+                              style={{
+                                background: active ? communityColor : 'var(--card2)',
+                                color: active ? '#000' : 'var(--muted)',
+                                border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
+                              }}
+                            >
+                              {t}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
-            </Card>
-
-            <div className="flex gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setStep('equipos')}>
-                ← Equipos
-              </Button>
-              <Button className="flex-1" onClick={() => setStep('stats')}>
-                Stats →
-              </Button>
             </div>
+
+            {/* MVP */}
+            {allPlayers.length > 0 && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+                  👑 MVP del partido
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {allPlayers.map(pid => {
+                    const p = players.find(pl => pl.id === pid)
+                    if (!p) return null
+                    const sel = mvpId === pid
+                    return (
+                      <button key={pid}
+                        onClick={() => setMvpId(sel ? null : pid)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-m text-xs font-bold transition-all active:scale-95 min-h-[44px]"
+                        style={{
+                          background: sel ? communityColor : 'var(--card)',
+                          color: sel ? '#050d05' : 'var(--muted)',
+                          border: `1px solid ${sel ? 'transparent' : 'var(--border)'}`,
+                        }}
+                      >
+                        <PlayerAvatar player={p} size={20} communityColor={communityColor} />
+                        {p.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => { if (allPlayers.length >= 2) { const init: Record<string, MatchPlayerStats> = {}; allPlayers.forEach(pid => { init[pid] = initStats(pid) }); setStats(prev => ({ ...init, ...prev })); setStep('stats') } else showToast('Asigna al menos 2 jugadores') }}
+              className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform"
+              style={{ background: communityColor, color: '#000' }}
+            >
+              Stats individuales →
+            </button>
           </div>
         )}
 
-        {/* Step 3: Individual stats */}
+        {/* ── Step 2: Stats individuales ────────────────── */}
         {step === 'stats' && (
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-              Estadisticas individuales
-            </p>
+            {/* Auto-validation banner */}
+            {hasStats && (
+              <div
+                className="flex items-center gap-3 rounded-m px-4 py-3"
+                style={{
+                  background: goalsMatch ? communityColor + '15' : '#ef444415',
+                  border: `1px solid ${goalsMatch ? communityColor + '44' : '#ef444444'}`,
+                }}
+              >
+                <span className="text-lg">{goalsMatch ? '✅' : '⚠️'}</span>
+                <div className="flex-1">
+                  <p className="text-xs font-bold" style={{ color: goalsMatch ? communityColor : '#ef4444' }}>
+                    {goalsMatch ? 'Goles cuadran' : 'Goles no cuadran'}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                    Individual: {totalGolesA}+{totalGolesB}={totalIndividual} · Marcador: {golesA}+{golesB}={totalMatch}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {allPlayers.map(pid => {
               const p = players.find(pl => pl.id === pid)
@@ -372,85 +396,159 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
               const team = equipoA.includes(pid) ? 'A' : 'B'
 
               return (
-                <Card key={pid}>
+                <div key={pid} className="rounded-m p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                   <div className="flex items-center gap-2 mb-3">
-                    <PlayerAvatar player={p} size={32} communityColor={session.communityColor} />
+                    <PlayerAvatar player={p} size={32} communityColor={communityColor} />
                     <span className="font-bold text-sm flex-1">{p.name}</span>
                     <span className="text-xs px-2 py-0.5 rounded font-bold"
-                      style={{ background: 'var(--card)', color: session.communityColor }}>
-                      Eq. {team}
+                      style={{ background: communityColor + '22', color: communityColor }}>
+                      Eq.{team}
                     </span>
                     {mvpId === pid && <span className="text-sm">👑</span>}
                   </div>
 
-                  {/* Goles + Asistencias counters */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
                       { label: '⚽ Goles', key: 'goles' as const, val: ps.goles },
                       { label: '🎯 Asistencias', key: 'asistencias' as const, val: ps.asistencias },
                     ].map(stat => (
                       <div key={stat.key}>
-                        <p className="text-xs mb-1" style={{ color: 'var(--muted)' }}>{stat.label}</p>
+                        <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>{stat.label}</p>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateStat(pid, stat.key, Math.max(0, stat.val - 1))}
-                            className="w-10 h-10 rounded text-sm font-bold active:scale-[0.95] select-none"
-                            style={{ background: 'var(--card)', color: 'var(--text)', WebkitUserSelect: 'none', userSelect: 'none' }}
-                          >
-                            −
-                          </button>
-                          <span className="font-bebas text-xl w-6 text-center" style={{ color: session.communityColor }}>
+                            className="w-11 h-11 rounded text-sm font-bold active:scale-[0.95] select-none"
+                            style={{ background: 'var(--card2)', color: 'var(--fg)' }}
+                          >−</button>
+                          <span className="font-bebas text-2xl w-6 text-center" style={{ color: communityColor }}>
                             {stat.val}
                           </span>
                           <button
                             onClick={() => updateStat(pid, stat.key, stat.val + 1)}
-                            className="w-10 h-10 rounded text-sm font-bold active:scale-[0.95] select-none"
-                            style={{ background: session.communityColor, color: '#050d05', WebkitUserSelect: 'none', userSelect: 'none' }}
-                          >
-                            +
-                          </button>
+                            className="w-11 h-11 rounded text-sm font-bold active:scale-[0.95] select-none"
+                            style={{ background: communityColor, color: '#050d05' }}
+                          >+</button>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Toggles */}
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      { key: 'porteria_cero' as const, label: '🧤 P. cero', val: ps.porteria_cero },
-                      { key: 'parada_penalti' as const, label: '🦸 Penalti', val: ps.parada_penalti },
-                      { key: 'chilena' as const, label: '🦅 Chilena', val: ps.chilena },
-                      { key: 'olimpico' as const, label: '🌊 Olímpico', val: ps.olimpico },
-                      { key: 'tacon' as const, label: '👠 Tacón', val: ps.tacon },
-                    ].map(toggle => (
-                      <button
-                        key={toggle.key}
-                        onClick={() => updateStat(pid, toggle.key, !toggle.val)}
-                        className="px-3 py-2.5 rounded text-xs font-bold transition-all active:scale-[0.95] select-none"
-                        style={{
-                          minHeight: '48px',
-                          WebkitUserSelect: 'none',
-                          userSelect: 'none',
-                          background: toggle.val ? session.communityColor : 'var(--card)',
-                          color: toggle.val ? '#050d05' : 'var(--muted)',
-                          border: `1px solid ${toggle.val ? 'transparent' : 'var(--border)'}`,
-                        }}
-                      >
-                        {toggle.label}
-                      </button>
-                    ))}
+                      { key: 'porteria_cero' as const, label: '🧤 P.cero' },
+                      { key: 'parada_penalti' as const, label: '🦸 Penalti' },
+                      { key: 'chilena' as const, label: '🦅 Chilena' },
+                      { key: 'olimpico' as const, label: '🌊 Olímpico' },
+                      { key: 'tacon' as const, label: '👠 Tacón' },
+                    ].map(t => {
+                      const val = ps[t.key] as boolean
+                      return (
+                        <button key={t.key}
+                          onClick={() => updateStat(pid, t.key, !val)}
+                          className="px-2.5 py-2 rounded text-xs font-bold transition-all active:scale-[0.95] select-none"
+                          style={{
+                            minHeight: '40px',
+                            background: val ? communityColor : 'var(--card2)',
+                            color: val ? '#050d05' : 'var(--muted)',
+                            border: `1px solid ${val ? 'transparent' : 'var(--border)'}`,
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      )
+                    })}
                   </div>
-                </Card>
+                </div>
               )
             })}
 
             <div className="flex gap-2 pt-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setStep('resultado')}>
+              <button onClick={() => setStep('marcador')}
+                className="flex-1 h-11 rounded-m font-bold text-sm active:scale-95"
+                style={{ background: 'var(--card)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
                 ← Marcador
-              </Button>
-              <Button className="flex-1" onClick={saveResultado} disabled={saving}>
-                {saving ? 'Guardando...' : '🏁 Guardar resultado'}
-              </Button>
+              </button>
+              <button onClick={() => setStep('resumen')}
+                className="flex-1 h-11 rounded-m font-bold text-sm active:scale-95"
+                style={{ background: communityColor, color: '#000' }}>
+                Resumen →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Resumen + confirmar ───────────────── */}
+        {step === 'resumen' && (
+          <div className="space-y-4">
+            {/* Score summary */}
+            <div className="rounded-m p-5 text-center"
+              style={{ background: communityColor + '11', border: `1px solid ${communityColor}44` }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>Marcador</p>
+              <p className="font-bebas text-6xl tracking-widest" style={{ color: communityColor }}>
+                {golesA} — {golesB}
+              </p>
+              {mvpId && (() => {
+                const mvp = players.find(p => p.id === mvpId)
+                return mvp ? (
+                  <p className="text-sm mt-2" style={{ color: 'var(--gold, #ffd700)' }}>👑 MVP: {mvp.name}</p>
+                ) : null
+              })()}
+            </div>
+
+            {/* Auto-validation warning (non-blocking) */}
+            {!goalsMatch && (
+              <div className="flex items-center gap-3 rounded-m px-4 py-3"
+                style={{ background: '#ef444415', border: '1px solid #ef444444' }}>
+                <span className="text-lg">⚠️</span>
+                <p className="text-xs" style={{ color: '#ef4444' }}>
+                  Goles individuales ({totalIndividual}) no coinciden con el marcador ({totalMatch}). Puedes guardar igualmente.
+                </p>
+              </div>
+            )}
+
+            {/* Teams + stats summary */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Equipo A', ids: equipoA },
+                { label: 'Equipo B', ids: equipoB },
+              ].map(({ label, ids }) => (
+                <div key={label} className="rounded-m p-3"
+                  style={{ background: 'var(--card)', border: `1px solid ${communityColor}22` }}>
+                  <p className="text-xs font-bold text-center mb-2" style={{ color: communityColor }}>{label}</p>
+                  {ids.map(pid => {
+                    const p = players.find(pl => pl.id === pid)
+                    if (!p) return null
+                    const ps = initStats(pid)
+                    return (
+                      <div key={pid} className="flex items-center gap-1.5 mb-1.5">
+                        <PlayerAvatar player={p} size={22} communityColor={communityColor} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-bold truncate">{p.name}</p>
+                          {(ps.goles > 0 || ps.asistencias > 0) && (
+                            <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                              {ps.goles > 0 && `⚽${ps.goles}`}{ps.goles > 0 && ps.asistencias > 0 && ' '}{ps.asistencias > 0 && `🎯${ps.asistencias}`}
+                            </p>
+                          )}
+                        </div>
+                        {mvpId === pid && <span className="text-xs">👑</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setStep('stats')}
+                className="flex-1 h-11 rounded-m font-bold text-sm active:scale-95"
+                style={{ background: 'var(--card)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
+                ← Stats
+              </button>
+              <button onClick={saveResultado} disabled={saving}
+                className="flex-1 h-12 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50"
+                style={{ background: communityColor, color: '#000' }}>
+                {saving ? 'Guardando...' : '🏁 Confirmar resultado'}
+              </button>
             </div>
           </div>
         )}
@@ -461,14 +559,10 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         <TeamGenerator
           players={confirmados}
           votes={votes}
-          communityColor={session.communityColor}
+          communityColor={communityColor}
           onTeamsGenerated={(result) => {
             if (result) {
-              handleTeamsSet(
-                result.teamA.map(p => p.id),
-                result.teamB.map(p => p.id)
-              )
-              setGenOpen(false)
+              handleTeamsGenerated(result.teamA.map(p => p.id), result.teamB.map(p => p.id))
             }
           }}
         />

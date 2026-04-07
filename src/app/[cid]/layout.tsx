@@ -139,6 +139,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
         role={session.role}
         playerId={session.playerId}
         playerName={player?.name}
+        onAcceder={() => setShowPinModal(true)}
       />
       <ToastProvider />
 

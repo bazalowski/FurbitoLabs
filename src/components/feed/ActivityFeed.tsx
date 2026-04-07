@@ -18,6 +18,7 @@ interface ActivityItem {
 interface ActivityFeedProps {
   events: Event[]
   players: Player[]
+  maxItems?: number
 }
 
 function timeAgo(dateStr: string): string {
@@ -83,8 +84,8 @@ function buildActivities(events: Event[], players: Player[]): ActivityItem[] {
   return items.slice(0, 10)
 }
 
-export function ActivityFeed({ events, players }: ActivityFeedProps) {
-  const activities = useMemo(() => buildActivities(events, players), [events, players])
+export function ActivityFeed({ events, players, maxItems = 10 }: ActivityFeedProps) {
+  const activities = useMemo(() => buildActivities(events, players).slice(0, maxItems), [events, players, maxItems])
 
   if (activities.length === 0) return null
 

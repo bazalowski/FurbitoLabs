@@ -39,9 +39,10 @@ interface BottomNavProps {
   role?: Role
   playerId?: string | null
   playerName?: string | null
+  onAcceder?: () => void
 }
 
-export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playerId, playerName }: BottomNavProps) {
+export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playerId, playerName, onAcceder }: BottomNavProps) {
   const pathname = usePathname()
   const navItems = buildNav(communityId, role, playerId, playerName)
   const [hidden, setHidden] = useState(false)
@@ -110,6 +111,42 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
     >
       {navItems.map(item => {
         const active = isActive(item)
+        const isAcceder = item.tab === 'perfil' && role === 'guest'
+
+        const innerContent = (
+          <>
+            {active && (
+              <span
+                className="absolute top-[-1px] left-1/4 right-1/4 h-0.5 rounded-b"
+                style={{ background: communityColor }}
+              />
+            )}
+            <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(.45)', transform: active ? 'translateY(-1px)' : 'none', transition: 'all .2s' }}>
+              {isAcceder ? '🔑' : item.icon}
+            </span>
+            <span
+              className="text-[10px] font-bold uppercase tracking-wide max-w-[56px] overflow-hidden text-ellipsis whitespace-nowrap"
+              style={{ color: isAcceder ? communityColor : active ? communityColor : 'var(--muted)', transition: 'color .18s' }}
+            >
+              {item.label}
+            </span>
+          </>
+        )
+
+        if (isAcceder) {
+          return (
+            <button
+              key={item.tab}
+              onClick={onAcceder}
+              aria-label="Acceder con PIN"
+              className="flex flex-col items-center gap-0.5 px-3 py-2 flex-1 relative min-h-[48px] transition-all active:scale-95"
+              style={{ WebkitTapHighlightColor: 'transparent', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              {innerContent}
+            </button>
+          )
+        }
+
         return (
           <Link
             key={item.tab}
@@ -119,21 +156,7 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
             className="flex flex-col items-center gap-0.5 px-3 py-2 flex-1 relative min-h-[48px] transition-all active:scale-95"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            {active && (
-              <span
-                className="absolute top-[-1px] left-1/4 right-1/4 h-0.5 rounded-b"
-                style={{ background: communityColor }}
-              />
-            )}
-            <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(.45)', transform: active ? 'translateY(-1px)' : 'none', transition: 'all .2s' }}>
-              {item.icon}
-            </span>
-            <span
-              className="text-[10px] font-bold uppercase tracking-wide max-w-[56px] overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{ color: active ? communityColor : 'var(--muted)', transition: 'color .18s' }}
-            >
-              {item.label}
-            </span>
+            {innerContent}
           </Link>
         )
       })}

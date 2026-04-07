@@ -6,7 +6,8 @@ import { useEvents } from '@/hooks/useEvents'
 import { usePlayers, usePlayer } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
-import { EventCard } from '@/components/events/EventCard'
+import { NextMatchHero } from '@/components/events/NextMatchHero'
+import { ActivityFeed } from '@/components/feed/ActivityFeed'
 import { Header, Logo } from '@/components/layout/Header'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
@@ -22,7 +23,7 @@ export default function HomePage({ params }: HomePageProps) {
   const { cid } = params
   const session = useSession()
   const { community } = useCommunity(cid)
-  const { upcoming, past, loading: eventsLoading } = useEvents(cid)
+  const { events, upcoming, past, loading: eventsLoading } = useEvents(cid)
   const { players } = usePlayers(cid)
   const { votes } = useVotes(cid)
   const { player: me } = usePlayer(
@@ -31,7 +32,6 @@ export default function HomePage({ params }: HomePageProps) {
   const [showTeams, setShowTeams] = useState(false)
 
   const nextEvent = upcoming[0]
-  const recentPast = past.slice(0, 2)
   const communityColor = session.communityColor || '#a8ff3e'
   const isLoggedIn = (session.role === 'player' || session.role === 'admin') && !!session.playerId
 
@@ -82,7 +82,7 @@ export default function HomePage({ params }: HomePageProps) {
                   <span>{me.partidos} partidos</span>
                   {rating && (
                     <span style={{ color: communityColor }}>
-                      {'\u2605'} {rating.avg.toFixed(1)}
+                      ★ {rating.avg.toFixed(1)}
                     </span>
                   )}
                 </div>
@@ -91,75 +91,19 @@ export default function HomePage({ params }: HomePageProps) {
           </Link>
         )}
 
-        {/* 4 Main Action Cards (2x2 grid) */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Jugadores */}
-          <Link href={`/${cid}/jugadores`} className="select-none cursor-pointer">
-            <div
-              className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-3xl">{'\uD83D\uDC65'}</span>
-              <p className="font-bebas text-lg tracking-wider mt-2">Jugadores</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Plantilla completa</p>
-            </div>
-          </Link>
+        {/* Hero: Próximo partido con CTAs inline */}
+        {!eventsLoading && nextEvent && (
+          <NextMatchHero
+            event={nextEvent}
+            communityId={cid}
+            playerId={isLoggedIn ? session.playerId : null}
+            communityColor={communityColor}
+            onToggleTeams={() => setShowTeams(prev => !prev)}
+            teamsOpen={showTeams}
+          />
+        )}
 
-          {/* Valorar */}
-          {isLoggedIn ? (
-            <Link href={`/${cid}/valorar`} className="select-none cursor-pointer">
-              <div
-                className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-              >
-                <span className="text-3xl">{'\u2B50'}</span>
-                <p className="font-bebas text-lg tracking-wider mt-2">Valorar</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{'Valora a tus compa\u00F1eros'}</p>
-              </div>
-            </Link>
-          ) : (
-            <div
-              className="rounded-m p-4 text-center min-h-[120px] flex flex-col items-center justify-center opacity-50 select-none"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-3xl">{'\uD83D\uDD12'}</span>
-              <p className="font-bebas text-lg tracking-wider mt-2">Valorar</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{'Inicia sesi\u00F3n para valorar'}</p>
-            </div>
-          )}
-
-          {/* Equipos */}
-          <button
-            onClick={() => setShowTeams(prev => !prev)}
-            className="select-none text-left w-full cursor-pointer"
-          >
-            <div
-              className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
-              style={{
-                background: showTeams ? communityColor + '11' : 'var(--card)',
-                border: `1px solid ${showTeams ? communityColor + '44' : 'var(--border)'}`,
-              }}
-            >
-              <span className="text-3xl">{'\u2696\uFE0F'}</span>
-              <p className="font-bebas text-lg tracking-wider mt-2">Equipos</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Genera equipos equilibrados</p>
-            </div>
-          </button>
-
-          {/* Mapa */}
-          <Link href={`/${cid}/pistas`} className="select-none cursor-pointer">
-            <div
-              className="rounded-m p-4 text-center active:scale-[0.97] transition-transform min-h-[120px] flex flex-col items-center justify-center"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-3xl">{'\uD83D\uDDFA\uFE0F'}</span>
-              <p className="font-bebas text-lg tracking-wider mt-2">Mapa</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Encuentra tu pista</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Team Generator (inline, conditionally shown) */}
+        {/* Team Generator (collapsible, triggered desde hero) */}
         {showTeams && (
           <div
             className="rounded-m p-4 relative"
@@ -170,7 +114,7 @@ export default function HomePage({ params }: HomePageProps) {
               className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold select-none active:scale-[0.95] transition-transform"
               style={{ background: 'var(--border)', color: 'var(--muted)' }}
             >
-              {'\u2715'}
+              ✕
             </button>
             <TeamGenerator
               players={players}
@@ -180,25 +124,12 @@ export default function HomePage({ params }: HomePageProps) {
           </div>
         )}
 
-        {/* Next Event Banner */}
-        {!eventsLoading && nextEvent && (
-          <div>
-            <p
-              className="text-xs font-bold uppercase tracking-wider mb-2"
-              style={{ color: 'var(--muted)' }}
-            >
-              {'Pr\u00F3ximo partido'}
-            </p>
-            <EventCard event={nextEvent} communityId={cid} players={players} />
-          </div>
-        )}
-
-        {/* Quick Stats Row */}
+        {/* Stats row 3-col compacto */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Jugadores', value: players.length, icon: '\uD83D\uDC65' },
-            { label: 'Pr\u00F3ximos', value: upcoming.length, icon: '\uD83D\uDCC5' },
-            { label: 'Jugados', value: past.length, icon: '\uD83C\uDFC6' },
+            { label: 'Jugadores', value: players.length, icon: '👥' },
+            { label: 'Próximos', value: upcoming.length, icon: '📅' },
+            { label: 'Jugados', value: past.length, icon: '🏆' },
           ].map(stat => (
             <div
               key={stat.label}
@@ -217,31 +148,9 @@ export default function HomePage({ params }: HomePageProps) {
           ))}
         </div>
 
-        {/* Recent Results */}
-        {recentPast.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p
-                className="text-xs font-bold uppercase tracking-wider"
-                style={{ color: 'var(--muted)' }}
-              >
-                {'\u00DAltimos resultados'}
-              </p>
-              <Link
-                href={`/${cid}/partidos`}
-                className="text-xs font-bold"
-                style={{ color: 'var(--comm-color, var(--accent))' }}
-              >
-                Historial
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {recentPast.map(ev => (
-                <EventCard key={ev.id} event={ev} communityId={cid} players={players} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Activity feed (últimas 5 líneas) */}
+        <ActivityFeed events={events.slice(0, 10)} players={players} maxItems={5} />
+
       </div>
     </div>
   )
