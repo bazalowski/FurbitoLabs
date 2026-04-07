@@ -9,7 +9,7 @@ interface HeaderProps {
 export function Header({ title, left, right }: HeaderProps) {
   return (
     <header
-      className="sticky top-0 z-40 flex items-center justify-between px-4 gap-2 flex-shrink-0"
+      className="sticky top-0 z-40 flex items-center justify-between pl-4 pr-[100px] gap-2 flex-shrink-0"
       style={{
         height: 'var(--header-h)',
         background: 'var(--bg)',
