@@ -104,18 +104,29 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
 
   if (!session.communityId) return null
 
+  // Escucha evento global para abrir el modal PIN desde cualquier página
+  useEffect(() => {
+    const handler = () => setShowPinModal(true)
+    window.addEventListener('furbito:open-pin', handler)
+    return () => window.removeEventListener('furbito:open-pin', handler)
+  }, [])
+
   return (
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">
-      {/* PIN / Exit — iconos fijos sobre el header, esquina superior derecha */}
+      {/* PIN / Exit — alineados al borde derecho del contenedor centrado */}
       <div
-        className="fixed top-0 right-0 z-50 flex items-center gap-1 pr-2"
-        style={{ height: 'var(--header-h)' }}
+        className="fixed top-0 z-50 flex items-center gap-1 pr-2"
+        style={{
+          height: 'var(--header-h)',
+          right: 'max(0px, calc((100vw - 500px) / 2))',
+        }}
       >
         <button
           onClick={() => setShowPinModal(true)}
           aria-label="Cambiar jugador"
           title="Cambiar jugador"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-sm opacity-40 hover:opacity-80 active:scale-90 transition-opacity"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-base active:scale-90 transition-opacity"
+          style={{ color: 'var(--muted)', opacity: 0.5 }}
         >
           🔑
         </button>
@@ -123,7 +134,8 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
           onClick={() => setShowExitModal(true)}
           aria-label="Salir de la comunidad"
           title="Salir de la comunidad"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-sm opacity-40 hover:opacity-80 active:scale-90 transition-opacity"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-base active:scale-90 transition-opacity"
+          style={{ color: 'var(--muted)', opacity: 0.5 }}
         >
           🚪
         </button>

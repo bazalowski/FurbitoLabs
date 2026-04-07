@@ -14,7 +14,7 @@ import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
-import { initials } from '@/lib/utils'
+import { initials, openPinModal } from '@/lib/utils'
 
 interface PlayerProfilePageProps {
   params: { cid: string; pid: string }
@@ -277,13 +277,16 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         <BadgeShowcase unlockedKeys={player.badges} accentColor={communityColor} />
 
         {/* ── CTA Valorar ───────────────────────────── */}
-        {canVote && (
+        {/* Visible para cualquiera que no sea el propio jugador */}
+        {!isOwnProfile && (
           <button
-            onClick={() => setVoteOpen(true)}
+            onClick={() => canVote ? setVoteOpen(true) : openPinModal()}
             className="w-full h-12 rounded-m font-bold text-sm tracking-wide uppercase active:scale-[0.98] transition-transform select-none"
             style={{ background: communityColor, color: '#000' }}
           >
-            {existingVote ? '✏️ Editar valoración' : '⭐ Valorar jugador'}
+            {canVote
+              ? (existingVote ? '✏️ Editar valoración' : '⭐ Valorar jugador')
+              : '🔑 Acceder para valorar'}
           </button>
         )}
 

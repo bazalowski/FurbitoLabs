@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { openPinModal } from '@/lib/utils'
 import type { NavTab, Role } from '@/types'
 
 interface NavItem {
@@ -137,7 +138,7 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
           return (
             <button
               key={item.tab}
-              onClick={onAcceder}
+              onClick={() => { onAcceder ? onAcceder() : openPinModal() }}
               aria-label="Acceder con PIN"
               className="flex flex-col items-center gap-0.5 px-3 py-2 flex-1 relative min-h-[48px] transition-all active:scale-95"
               style={{ WebkitTapHighlightColor: 'transparent', background: 'none', border: 'none', cursor: 'pointer' }}

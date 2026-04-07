@@ -54,3 +54,10 @@ export const COMMUNITY_COLORS = [
   '#a8ff3e', '#ff5c5c', '#ff9030', '#ffd700',
   '#38bdf8', '#c084fc', '#f472b6', '#34d399',
 ]
+
+/** Abre el modal PIN desde cualquier parte de la app */
+export function openPinModal() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('furbito:open-pin'))
+  }
+}
