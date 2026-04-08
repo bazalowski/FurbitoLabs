@@ -56,6 +56,13 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
     }
   }, [session.communityColor])
 
+  // Escucha evento global para abrir el modal PIN desde cualquier página
+  useEffect(() => {
+    const handler = () => setShowPinModal(true)
+    window.addEventListener('furbito:open-pin', handler)
+    return () => window.removeEventListener('furbito:open-pin', handler)
+  }, [])
+
   async function handlePinSubmit() {
     if (pinInput.length !== 4) {
       setPinError('El PIN debe tener 4 digitos')
@@ -103,13 +110,6 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
   }
 
   if (!session.communityId) return null
-
-  // Escucha evento global para abrir el modal PIN desde cualquier página
-  useEffect(() => {
-    const handler = () => setShowPinModal(true)
-    window.addEventListener('furbito:open-pin', handler)
-    return () => window.removeEventListener('furbito:open-pin', handler)
-  }, [])
 
   return (
     <div className="max-w-app mx-auto min-h-screen relative flex flex-col">

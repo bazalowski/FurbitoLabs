@@ -263,8 +263,7 @@ input, select, textarea {
 .animate-slide-up,
 .animate-fade-in,
 .animate-pop,
-.animate-float,
-.view-enter {
+.animate-float {
   will-change: transform, opacity;
 }
 
