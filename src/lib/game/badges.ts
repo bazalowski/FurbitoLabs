@@ -261,15 +261,15 @@ export const BADGE_DEFS: Record<string, BadgeDef> = {
 // ════════════════════════════════════════════════════
 //  Calcular XP de un partido
 // ════════════════════════════════════════════════════
+// Balanceo: 500 partidos + 250 goles + 250 asistencias ≈ nivel 99 (7544 XP)
 export function calcXP(mp: MatchPlayer, isMVP: boolean): number {
-  let xp = 10 // por participar
-  xp += mp.goles * 8
-  if (mp.goles >= 3) xp += 15 // hat trick bonus
-  xp += mp.asistencias * 5
-  if (isMVP) xp += 15
-  xp += 5 // por completar el partido
-  if (mp.porteria_cero) xp += 10
-  if (mp.parada_penalti) xp += 15
+  let xp = 12 // base (participar + completar)
+  xp += mp.goles * 2
+  xp += mp.asistencias * 2
+  if (mp.goles >= 3) xp += 5 // hat trick bonus
+  if (isMVP) xp += 10
+  if (mp.porteria_cero) xp += 3
+  if (mp.parada_penalti) xp += 5
   return Math.max(0, xp)
 }
 

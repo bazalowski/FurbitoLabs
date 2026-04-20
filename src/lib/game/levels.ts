@@ -3,8 +3,8 @@ import type { Level } from '@/types'
 // ════════════════════════════════════════════════════
 //  99-level system
 //  XP curve: totalXP = floor(N * N * 0.77)
-//  Level 1 = 0 XP, Level 99 ~ 7547 XP
-//  A player with 500 matches at 15 XP each = 7500 XP → ~level 98-99
+//  Level 1 = 0 XP, Level 99 ~ 7544 XP
+//  Balanceo: 500 partidos + 250 goles + 250 asistencias ≈ nivel 99
 // ════════════════════════════════════════════════════
 
 const TIERS: { maxLevel: number; name: string; icon: string }[] = [
