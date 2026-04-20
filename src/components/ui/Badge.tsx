@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { BADGE_DEFS } from '@/lib/game/badges'
 import { cn } from '@/lib/utils'
 
@@ -61,6 +61,147 @@ export function BadgeList({ badges, max, size = 'sm' }: BadgeListProps) {
   )
 }
 
+// ── Inline detail panel (shared) ─────────────────────────────
+function BadgeDetailPanel({
+  badgeKey,
+  accentColor,
+  onClose,
+}: { badgeKey: string; accentColor: string; onClose: () => void }) {
+  const def = BADGE_DEFS[badgeKey]
+  if (!def) return null
+  return (
+    <div
+      className="rounded-m p-3 flex items-center gap-3 animate-pop relative"
+      style={{ background: 'var(--card)', border: `1px solid ${accentColor}44` }}
+    >
+      <span className="text-3xl shrink-0">{def.icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-bebas text-base tracking-wider leading-tight" style={{ color: accentColor }}>
+          {def.name}
+        </p>
+        <p className="text-xs leading-snug mt-0.5" style={{ color: 'var(--muted)' }}>
+          {def.desc}
+        </p>
+        {def.xp > 0 && (
+          <p className="text-[10px] font-bold mt-1" style={{ color: accentColor }}>
+            +{def.xp} XP
+          </p>
+        )}
+      </div>
+      <button
+        onClick={onClose}
+        aria-label="Cerrar"
+        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-opacity hover:opacity-80 active:scale-95"
+        style={{ color: 'var(--muted)', background: 'var(--bg)', border: '1px solid var(--border)' }}
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
+// ── Inline grid with expandable detail anchored to the clicked row ──
+interface BadgeInlineGridProps {
+  keys: string[]
+  cols: number
+  accentColor?: string
+  unlockedSet?: Set<string>
+  /** When true, render unlocked as compact icon+name button (showcase style). When false, use BadgeChip size="md". */
+  showcaseStyle?: boolean
+}
+
+export function BadgeInlineGrid({
+  keys,
+  cols,
+  accentColor = 'var(--accent)',
+  unlockedSet,
+  showcaseStyle = false,
+}: BadgeInlineGridProps) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const selIdx = selected ? keys.indexOf(selected) : -1
+  const selRow = selIdx >= 0 ? Math.floor(selIdx / cols) : -1
+
+  const rows: string[][] = []
+  for (let i = 0; i < keys.length; i += cols) rows.push(keys.slice(i, i + cols))
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {rows.map((row, rIdx) => (
+        <Fragment key={rIdx}>
+          <div
+            className="grid gap-1.5"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            {row.map(key => {
+              const def = BADGE_DEFS[key]
+              if (!def) return null
+              const unlocked = unlockedSet ? unlockedSet.has(key) : true
+              const isSelected = key === selected
+              const toggle = () => setSelected(s => (s === key ? null : key))
+
+              if (showcaseStyle) {
+                return unlocked ? (
+                  <button
+                    key={key}
+                    onClick={toggle}
+                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
+                    style={{
+                      background: 'var(--card)',
+                      border: `1px solid ${isSelected ? accentColor : `${accentColor}44`}`,
+                      boxShadow: isSelected ? `0 0 0 2px ${accentColor}55` : undefined,
+                    }}
+                  >
+                    <span className="text-lg">{def.icon}</span>
+                    <span className="text-[10px] font-bold leading-tight" style={{ color: 'var(--fg)' }}>
+                      {def.name}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    key={key}
+                    onClick={toggle}
+                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
+                    style={{
+                      background: 'var(--card)',
+                      border: `1px solid ${isSelected ? 'var(--muted)' : 'var(--border)'}`,
+                      opacity: 0.45,
+                    }}
+                  >
+                    <span className="text-lg">🔒</span>
+                    <span className="text-[10px] font-bold leading-tight" style={{ color: 'var(--muted)' }}>
+                      {def.name}
+                    </span>
+                  </button>
+                )
+              }
+
+              return (
+                <button
+                  key={key}
+                  onClick={toggle}
+                  className="active:scale-95 transition-transform rounded-m"
+                  style={{
+                    boxShadow: isSelected ? `0 0 0 2px ${accentColor}` : undefined,
+                  }}
+                >
+                  <BadgeChip badgeKey={key} size="md" />
+                </button>
+              )
+            })}
+          </div>
+          {rIdx === selRow && selected && (
+            <BadgeDetailPanel
+              badgeKey={selected}
+              accentColor={accentColor}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </Fragment>
+      ))}
+    </div>
+  )
+}
+
 // ── Badge Showcase (full catalog with locked/unlocked) ──────
 
 interface BadgeShowcaseProps {
@@ -71,23 +212,18 @@ interface BadgeShowcaseProps {
 const BADGE_CATEGORIES: { label: string; keys: string[] }[] = buildCategories()
 
 function buildCategories() {
-  // Group badges by prefix pattern for a rough categorization
   const allKeys = Object.keys(BADGE_DEFS)
   const cats: { label: string; prefixes: string[] }[] = [
     { label: 'Goles', prefixes: ['primer_gol', 'primer_doblete', 'hat_trick', 'poker', 'manita', 'doble_digito', 'goles_', 'gol_debut', 'gol_y_cero', 'gol_50_partidos', 'media_gol'] },
     { label: 'Asistencias', prefixes: ['primera_asistencia', 'doble_asist', 'triple_asist', 'asistencias_', 'gol_y_asist', 'asist_'] },
-    { label: 'Hazanas', prefixes: ['chilena', 'olimpico', 'tacon', 'porteria_cero', 'parada_penalti', 'muro_', 'doble_hazana', 'triple_hazana', 'todo_cero', 'portero_goleador', 'parada_y_asist', 'gol_asist_hazana'] },
+    { label: 'Hazañas', prefixes: ['chilena', 'olimpico', 'tacon', 'porteria_cero', 'parada_penalti', 'muro_', 'doble_hazana', 'triple_hazana', 'todo_cero', 'portero_goleador', 'parada_y_asist', 'gol_asist_hazana'] },
     { label: 'Partidos', prefixes: ['primer_partido', 'partidos_'] },
     { label: 'MVP', prefixes: ['primer_mvp', 'mvp_'] },
     { label: 'XP y Nivel', prefixes: ['xp_', 'nivel_'] },
-    { label: 'Combos', prefixes: ['gol_50_mvp', 'partidos_100_goles', 'partido_perfecto', 'doble_doble', 'triple_doble', 'zero_to_hero', 'vitrina_llena', 'hat_trick_asist', 'mvp_hat_trick', 'all_categories', 'gol_hat_asist', 'mvp_goleada', 'mvp_remontada', 'gol_todos_partidos', 'goles_asist_100', 'partidos_50_mvp', 'gol_100_asist'] },
-    { label: 'Meta', prefixes: ['leyenda_total', 'leyenda_100', 'leyenda_150'] },
+    { label: 'Combos', prefixes: ['gol_50_mvp', 'partidos_100_goles', 'partido_perfecto', 'doble_doble', 'triple_doble', 'hat_trick_asist', 'mvp_hat_trick', 'gol_hat_asist', 'mvp_goleada', 'goles_asist_100', 'partidos_50_mvp', 'gol_100_asist'] },
+    { label: 'Meta', prefixes: ['leyenda_'] },
     { label: 'Portero', prefixes: ['portero_', 'parada_'] },
-    { label: 'Rachas', prefixes: ['racha_'] },
-    { label: 'Social', prefixes: ['primer_voto', 'votado_', 'rating_', 'votos_dados'] },
-    { label: 'Pistas', prefixes: ['pista_', 'pistas_', 'jugar_'] },
-    { label: 'Tiempo', prefixes: ['madrugador', 'nocturno', 'fin_de_semana', 'lunes_guerrero', 'navidad', 'nochevieja', 'ano_nuevo', 'mediodia', 'finde_', 'entre_semana'] },
-    { label: 'Resultados', prefixes: ['goleada_', 'remontada', 'empate_', 'victoria_ajustada', 'muchos_goles', 'partido_epico'] },
+    { label: 'Resultados', prefixes: ['goleada_', 'empate_', 'victoria_ajustada', 'muchos_goles', 'partido_epico'] },
   ]
 
   const used = new Set<string>()
@@ -102,7 +238,6 @@ function buildCategories() {
     if (keys.length > 0) result.push({ label: cat.label, keys })
   }
 
-  // Anything left goes into "Otros"
   const remaining = allKeys.filter(k => !used.has(k))
   if (remaining.length > 0) result.push({ label: 'Otros', keys: remaining })
 
@@ -114,26 +249,19 @@ export function BadgeShowcase({ unlockedKeys, accentColor = 'var(--accent)' }: B
   const totalBadges = Object.keys(BADGE_DEFS).length
   const unlockedCount = unlockedKeys.filter(k => BADGE_DEFS[k]).length
   const [expanded, setExpanded] = useState(false)
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null)
-
-  const selectedDef = selectedBadge ? BADGE_DEFS[selectedBadge] : null
 
   return (
     <div>
-      {/* Section header */}
       <button
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between py-2"
       >
-        <span className="font-bebas text-xl tracking-wider">
-          🏅 INSIGNIAS
-        </span>
+        <span className="font-bebas text-xl tracking-wider">🏅 INSIGNIAS</span>
         <span className="text-xs font-bold" style={{ color: accentColor }}>
           {unlockedCount}/{totalBadges} desbloqueadas {expanded ? '▲' : '▼'}
         </span>
       </button>
 
-      {/* Progress bar */}
       <div className="xp-bar mb-3">
         <div
           className="xp-bar-fill"
@@ -148,95 +276,15 @@ export function BadgeShowcase({ unlockedKeys, accentColor = 'var(--accent)' }: B
               <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
                 {cat.label} ({cat.keys.filter(k => unlockedSet.has(k)).length}/{cat.keys.length})
               </p>
-              <div className="grid grid-cols-4 gap-1.5">
-                {cat.keys.map(key => {
-                  const def = BADGE_DEFS[key]
-                  if (!def) return null
-                  const unlocked = unlockedSet.has(key)
-                  return unlocked ? (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedBadge(key)}
-                      className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
-                      style={{
-                        background: 'var(--card)',
-                        border: `1px solid ${accentColor}44`,
-                      }}
-                    >
-                      <span className="text-lg">{def.icon}</span>
-                      <span
-                        className="text-[10px] font-bold leading-tight"
-                        style={{ color: 'var(--fg)' }}
-                      >
-                        {def.name}
-                      </span>
-                    </button>
-                  ) : (
-                    <div
-                      key={key}
-                      className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px]"
-                      style={{
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        opacity: 0.4,
-                      }}
-                    >
-                      <span className="text-lg">🔒</span>
-                      <span
-                        className="text-[10px] font-bold leading-tight"
-                        style={{ color: 'var(--muted)' }}
-                      >
-                        {def.name}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+              <BadgeInlineGrid
+                keys={cat.keys}
+                cols={4}
+                accentColor={accentColor}
+                unlockedSet={unlockedSet}
+                showcaseStyle
+              />
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Badge detail modal */}
-      {selectedBadge && selectedDef && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 select-none"
-          style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedBadge(null) }}
-        >
-          <div
-            className="w-full max-w-[260px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pop relative"
-            style={{ background: 'var(--card)', border: `1px solid ${accentColor}44` }}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedBadge(null)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-opacity hover:opacity-80 active:scale-95 min-h-[48px] min-w-[48px]"
-              style={{ color: 'var(--muted)' }}
-            >
-              ✕
-            </button>
-
-            {/* Large emoji */}
-            <span className="text-5xl mt-2">{selectedDef.icon}</span>
-
-            {/* Badge name */}
-            <p className="font-bebas text-xl tracking-wider text-center" style={{ color: accentColor }}>
-              {selectedDef.name}
-            </p>
-
-            {/* Description */}
-            <p className="text-sm text-center leading-snug" style={{ color: 'var(--muted)' }}>
-              {selectedDef.desc}
-            </p>
-
-            {/* XP reward */}
-            {selectedDef.xp > 0 && (
-              <p className="text-xs font-bold" style={{ color: accentColor }}>
-                +{selectedDef.xp} XP
-              </p>
-            )}
-          </div>
         </div>
       )}
     </div>

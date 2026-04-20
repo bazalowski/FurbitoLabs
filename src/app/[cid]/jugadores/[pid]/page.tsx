@@ -9,8 +9,7 @@ import { useVotes } from '@/hooks/useVotes'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { BadgeChip, BadgeShowcase } from '@/components/ui/Badge'
-import { BADGE_DEFS } from '@/lib/game/badges'
+import { BadgeChip, BadgeInlineGrid, BadgeShowcase } from '@/components/ui/Badge'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
@@ -34,7 +33,6 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
   const [rating, setRating] = useState<Record<string, number>>({})
   const [voting, setVoting] = useState(false)
   const [voteOpen, setVoteOpen] = useState(false)
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null)
 
   // Change PIN state
   const [pinModalOpen, setPinModalOpen] = useState(false)
@@ -263,13 +261,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             </p>
           </div>
           {player.badges.length > 0 ? (
-            <div className="grid grid-cols-5 gap-1.5">
-              {player.badges.map(key => (
-                <button key={key} onClick={() => setSelectedBadge(key)} className="active:scale-95 transition-transform">
-                  <BadgeChip badgeKey={key} size="md" />
-                </button>
-              ))}
-            </div>
+            <BadgeInlineGrid keys={player.badges} cols={5} accentColor={communityColor} />
           ) : (
             <p className="text-sm text-center py-3" style={{ color: 'var(--muted)' }}>
               Sin insignias todavía
@@ -396,40 +388,6 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             </button>
           </div>
         </>
-      )}
-
-      {/* ── Modal: Badge detail ────────────────────────── */}
-      {selectedBadge && BADGE_DEFS[selectedBadge] && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 select-none"
-          style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedBadge(null) }}
-        >
-          <div
-            className="w-full max-w-[260px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pop"
-            style={{ background: 'var(--card)', border: `1px solid ${communityColor}44` }}
-          >
-            <span className="text-5xl mt-2">{BADGE_DEFS[selectedBadge].icon}</span>
-            <p className="font-bebas text-xl tracking-wider text-center" style={{ color: communityColor }}>
-              {BADGE_DEFS[selectedBadge].name}
-            </p>
-            <p className="text-sm text-center leading-snug" style={{ color: 'var(--muted)' }}>
-              {BADGE_DEFS[selectedBadge].desc}
-            </p>
-            {BADGE_DEFS[selectedBadge].xp > 0 && (
-              <p className="text-xs font-bold" style={{ color: communityColor }}>
-                +{BADGE_DEFS[selectedBadge].xp} XP
-              </p>
-            )}
-            <button
-              onClick={() => setSelectedBadge(null)}
-              className="mt-2 text-xs uppercase tracking-wide font-bold min-h-[44px] px-6"
-              style={{ color: 'var(--muted)' }}
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
       )}
 
       {/* ── Modal: Cambiar PIN ────────────────────────── */}
