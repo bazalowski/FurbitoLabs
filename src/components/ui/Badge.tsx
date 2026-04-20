@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { BADGE_DEFS } from '@/lib/game/badges'
 import { cn } from '@/lib/utils'
 
@@ -68,9 +68,14 @@ function BadgeDetailPanel({
   onClose,
 }: { badgeKey: string; accentColor: string; onClose: () => void }) {
   const def = BADGE_DEFS[badgeKey]
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [badgeKey])
   if (!def) return null
   return (
     <div
+      ref={ref}
       className="rounded-m p-3 flex items-center gap-3 animate-pop relative"
       style={{ background: 'var(--card)', border: `1px solid ${accentColor}44` }}
     >
@@ -128,6 +133,13 @@ export function BadgeInlineGrid({
     <div className="flex flex-col gap-1.5">
       {rows.map((row, rIdx) => (
         <Fragment key={rIdx}>
+          {rIdx === selRow && selected && (
+            <BadgeDetailPanel
+              badgeKey={selected}
+              accentColor={accentColor}
+              onClose={() => setSelected(null)}
+            />
+          )}
           <div
             className="grid gap-1.5"
             style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
@@ -189,13 +201,6 @@ export function BadgeInlineGrid({
               )
             })}
           </div>
-          {rIdx === selRow && selected && (
-            <BadgeDetailPanel
-              badgeKey={selected}
-              accentColor={accentColor}
-              onClose={() => setSelected(null)}
-            />
-          )}
         </Fragment>
       ))}
     </div>
