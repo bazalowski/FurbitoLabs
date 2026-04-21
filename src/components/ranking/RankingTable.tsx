@@ -68,27 +68,42 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
   return (
     <div className="space-y-4">
       {/* ── Scrollable pill tabs ──────────────────────── */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="flex-shrink-0 snap-start px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all min-h-[36px] flex items-center gap-1 active:scale-95"
-            style={
-              tab === t.key
-                ? { background: communityColor, color: '#050d05' }
-                : { background: 'var(--card)', color: 'var(--muted)', border: '1px solid var(--border)' }
-            }
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x scrollbar-none">
+        {TABS.map(t => {
+          const active = tab === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="flex-shrink-0 snap-start px-3.5 py-2 rounded-full text-[11px] uppercase min-h-[36px] flex items-center gap-1 active:scale-95"
+              style={
+                active
+                  ? {
+                      background: communityColor,
+                      color: '#050d05',
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      boxShadow: 'var(--shadow-depth-1)',
+                    }
+                  : {
+                      background: 'var(--card)',
+                      color: 'var(--muted)',
+                      border: '1px solid var(--border)',
+                      fontWeight: 600,
+                      letterSpacing: '0.08em',
+                    }
+              }
+            >
+              <span aria-hidden="true">{t.icon}</span> {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* ── Podio visual top 3 ───────────────────────── */}
       {top3.length > 0 && (
-        <div className="flex items-end justify-center gap-2 pt-2 pb-1">
-          {podiumOrder.map((player, i) => {
+        <div className="flex items-end justify-center gap-2 pt-3 pb-1">
+          {podiumOrder.map((player) => {
             if (!player) return null
             const originalPos = sorted.indexOf(player) + 1
             const meta = podiumMeta.find(m => m.pos === originalPos) ?? podiumMeta[2]
@@ -98,21 +113,34 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
               <Link
                 key={player.id}
                 href={`/${communityId}/jugadores/${player.id}`}
-                className="flex flex-col items-center gap-1 flex-1 max-w-[110px] active:scale-95 transition-transform"
+                className="no-lift flex flex-col items-center gap-1.5 flex-1 max-w-[110px] active:scale-95 transition-transform"
               >
                 {/* Medal */}
-                <span className="text-2xl">{meta.medal}</span>
+                <span
+                  className="leading-none"
+                  style={{
+                    fontSize: isFirst ? 30 : 22,
+                    filter: isFirst ? `drop-shadow(0 2px 6px ${communityColor}55)` : 'none',
+                  }}
+                  aria-hidden="true"
+                >
+                  {meta.medal}
+                </span>
 
                 {/* Avatar */}
                 <div
-                  className="rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 transition-all"
+                  className="rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    width: isFirst ? 56 : 44,
-                    height: isFirst ? 56 : 44,
+                    width: isFirst ? 64 : 46,
+                    height: isFirst ? 64 : 46,
+                    fontSize: isFirst ? 18 : 13,
+                    fontWeight: 600,
                     background: communityColor + '22',
                     color: communityColor,
                     border: `2px solid ${meta.labelColor}`,
-                    boxShadow: isFirst ? `0 0 12px ${communityColor}44` : 'none',
+                    boxShadow: isFirst
+                      ? `0 0 0 3px ${communityColor}14, 0 8px 24px ${communityColor}40, 0 2px 6px rgba(0,0,0,0.4)`
+                      : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`,
                   }}
                 >
                   {player.avatar ?? initials(player.name)}
@@ -120,27 +148,58 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
 
                 {/* Name */}
                 <p
-                  className="text-xs font-bold text-center truncate w-full px-1 leading-tight"
-                  style={{ color: isFirst ? communityColor : 'var(--fg)' }}
+                  className="text-center truncate w-full px-1 leading-tight"
+                  style={{
+                    fontSize: isFirst ? 13 : 12,
+                    fontWeight: isFirst ? 700 : 600,
+                    color: isFirst ? communityColor : 'var(--text)',
+                    letterSpacing: isFirst ? '-0.01em' : 0,
+                  }}
                 >
                   {player.name.split(' ')[0]}
                 </p>
 
-                {/* Value */}
-                <p className="font-bebas text-base tracking-wider" style={{ color: meta.labelColor }}>
+                {/* Value — display number con tracking negativo y tabular */}
+                <p
+                  className="font-bebas leading-none"
+                  style={{
+                    fontSize: isFirst ? 30 : 22,
+                    letterSpacing: '-0.015em',
+                    color: meta.labelColor,
+                    textShadow: isFirst ? `0 0 18px ${meta.labelColor}55` : 'none',
+                  }}
+                >
                   {getValue(player)}
                 </p>
 
-                {/* Podium plinth */}
+                {/* Podium plinth — inner border + tint shadow */}
                 <div
-                  className="w-full rounded-t-m"
+                  className="w-full rounded-t-m relative overflow-hidden"
                   style={{
                     height: meta.height,
-                    background: isFirst ? communityColor + '22' : 'var(--card)',
-                    border: `1px solid ${isFirst ? communityColor + '44' : 'var(--border)'}`,
+                    background: isFirst
+                      ? `linear-gradient(180deg, ${communityColor}2b 0%, ${communityColor}10 100%)`
+                      : 'var(--card)',
+                    border: `1px solid ${isFirst ? communityColor + '55' : 'var(--border)'}`,
                     borderBottom: 'none',
+                    boxShadow: isFirst
+                      ? `0 -6px 20px ${communityColor}1c inset, 0 1px 0 rgba(255,255,255,0.06) inset`
+                      : '0 1px 0 rgba(255,255,255,0.04) inset',
                   }}
-                />
+                >
+                  {/* Position numeral grabado en el plinth */}
+                  <span
+                    className="font-bebas absolute inset-x-0 bottom-1 text-center leading-none select-none"
+                    style={{
+                      fontSize: isFirst ? 42 : 28,
+                      letterSpacing: '-0.02em',
+                      color: isFirst ? `${communityColor}33` : 'rgba(255,255,255,0.06)',
+                    }}
+                    aria-hidden="true"
+                  >
+                    {originalPos}
+                  </span>
+                </div>
               </Link>
             )
           })}
@@ -154,22 +213,33 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
             const pos = index + 4
             const level = getLevel(player.xp)
 
-
             return (
               <Link key={player.id} href={`/${communityId}/jugadores/${player.id}`}>
                 <div
-                  className="flex items-center gap-3 px-4 py-3 rounded-m transition-all active:scale-[0.98]"
-                  style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+                  className="card flex items-center gap-3 px-4 py-3 active:scale-[0.98]"
                 >
                   {/* Position */}
-                  <span className="font-bebas text-xl w-7 text-center flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                  <span
+                    className="font-bebas w-7 text-center flex-shrink-0 leading-none"
+                    style={{
+                      fontSize: 20,
+                      letterSpacing: '-0.01em',
+                      color: 'var(--muted)',
+                      fontWeight: 400,
+                    }}
+                  >
                     {pos}
                   </span>
 
                   {/* Avatar */}
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0"
-                    style={{ background: communityColor + '22', color: communityColor }}
+                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: communityColor + '22',
+                      color: communityColor,
+                      fontWeight: 600,
+                      fontSize: 12,
+                    }}
                   >
                     {player.avatar ?? initials(player.name)}
                   </div>
@@ -177,16 +247,33 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                   {/* Name & level */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="font-bold text-sm truncate">{player.name}</p>
-                      {adminIds.includes(player.id) && <span className="text-xs">👑</span>}
+                      <p
+                        className="truncate"
+                        style={{ fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.005em' }}
+                      >
+                        {player.name}
+                      </p>
+                      {adminIds.includes(player.id) && (
+                        <span className="text-xs" aria-hidden="true">👑</span>
+                      )}
                     </div>
-                    <p className="text-xs" style={{ color: communityColor }}>
+                    <p
+                      className="text-xs"
+                      style={{ color: communityColor, fontWeight: 500 }}
+                    >
                       {level.icon} {level.name}
                     </p>
                   </div>
 
                   {/* Value */}
-                  <p className="font-bebas text-xl tracking-wider flex-shrink-0" style={{ color: communityColor }}>
+                  <p
+                    className="font-bebas flex-shrink-0 leading-none"
+                    style={{
+                      fontSize: 22,
+                      letterSpacing: '-0.015em',
+                      color: communityColor,
+                    }}
+                  >
                     {getValue(player)}
                   </p>
                 </div>

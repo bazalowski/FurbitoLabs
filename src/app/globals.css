@@ -28,6 +28,46 @@
   --comm-color: #a8ff3e;
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
+
+  /* Tinted stadium shadows — acento del community color (fallback accent) */
+  --shadow-tint: rgba(168,255,62,0.08);
+  --shadow-tint-strong: rgba(168,255,62,0.18);
+  --shadow-depth-1:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 1px 2px rgba(0,0,0,0.35),
+    0 2px 8px var(--shadow-tint);
+  --shadow-depth-2:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 2px 4px rgba(0,0,0,0.4),
+    0 8px 24px var(--shadow-tint);
+  --shadow-depth-3:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 4px 8px rgba(0,0,0,0.45),
+    0 16px 48px var(--shadow-tint-strong);
+  --shadow-lift:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 6px 14px rgba(0,0,0,0.45),
+    0 12px 32px var(--shadow-tint-strong);
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-grain: 1;
+  --z-elevated: 10;
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
+
+/* Community tint override hook — set once --comm-color changes, shadows follow */
+:root {
+  --shadow-tint: color-mix(in srgb, var(--comm-color, var(--accent)) 12%, transparent);
+  --shadow-tint-strong: color-mix(in srgb, var(--comm-color, var(--accent)) 22%, transparent);
 }
 
 /* ── Light Theme ─────────────────────────────────────── */
@@ -85,6 +125,7 @@ body {
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
   font-size: 14px;
+  font-feature-settings: 'ss01', 'cv11';
 }
 
 /* Grid background */
@@ -100,9 +141,63 @@ body::before {
   background-size: 60px 60px;
 }
 
+/* Grain overlay — rompe la planitud del background flat */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-grain);
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+:root[data-theme="light"] body::after {
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
 /* ── Typography ──────────────────────────────────────── */
-.font-bebas { font-family: 'Bebas Neue', cursive; }
+.font-bebas {
+  font-family: 'Bebas Neue', cursive;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
 .font-barlow { font-family: 'Barlow', sans-serif; }
+
+/* Tabular numbers everywhere numbers actually matter (stats, scores, XP).
+   Safer than a blanket body rule — only hits Bebas display numbers and
+   explicit opt-ins via the utility below. */
+.tabular-nums,
+[class*="tabular"],
+.stat-num,
+.score,
+.xp {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* Headlines balance — evita viudas de 1-2 palabras en titulares */
+h1, h2, h3, .hl-balance {
+  text-wrap: balance;
+}
+
+/* Display headings lean on tight tracking; Bebas already carries the
+   character, we just negate letter-spacing slightly on large sizes */
+.font-bebas.text-4xl,
+.font-bebas.text-5xl,
+.font-bebas.text-6xl,
+.font-bebas.text-7xl,
+.tracking-display {
+  letter-spacing: -0.01em;
+}
+
+/* Medium weight layer — Barlow already has 500/600, el problema era que
+   solo usábamos 400 y 700. Estas utilidades completan el set. */
+.fw-medium  { font-weight: 500; }
+.fw-semi    { font-weight: 600; }
 
 /* ── View transitions ────────────────────────────────── */
 .view-enter {
@@ -145,10 +240,13 @@ body::before {
   border-radius: var(--radius-m);
   font-size: 13px;
   font-weight: 600;
-  z-index: 9999;
+  z-index: var(--z-toast);
   pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transition: transform 0.35s var(--ease-spring);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 8px 32px rgba(0,0,0,0.45),
+    0 4px 16px var(--shadow-tint-strong);
   max-width: 90%;
   text-align: center;
   font-family: 'Barlow', sans-serif;
@@ -268,18 +366,40 @@ input, select, textarea {
 }
 
 /* ── Touch UX: active feedback on cards & buttons ─── */
+button,
+[role="button"],
+a {
+  transition:
+    transform 0.18s var(--ease-out),
+    box-shadow 0.18s var(--ease-out),
+    background-color 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out),
+    color 0.18s var(--ease-out);
+}
+
 button:active,
 [role="button"]:active,
 a:active {
-  transition: transform 0.1s ease;
+  transition: transform 0.1s var(--ease-out), box-shadow 0.1s var(--ease-out);
 }
 
-/* ── Hover/active pairing for non-touch devices ───── */
+/* ── Hover/active pairing for non-touch devices ─────
+   Sustituye opacity:0.85 (el fingerprint AI más claro) por un lift real:
+   translateY + shadow-lift tintada. Evita elementos marcados como nav-item
+   o disabled. */
 @media (hover: hover) {
-  button:hover,
-  [role="button"]:hover,
-  a:hover {
-    opacity: 0.85;
+  button:not(:disabled):not(.no-lift):hover,
+  [role="button"]:not(.no-lift):hover,
+  a:not(.no-lift):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lift);
+  }
+
+  button:not(:disabled):not(.no-lift):active,
+  [role="button"]:not(.no-lift):active,
+  a:not(.no-lift):active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-depth-1);
   }
 }
 
@@ -321,4 +441,54 @@ a:focus-visible {
 ::selection {
   background: rgba(168, 255, 62, 0.3);
   color: inherit;
+}
+
+/* ── Glass card — depth shadow + inner hairline border ───
+   Usar en lugar de un simple border: 1px solid var(--border) plano.
+   El inset 1px blanco translúcido simula el filo del vidrio contra la luz;
+   la shadow tintada da volumen sin gris genérico. */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 1px 2px rgba(0,0,0,0.35),
+    0 2px 8px var(--shadow-tint);
+  position: relative;
+}
+
+.card-hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-depth-2);
+  position: relative;
+}
+
+.card-hero::before,
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+}
+
+/* Ensure the nav, modals, overlays respect the scale */
+[data-role="nav"]      { z-index: var(--z-nav); }
+[data-role="sticky"]   { z-index: var(--z-sticky); }
+[data-role="overlay"]  { z-index: var(--z-overlay); }
+[data-role="modal"]    { z-index: var(--z-modal); }
+
+/* Spring entrance para elementos que aparecen bajo interacción clave */
+@keyframes springIn {
+  0%   { transform: scale(0.92) translateY(6px); opacity: 0; }
+  60%  { transform: scale(1.02) translateY(-1px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-spring-in {
+  animation: springIn 0.42s var(--ease-spring) both;
 }

@@ -128,6 +128,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         style={{
           background: 'var(--bg2)',
           border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-depth-3)',
           paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
           overscrollBehavior: 'contain',
           WebkitOverflowScrolling: 'touch',

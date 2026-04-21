@@ -58,55 +58,128 @@ export function NextMatchHero({
   return (
     <div>
       <p
-        className="text-xs font-bold uppercase tracking-wider mb-2"
-        style={{ color: 'var(--muted)' }}
+        className="uppercase mb-2"
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.14em',
+          color: 'var(--muted)',
+        }}
       >
         Próximo partido
       </p>
       <div
-        className="rounded-m overflow-hidden"
-        style={{ background: 'var(--card)', border: `1px solid ${communityColor}33` }}
+        className="rounded-l overflow-hidden relative"
+        style={{
+          background: 'var(--card)',
+          border: `1px solid ${communityColor}33`,
+          boxShadow: 'var(--shadow-depth-2)',
+        }}
       >
-        {/* Accent bar top */}
-        <div className="h-0.5" style={{ background: communityColor }} />
+        {/* Inner hairline — filo del vidrio */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-l"
+          style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset' }}
+          aria-hidden="true"
+        />
 
-        <Link href={`/${communityId}/partidos/${event.id}`} className="block px-4 pt-3 pb-2">
+        {/* Accent bar top con gradiente hacia el tint */}
+        <div
+          className="h-[3px] relative"
+          style={{
+            background: `linear-gradient(90deg, ${communityColor} 0%, ${communityColor}88 60%, ${communityColor}33 100%)`,
+          }}
+        />
+
+        <Link href={`/${communityId}/partidos/${event.id}`} className="block px-4 pt-4 pb-3 no-lift">
           {/* Title + badge */}
           <div className="flex items-start justify-between gap-2">
-            <h2 className="font-bold text-base leading-tight flex-1 min-w-0 truncate">
+            <h2
+              className="flex-1 min-w-0 hl-balance"
+              style={{
+                fontSize: 19,
+                fontWeight: 700,
+                letterSpacing: '-0.015em',
+                lineHeight: 1.15,
+                color: 'var(--text)',
+              }}
+            >
               {event.titulo}
             </h2>
             <span
-              className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: communityColor + '22', color: communityColor }}
+              className="uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                background: communityColor + '22',
+                color: communityColor,
+                border: `1px solid ${communityColor}33`,
+              }}
             >
               Abierto
             </span>
           </div>
 
           {/* Date + location */}
-          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            🗓 {fmtDateTime(event.fecha, event.hora)}
+          <p
+            className="mt-2"
+            style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}
+          >
+            <span aria-hidden="true">🗓</span> {fmtDateTime(event.fecha, event.hora)}
           </p>
           {(event.pista?.name || event.lugar) && (
-            <p className="text-sm mt-0.5 truncate" style={{ color: 'var(--muted)' }}>
-              📍 {event.pista?.name ?? event.lugar}
+            <p
+              className="mt-0.5 truncate"
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}
+            >
+              <span aria-hidden="true">📍</span> {event.pista?.name ?? event.lugar}
             </p>
           )}
 
           {/* Confirmation bar */}
-          <div className="mt-3 space-y-1">
-            <div className="flex justify-between text-xs" style={{ color: 'var(--muted)' }}>
-              <span>✅ {confirmed.length} confirmados</span>
-              <span>{confirmed.length}/{event.max_jugadores}</span>
+          <div className="mt-3.5 space-y-1.5">
+            <div className="flex justify-between items-baseline">
+              <span
+                className="uppercase"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.1em',
+                  color: 'var(--muted)',
+                }}
+              >
+                Confirmados
+              </span>
+              <span
+                className="font-bebas leading-none tabular-nums"
+                style={{
+                  fontSize: 18,
+                  letterSpacing: '-0.015em',
+                  color: 'var(--text)',
+                }}
+              >
+                {confirmed.length}
+                <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+                  {' / '}{event.max_jugadores}
+                </span>
+              </span>
             </div>
             <div
               className="w-full h-1.5 rounded-full overflow-hidden"
-              style={{ background: communityColor + '22' }}
+              style={{
+                background: communityColor + '1a',
+                boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset',
+              }}
             >
               <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, background: communityColor }}
+                className="h-full rounded-full"
+                style={{
+                  width: `${pct}%`,
+                  background: `linear-gradient(90deg, ${communityColor}cc 0%, ${communityColor} 100%)`,
+                  boxShadow: `0 0 10px ${communityColor}66`,
+                  transition: 'width 0.6s var(--ease-out)',
+                }}
               />
             </div>
           </div>
@@ -118,20 +191,42 @@ export function NextMatchHero({
             <button
               onClick={handleConfirm}
               disabled={confirming}
-              className="flex-1 h-11 rounded-s font-bold text-sm active:scale-[0.97] transition-transform disabled:opacity-60"
+              className="flex-1 h-11 rounded-s active:scale-[0.97] disabled:opacity-60"
               style={
                 iConfirmed
-                  ? { background: communityColor + '22', color: communityColor, border: `1px solid ${communityColor}44` }
-                  : { background: communityColor, color: '#000' }
+                  ? {
+                      background: communityColor + '22',
+                      color: communityColor,
+                      border: `1px solid ${communityColor}44`,
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      letterSpacing: '-0.005em',
+                      boxShadow: 'var(--shadow-depth-1)',
+                    }
+                  : {
+                      background: communityColor,
+                      color: '#000',
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      letterSpacing: '-0.005em',
+                      boxShadow: `0 8px 24px ${communityColor}33, 0 1px 0 rgba(255,255,255,0.25) inset`,
+                    }
               }
             >
-              {confirming ? '...' : iConfirmed ? '✅ Confirmado' : '✅ Confirmar'}
+              {confirming ? '…' : iConfirmed ? '✅ Confirmado' : '✅ Confirmar'}
             </button>
           ) : (
             <Link
               href={`/${communityId}/partidos/${event.id}`}
-              className="flex-1 h-11 rounded-s font-bold text-sm flex items-center justify-center active:scale-[0.97] transition-transform"
-              style={{ background: communityColor, color: '#000' }}
+              className="flex-1 h-11 rounded-s flex items-center justify-center active:scale-[0.97]"
+              style={{
+                background: communityColor,
+                color: '#000',
+                fontSize: 13.5,
+                fontWeight: 700,
+                letterSpacing: '-0.005em',
+                boxShadow: `0 8px 24px ${communityColor}33, 0 1px 0 rgba(255,255,255,0.25) inset`,
+              }}
             >
               Ver partido
             </Link>
@@ -139,11 +234,27 @@ export function NextMatchHero({
 
           <button
             onClick={onToggleTeams}
-            className="flex-1 h-11 rounded-s font-bold text-sm active:scale-[0.97] transition-transform"
+            className="flex-1 h-11 rounded-s active:scale-[0.97]"
             style={
               teamsOpen
-                ? { background: communityColor + '22', color: communityColor, border: `1px solid ${communityColor}44` }
-                : { background: 'var(--card2)', color: 'var(--fg)', border: '1px solid var(--border)' }
+                ? {
+                    background: communityColor + '22',
+                    color: communityColor,
+                    border: `1px solid ${communityColor}44`,
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    letterSpacing: '-0.005em',
+                    boxShadow: 'var(--shadow-depth-1)',
+                  }
+                : {
+                    background: 'var(--card2)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    letterSpacing: '-0.005em',
+                    boxShadow: 'var(--shadow-depth-1)',
+                  }
             }
           >
             ⚖️ Equipos

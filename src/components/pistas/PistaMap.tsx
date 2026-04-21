@@ -152,7 +152,7 @@ export function PistaMap({ pistas, height = 300, userLat, userLng, onMapClick, t
           cursor: 'pointer',
           fontSize: 18,
           lineHeight: 1,
-          boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+          boxShadow: 'var(--shadow-depth-1)',
         }}
         title={satellite ? 'Cambiar a mapa' : 'Cambiar a satélite'}
       >
