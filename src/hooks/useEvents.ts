@@ -51,10 +51,10 @@ export function useEvent(eventId: string | null) {
   const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!eventId) { setLoading(false); return }
     const supabase = createClient()
-    supabase.from('events')
+    const { data } = await supabase.from('events')
       .select(`
         *,
         pista:pistas(*),
@@ -64,8 +64,11 @@ export function useEvent(eventId: string | null) {
       `)
       .eq('id', eventId)
       .single()
-      .then(({ data }) => { setEvent(data as Event); setLoading(false) })
+    setEvent((data as Event) ?? null)
+    setLoading(false)
   }, [eventId])
 
-  return { event, loading }
+  useEffect(() => { load() }, [load])
+
+  return { event, loading, reload: load }
 }

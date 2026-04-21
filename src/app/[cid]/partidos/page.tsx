@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useSession } from '@/stores/session'
 import { useEvents } from '@/hooks/useEvents'
 import { usePlayers } from '@/hooks/usePlayers'
@@ -20,7 +21,9 @@ export default function PartidosPage({ params }: PartidosPageProps) {
   const session = useSession()
   const { upcoming, past, loading } = useEvents(cid)
   const { players } = usePlayers(cid)
-  const [tab, setTab] = useState<Tab>('proximos')
+  const searchParams = useSearchParams()
+  const initialTab: Tab = searchParams.get('tab') === 'historial' ? 'historial' : 'proximos'
+  const [tab, setTab] = useState<Tab>(initialTab)
 
   const canCreate = session.role === 'admin'
   const shown = tab === 'proximos' ? upcoming : past

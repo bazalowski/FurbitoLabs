@@ -159,9 +159,13 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       pistasAddedByPlayer.set(row.added_by, (pistasAddedByPlayer.get(row.added_by) ?? 0) + 1)
     }
 
+    // Cierre automático de votación MVP: 24h tras el guardado del resultado.
+    const mvpVotingClosesAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
     await supabase.from('events').update({
       finalizado: true, goles_a: golesA, goles_b: golesB,
       equipo_a: equipoA, equipo_b: equipoB, mvp_id: mvpId,
+      mvp_voting_closes_at: mvpVotingClosesAt,
     }).eq('id', eid)
 
     for (const pid of allPlayers) {

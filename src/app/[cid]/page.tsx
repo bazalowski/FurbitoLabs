@@ -6,6 +6,7 @@ import { useEvents } from '@/hooks/useEvents'
 import { usePlayers, usePlayer } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
+import { usePendingMvpVotes } from '@/hooks/usePendingMvpVotes'
 import { NextMatchHero } from '@/components/events/NextMatchHero'
 import { ActivityFeed } from '@/components/feed/ActivityFeed'
 import { Header, Logo } from '@/components/layout/Header'
@@ -28,6 +29,10 @@ export default function HomePage({ params }: HomePageProps) {
   const { votes } = useVotes(cid)
   const { player: me } = usePlayer(
     (session.role === 'player' || session.role === 'admin') ? session.playerId : null
+  )
+  const { pendingCount: mvpPending } = usePendingMvpVotes(
+    cid,
+    (session.role === 'player' || session.role === 'admin') ? session.playerId : null,
   )
   const [showTeams, setShowTeams] = useState(false)
 
@@ -90,6 +95,48 @@ export default function HomePage({ params }: HomePageProps) {
                 </div>
               </div>
             </div>
+          </Link>
+        )}
+
+        {/* MVP reminder — solo si hay partidos con voto pendiente */}
+        {isLoggedIn && mvpPending > 0 && (
+          <Link
+            href={`/${cid}/partidos?tab=historial`}
+            className="block select-none rounded-m p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+            style={{
+              background: 'var(--card)',
+              border: `1px solid ${communityColor}55`,
+              boxShadow: `0 0 0 1px ${communityColor}22 inset`,
+            }}
+          >
+            <span className="text-2xl">🏆</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">Vota al MVP de tus últimos partidos</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {mvpPending === 1
+                  ? 'Tienes 1 partido con votación abierta.'
+                  : `Tienes ${mvpPending} partidos con votación abierta.`}
+              </p>
+            </div>
+            <span className="text-lg" style={{ color: communityColor }}>{'›'}</span>
+          </Link>
+        )}
+
+        {/* Quick actions — acceso rápido a valoraciones */}
+        {isLoggedIn && (
+          <Link
+            href={`/${cid}/valorar`}
+            className="block select-none rounded-m p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <span className="text-2xl">⭐</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">Valorar compañeros</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Puntúa habilidades para equilibrar equipos.
+              </p>
+            </div>
+            <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
           </Link>
         )}
 

@@ -29,13 +29,14 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const { cid, eid } = params
   const router = useRouter()
   const session = useSession()
-  const { event, loading } = useEvent(eid)
+  const { event, loading, reload: reloadEvent } = useEvent(eid)
   const { players } = usePlayers(cid)
   const { pistas } = usePistas(cid)
   const [editOpen, setEditOpen] = useState(false)
   const [adminConfirming, setAdminConfirming] = useState<Record<string, boolean>>({})
   const [matchPlayers, setMatchPlayers] = useState<MatchPlayer[]>([])
   const [activeTab, setActiveTab] = useState<DetailTab>('convocados')
+  const [closingMvp, setClosingMvp] = useState(false)
 
   useEffect(() => {
     if (event?.finalizado) setActiveTab('resultado')
@@ -94,6 +95,19 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     await supabase.from('events').delete().eq('id', event.id)
     showToast('🗑️ Evento eliminado')
     router.push(`/${cid}/partidos`)
+  }
+
+  async function closeMvpVoting() {
+    if (!event || closingMvp) return
+    if (!confirm('¿Cerrar la votación del MVP ahora? Nadie más podrá votar.')) return
+    setClosingMvp(true)
+    const supabase = createClient()
+    await supabase.from('events')
+      .update({ mvp_voting_closes_at: new Date().toISOString() })
+      .eq('id', event.id)
+    await reloadEvent()
+    setClosingMvp(false)
+    showToast('🔒 Votación MVP cerrada')
   }
 
   if (loading) return <div className="p-4" style={{ color: 'var(--muted)' }}>Cargando...</div>
@@ -245,6 +259,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             allPlayers={players}
             communityColor={communityColor}
             officialMvp={event.mvp}
+            closesAt={event.mvp_voting_closes_at}
           />
         )}
 
@@ -271,6 +286,21 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 🏁 Registrar resultado
               </Button>
             )}
+            {event.finalizado && matchPlayers.length > 0 && (() => {
+              const closesAtMs = event.mvp_voting_closes_at ? new Date(event.mvp_voting_closes_at).getTime() : null
+              const isOpen = closesAtMs === null || Date.now() < closesAtMs
+              if (!isOpen) return null
+              return (
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={closeMvpVoting}
+                  disabled={closingMvp}
+                >
+                  {closingMvp ? 'Cerrando…' : '🔒 Cerrar votación MVP'}
+                </Button>
+              )
+            })()}
             <Button variant="danger" className="w-full" onClick={deleteEvent}>
               🗑️ Eliminar evento
             </Button>

@@ -60,12 +60,21 @@ export interface Event {
   equipo_a: string[]
   equipo_b: string[]
   mvp_id: string | null
+  mvp_voting_closes_at: string | null
   created_at: string
   // Joins opcionales
   pista?: Pista
   confirmations?: Confirmation[]
   match_players?: MatchPlayer[]
   mvp?: Player
+}
+
+export interface MvpVote {
+  id: string
+  event_id: string
+  voter_id: string
+  voted_id: string
+  created_at: string
 }
 
 export interface Confirmation {
