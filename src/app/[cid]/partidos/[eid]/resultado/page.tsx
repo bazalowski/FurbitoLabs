@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
-import { calcXP, detectBadges, BADGE_DEFS } from '@/lib/game/badges'
+import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
 import { uid } from '@/lib/utils'
 import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
@@ -104,6 +104,61 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     setSaving(true)
     const supabase = createClient()
 
+    // Pre-cargar historia de partidos finalizados (excluyendo el actual)
+    // y conteo de pistas añadidas por cada jugador, para detectar badges
+    // basados en rachas, pistas visitadas y horario acumulado.
+    const [{ data: pastEventsData }, { data: pistasData }] = await Promise.all([
+      supabase
+        .from('events')
+        .select(`id, fecha, hora, pista_id, goles_a, goles_b, equipo_a, equipo_b, mvp_id, finalizado, match_players(*)`)
+        .eq('community_id', cid)
+        .eq('finalizado', true)
+        .neq('id', eid),
+      supabase
+        .from('pistas')
+        .select('added_by')
+        .eq('community_id', cid),
+    ])
+
+    type PastEventRow = {
+      id: string; fecha: string | null; hora: string | null; pista_id: string | null
+      goles_a: number | null; goles_b: number | null
+      equipo_a: string[] | null; equipo_b: string[] | null
+      mvp_id: string | null; finalizado: boolean
+      match_players: Array<{
+        player_id: string; goles: number; asistencias: number
+        porteria_cero: boolean; parada_penalti: boolean
+      }>
+    }
+
+    const historyByPlayer = new Map<string, HistoryMatch[]>()
+    for (const ev of (pastEventsData ?? []) as PastEventRow[]) {
+      for (const pmp of ev.match_players ?? []) {
+        const team = ev.equipo_a?.includes(pmp.player_id) ? 'A'
+                   : ev.equipo_b?.includes(pmp.player_id) ? 'B'
+                   : null
+        const hm: HistoryMatch = {
+          fecha: ev.fecha, hora: ev.hora, pistaId: ev.pista_id,
+          playerTeam: team, golesA: ev.goles_a, golesB: ev.goles_b,
+          goles: pmp.goles, asistencias: pmp.asistencias,
+          isMVP: ev.mvp_id === pmp.player_id,
+          porteria_cero: pmp.porteria_cero, parada_penalti: pmp.parada_penalti,
+        }
+        const arr = historyByPlayer.get(pmp.player_id)
+        if (arr) arr.push(hm); else historyByPlayer.set(pmp.player_id, [hm])
+      }
+    }
+    // Ordenar cada historia por fecha desc (más reciente primero)
+    Array.from(historyByPlayer.values()).forEach((arr: HistoryMatch[]) => {
+      arr.sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))
+    })
+
+    const pistasAddedByPlayer = new Map<string, number>()
+    for (const row of (pistasData ?? []) as Array<{ added_by: string | null }>) {
+      if (!row.added_by) continue
+      pistasAddedByPlayer.set(row.added_by, (pistasAddedByPlayer.get(row.added_by) ?? 0) + 1)
+    }
+
     await supabase.from('events').update({
       finalizado: true, goles_a: golesA, goles_b: golesB,
       equipo_a: equipoA, equipo_b: equipoB, mvp_id: mvpId,
@@ -135,7 +190,14 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         partidos_cero: player.partidos_cero + (ps.porteria_cero ? 1 : 0),
         xp: player.xp + xpGanado,
       }
-      const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP)
+
+      const ctx: DetectBadgeContext = {
+        matchScore: { golesA, golesB, playerTeam: equipo },
+        matchMeta: { fecha: event.fecha, hora: event.hora, pistaId: event.pista_id },
+        history: historyByPlayer.get(pid) ?? [],
+        pistasStats: { addedByPlayer: pistasAddedByPlayer.get(pid) ?? 0 },
+      }
+      const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP, ctx)
       const allBadges = [...player.badges, ...newBadges]
 
       if (newBadges.length > 0 && pid === session.playerId) {

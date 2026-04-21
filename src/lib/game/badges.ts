@@ -269,15 +269,85 @@ export function calcXP(mp: MatchPlayer, isMVP: boolean): number {
 }
 
 // ════════════════════════════════════════════════════
+//  Extended detection context (history / pistas / time)
+// ════════════════════════════════════════════════════
+export interface HistoryMatch {
+  fecha: string | null          // YYYY-MM-DD
+  hora: string | null           // HH:MM
+  pistaId: string | null
+  playerTeam: 'A' | 'B' | null
+  golesA: number | null
+  golesB: number | null
+  goles: number
+  asistencias: number
+  isMVP: boolean
+  porteria_cero: boolean
+  parada_penalti: boolean
+}
+
+export interface DetectBadgeContext {
+  matchScore?: { golesA: number; golesB: number; playerTeam: 'A' | 'B' | null }
+  matchMeta?: { fecha: string | null; hora: string | null; pistaId: string | null }
+  /** Past finalized matches of this player, most recent first (excluding the current match). */
+  history?: HistoryMatch[]
+  pistasStats?: { addedByPlayer: number }
+}
+
+type MatchLike = {
+  playerTeam: 'A' | 'B' | null
+  golesA: number | null
+  golesB: number | null
+  goles: number
+  asistencias: number
+  isMVP: boolean
+  porteria_cero: boolean
+  parada_penalti: boolean
+  pistaId: string | null
+  fecha: string | null
+  hora: string | null
+}
+
+function isWin(m: MatchLike): boolean {
+  if (!m.playerTeam || m.golesA == null || m.golesB == null) return false
+  return (m.playerTeam === 'A' && m.golesA > m.golesB) ||
+         (m.playerTeam === 'B' && m.golesB > m.golesA)
+}
+function isLoss(m: MatchLike): boolean {
+  if (!m.playerTeam || m.golesA == null || m.golesB == null) return false
+  return (m.playerTeam === 'A' && m.golesA < m.golesB) ||
+         (m.playerTeam === 'B' && m.golesB < m.golesA)
+}
+/** Count consecutive elements from index 0 while predicate holds. */
+function streakFromStart<T>(arr: T[], pred: (m: T) => boolean): number {
+  let n = 0
+  for (const m of arr) {
+    if (pred(m)) n++
+    else break
+  }
+  return n
+}
+function dayOfWeek(fecha: string | null): number | null {
+  if (!fecha) return null
+  const d = new Date(fecha + 'T12:00:00')
+  const dow = d.getDay()
+  return Number.isNaN(dow) ? null : dow
+}
+function parseHour(hora: string | null): number | null {
+  if (!hora) return null
+  const h = parseInt(hora.slice(0, 2), 10)
+  return Number.isNaN(h) ? null : h
+}
+
+// ════════════════════════════════════════════════════
 //  Detectar badges nuevos para un jugador
 // ════════════════════════════════════════════════════
 export function detectBadges(
   player: Player,
   mp: MatchPlayer,
   isMVP: boolean,
-  /** Optional match score context for score-related badges */
-  matchScore?: { golesA: number; golesB: number; playerTeam: 'A' | 'B' | null }
+  ctx?: DetectBadgeContext
 ): string[] {
+  const matchScore = ctx?.matchScore
   const existing = new Set(player.badges)
   const newBadges: string[] = []
 
@@ -476,6 +546,134 @@ export function detectBadges(
   chk('goles_asist_100', player.goles >= 100 && player.asistencias >= 100)
   chk('partidos_50_mvp_25', player.partidos >= 50 && player.mvps >= 25)
   chk('gol_100_asist_50', player.goles >= 100 && player.asistencias >= 50)
+
+  // ════════════════════════════════════════════════════
+  // Extended detection: history + pistas + time
+  // ════════════════════════════════════════════════════
+  if (ctx?.history && ctx.matchMeta) {
+    const meta = ctx.matchMeta
+    const current: MatchLike = {
+      playerTeam: matchScore?.playerTeam ?? null,
+      golesA: matchScore?.golesA ?? null,
+      golesB: matchScore?.golesB ?? null,
+      goles: g,
+      asistencias: a,
+      isMVP,
+      porteria_cero: mp.porteria_cero,
+      parada_penalti: mp.parada_penalti,
+      pistaId: meta.pistaId,
+      fecha: meta.fecha,
+      hora: meta.hora,
+    }
+    const history: MatchLike[] = ctx.history.map(h => ({
+      playerTeam: h.playerTeam,
+      golesA: h.golesA,
+      golesB: h.golesB,
+      goles: h.goles,
+      asistencias: h.asistencias,
+      isMVP: h.isMVP,
+      porteria_cero: h.porteria_cero,
+      parada_penalti: h.parada_penalti,
+      pistaId: h.pistaId,
+      fecha: h.fecha,
+      hora: h.hora,
+    }))
+    const seq: MatchLike[] = [current, ...history] // most recent first
+
+    // ── Victorias / Rachas ──────────────────────────────
+    const totalWins = seq.filter(isWin).length
+    chk('primera_victoria', totalWins >= 1)
+    chk('victorias_10',  totalWins >= 10)
+    chk('victorias_25',  totalWins >= 25)
+    chk('victorias_50',  totalWins >= 50)
+    chk('victorias_100', totalWins >= 100)
+
+    const winStreak = streakFromStart(seq, isWin)
+    chk('racha_2',  winStreak >= 2)
+    chk('racha_3',  winStreak >= 3)
+    chk('racha_5',  winStreak >= 5)
+    chk('racha_7',  winStreak >= 7)
+    chk('racha_10', winStreak >= 10)
+    chk('racha_15', winStreak >= 15)
+    chk('racha_20', winStreak >= 20)
+
+    const noLossStreak = streakFromStart(seq, m => !isLoss(m))
+    chk('sin_perder_5',  noLossStreak >= 5)
+    chk('sin_perder_10', noLossStreak >= 10)
+
+    // ── Goleo / asist consecutivos ──────────────────────
+    const golStreak = streakFromStart(seq, m => m.goles >= 1)
+    chk('gol_todos_partidos_5',  golStreak >= 5)
+    chk('gol_todos_partidos_10', golStreak >= 10)
+
+    const asistStreak = streakFromStart(seq, m => m.asistencias >= 1)
+    chk('asist_racha_3', asistStreak >= 3)
+
+    // ── Portería a cero seguidas ────────────────────────
+    const ceroStreak = streakFromStart(seq, m => m.porteria_cero)
+    chk('portero_invicto_3', ceroStreak >= 3)
+
+    // ── Paradas acumuladas ──────────────────────────────
+    const paradasTotal = seq.filter(m => m.parada_penalti).length
+    chk('parada_5',  paradasTotal >= 5)
+    chk('parada_10', paradasTotal >= 10)
+
+    // ── Pistas jugadas ──────────────────────────────────
+    const pistaCounts = new Map<string, number>()
+    for (const m of seq) {
+      if (!m.pistaId) continue
+      pistaCounts.set(m.pistaId, (pistaCounts.get(m.pistaId) ?? 0) + 1)
+    }
+    const distinctPistas = pistaCounts.size
+    chk('jugar_3_pistas', distinctPistas >= 3)
+    chk('jugar_5_pistas', distinctPistas >= 5)
+    chk('pista_10', distinctPistas >= 10)
+    chk('pista_15', distinctPistas >= 15)
+    chk('pista_20', distinctPistas >= 20)
+
+    const maxSamePista = pistaCounts.size > 0 ? Math.max(...Array.from(pistaCounts.values())) : 0
+    chk('pista_favorita_10', maxSamePista >= 10)
+    chk('pista_favorita_25', maxSamePista >= 25)
+    chk('pista_favorita_50', maxSamePista >= 50)
+
+    // ── Horario / calendario del partido actual ─────────
+    const hour = parseHour(meta.hora)
+    if (hour != null) {
+      chk('madrugador', hour < 10)
+      chk('nocturno',  hour >= 21)
+      chk('mediodia', meta.hora === '12:00' || meta.hora?.startsWith('12:') === true)
+    }
+    const dow = dayOfWeek(meta.fecha)
+    if (dow != null) {
+      chk('lunes_guerrero', dow === 1)
+    }
+    if (meta.fecha) {
+      chk('navidad',    meta.fecha.endsWith('-12-25'))
+      chk('nochevieja', meta.fecha.endsWith('-12-31'))
+      chk('ano_nuevo',  meta.fecha.endsWith('-01-01'))
+    }
+
+    // Weekend / weekday counts across full sequence
+    let weekendCount = 0
+    let weekdayCount = 0
+    for (const m of seq) {
+      const d = dayOfWeek(m.fecha)
+      if (d == null) continue
+      if (d === 0 || d === 6) weekendCount++
+      else weekdayCount++
+    }
+    chk('finde_10',        weekendCount >= 10)
+    chk('fin_de_semana',   weekendCount >= 20)
+    chk('entre_semana_20', weekdayCount >= 20)
+  }
+
+  // ── Pistas añadidas por el jugador (mapa) ────────────
+  if (ctx?.pistasStats) {
+    const n = ctx.pistasStats.addedByPlayer
+    chk('pista_nueva', n >= 1)
+    chk('pistas_5',    n >= 5)
+    chk('pistas_10',   n >= 10)
+  }
 
   // Meta
   const total = player.badges.length + newBadges.length

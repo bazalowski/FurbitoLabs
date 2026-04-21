@@ -10,6 +10,7 @@ import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { BadgeChip, BadgeInlineGrid, BadgeShowcase } from '@/components/ui/Badge'
+import { PlayerTimeline } from '@/components/players/PlayerTimeline'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
@@ -271,6 +272,18 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
         {/* Catálogo completo (collapsible) */}
         <BadgeShowcase unlockedKeys={player.badges} accentColor={communityColor} />
+
+        {/* ── Historial de partidos ─────────────────── */}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+            Historial
+          </p>
+          <PlayerTimeline
+            playerId={pid}
+            communityId={cid}
+            communityColor={communityColor}
+          />
+        </div>
 
         {/* ── CTA Valorar ───────────────────────────── */}
         {/* Visible para cualquiera que no sea el propio jugador */}
