@@ -14,7 +14,7 @@ import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
 import { uid } from '@/lib/utils'
-import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
+import { notifyMatchFinished, notifyBadgeEarned, notifyMvpSelected } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
 
 type Step = 'marcador' | 'stats' | 'resumen'
@@ -200,10 +200,11 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP, ctx)
       const allBadges = [...player.badges, ...newBadges]
 
-      if (newBadges.length > 0 && pid === session.playerId) {
+      if (newBadges.length > 0) {
+        const badgeUrl = `/${cid}/partidos/${eid}`
         newBadges.forEach(key => {
           const def = BADGE_DEFS[key]
-          if (def) notifyBadgeEarned(pid, def.name, def.icon)
+          if (def) notifyBadgeEarned(pid, def.name, def.icon, badgeUrl)
         })
       }
       const badgeXP = newBadges.reduce((sum, key) => sum + (BADGE_DEFS[key]?.xp ?? 0), 0)
@@ -217,7 +218,9 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     }
 
     showToast('🏁 Resultado guardado')
-    notifyMatchFinished(cid, event.titulo, golesA, golesB, `/${cid}/partidos/${eid}`)
+    const eventUrl = `/${cid}/partidos/${eid}`
+    notifyMatchFinished(cid, event.titulo, golesA, golesB, eventUrl)
+    if (mvpId) notifyMvpSelected(mvpId, event.titulo, eventUrl)
     reloadPlayers()
     router.push(`/${cid}/partidos/${eid}`)
     setSaving(false)

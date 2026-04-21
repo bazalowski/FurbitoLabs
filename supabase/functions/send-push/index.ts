@@ -1,22 +1,21 @@
 // ════════════════════════════════════════════════════
 //  Supabase Edge Function: send-push
-//  Envía Web Push notifications a suscriptores de una comunidad
+//  Envía Web Push notifications a suscriptores usando VAPID.
 //
 //  POST /functions/v1/send-push
-//  Body: { community_id, title, body, url, type, exclude_player_id? }
+//  Body (uno de estos dos bloques + el resto):
+//    { community_id, title, body, type, url?, icon?, exclude_player_id? }
+//    { target_player_id, title, body, type, url?, icon? }
 //
 //  Requiere env vars en Supabase Dashboard → Edge Functions → Secrets:
-//    VAPID_PRIVATE_KEY
 //    VAPID_PUBLIC_KEY
-//    VAPID_SUBJECT (e.g. "mailto:admin@furbito.app")
+//    VAPID_PRIVATE_KEY
+//    VAPID_SUBJECT   (e.g. "mailto:admin@furbito.app")
 // ════════════════════════════════════════════════════
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// Web Push signing con VAPID (usando la lib web-push para Deno)
-// En Deno no hay web-push nativo, usamos crypto API directamente
-// Por simplicidad, usamos fetch al push endpoint con headers VAPID
+import webpush from 'npm:web-push@3.6.7'
 
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
@@ -24,105 +23,136 @@ const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@furbito.app
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
-interface PushPayload {
-  community_id: string
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+}
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
+}
+
+interface PushBody {
+  community_id?: string
+  target_player_id?: string
   title: string
   body: string
   url?: string
   type: string
+  icon?: string
   exclude_player_id?: string
 }
 
+interface Subscription {
+  id: string
+  endpoint: string
+  key_auth: string
+  key_p256dh: string
+  player_id: string
+  preferences: Record<string, boolean> | null
+}
+
+function json(status: number, data: unknown) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+  })
+}
+
 serve(async (req) => {
-  // CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
+  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
+
+  if (!VAPID_PRIVATE_KEY || !VAPID_PUBLIC_KEY) {
+    return json(500, { error: 'VAPID keys not configured' })
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
-
+  let payload: PushBody
   try {
-    const payload: PushPayload = await req.json()
-    const { community_id, title, body, url, type, exclude_player_id } = payload
-
-    if (!community_id || !title) {
-      return new Response(JSON.stringify({ error: 'community_id and title required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Obtener suscripciones de la comunidad
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const { data: subs, error } = await supabase
-      .from('push_subscriptions')
-      .select('endpoint, key_auth, key_p256dh, player_id, preferences')
-      .eq('community_id', community_id)
-
-    if (error || !subs) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch subscriptions' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Filtrar por preferencias y excluir emisor
-    const targets = subs.filter(sub => {
-      if (exclude_player_id && sub.player_id === exclude_player_id) return false
-      const prefs = sub.preferences as Record<string, boolean> | null
-      if (prefs && prefs[type] === false) return false
-      return true
-    })
-
-    // Preparar payload de notificación
-    const pushPayload = JSON.stringify({
-      title,
-      body,
-      url: url ?? '/',
-      tag: type,
-      icon: '/icons/icon-192x192.png',
-    })
-
-    // Enviar push a cada suscriptor
-    // NOTA: Para producción real necesitas firmar con VAPID.
-    // Esto requiere la librería web-push o implementar JWT signing.
-    // Por ahora logueamos los targets — la implementación completa
-    // requiere importar una lib de Web Push compatible con Deno.
-    const results = {
-      total: subs.length,
-      targeted: targets.length,
-      sent: 0,
-      failed: 0,
-    }
-
-    // TODO: Implementar envío real con VAPID signing
-    // Cada target necesita: POST a target.endpoint con headers:
-    //   Authorization: vapid t=<JWT>, k=<public_key>
-    //   Content-Encoding: aes128gcm
-    //   TTL: 86400
-    // Body: pushPayload encriptado con target.key_p256dh + target.key_auth
-
-    console.log(`[send-push] ${results.targeted} targets for "${type}" in community ${community_id}`)
-
-    return new Response(JSON.stringify(results), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-    })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    payload = await req.json() as PushBody
+  } catch {
+    return json(400, { error: 'Invalid JSON body' })
   }
+
+  const { community_id, target_player_id, title, body, url, type, icon, exclude_player_id } = payload
+  if (!title || !type) return json(400, { error: 'title and type required' })
+  if (!community_id && !target_player_id) {
+    return json(400, { error: 'community_id or target_player_id required' })
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  let query = supabase
+    .from('push_subscriptions')
+    .select('id, endpoint, key_auth, key_p256dh, player_id, preferences')
+
+  if (target_player_id) {
+    query = query.eq('player_id', target_player_id)
+  } else if (community_id) {
+    query = query.eq('community_id', community_id)
+  }
+
+  const { data: subs, error } = await query
+  if (error) return json(500, { error: 'Failed to fetch subscriptions', detail: error.message })
+
+  const allSubs = (subs ?? []) as Subscription[]
+  const targets = allSubs.filter(sub => {
+    if (exclude_player_id && sub.player_id === exclude_player_id) return false
+    const prefs = sub.preferences
+    // Un pref desconocido se trata como "permitido" — por defecto enviamos.
+    if (prefs && prefs[type] === false) return false
+    return true
+  })
+
+  const pushPayload = JSON.stringify({
+    title,
+    body: body ?? '',
+    url: url ?? '/',
+    tag: type,
+    icon: icon ?? '/icons/icon-192x192.png',
+  })
+
+  const results = {
+    total: allSubs.length,
+    targeted: targets.length,
+    sent: 0,
+    failed: 0,
+    removed: 0,
+  }
+
+  await Promise.all(targets.map(async (sub) => {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: { auth: sub.key_auth, p256dh: sub.key_p256dh },
+        },
+        pushPayload,
+        { TTL: 86400 }
+      )
+      results.sent += 1
+    } catch (err: unknown) {
+      results.failed += 1
+      const status = (err as { statusCode?: number })?.statusCode
+      if (status === 404 || status === 410) {
+        // Endpoint expirado → limpiar suscripción muerta
+        await supabase.from('push_subscriptions').delete().eq('id', sub.id)
+        results.removed += 1
+      } else {
+        console.error('[send-push] delivery error', {
+          endpoint: sub.endpoint,
+          status,
+          message: (err as Error)?.message,
+        })
+      }
+    }
+  }))
+
+  console.log(
+    `[send-push] type=${type} total=${results.total} targeted=${results.targeted} ` +
+    `sent=${results.sent} failed=${results.failed} removed=${results.removed}`
+  )
+
+  return json(200, results)
 })

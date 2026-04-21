@@ -1,11 +1,20 @@
 /**
- * Envía una notificación push a los suscriptores de una comunidad via Supabase.
- * Se usa desde el cliente como trigger — en producción debería ser una Edge Function.
+ * Capa de alto nivel para emitir notificaciones.
  *
- * Por ahora: notificación local como fallback cuando la app está abierta.
+ * - Local (showLocalNotification): avisos instantáneos para el dispositivo
+ *   actual cuando la app está en primer plano.
+ * - Push real (notifyCommunity / notifyPlayer): invoca la Edge Function
+ *   send-push, que firma con VAPID y envía a los endpoints suscritos.
  */
 
 import { createClient } from '@/lib/supabase/client'
+
+export type NotificationType =
+  | 'event_created'
+  | 'event_reminder'
+  | 'match_finished'
+  | 'badge_earned'
+  | 'mvp_selected'
 
 export interface NotificationPayload {
   title: string
@@ -13,77 +22,84 @@ export interface NotificationPayload {
   icon?: string
   tag?: string
   url?: string
-  type: 'event_created' | 'event_reminder' | 'match_finished' | 'badge_earned'
+  type: NotificationType
 }
 
 const DEFAULT_ICON = '/icons/icon-192x192.png'
 
 /**
- * Muestra una notificación local (cuando la app está en primer plano)
+ * Muestra una notificación local (cuando la app está en primer plano).
+ * No requiere red — usa la Notification API del navegador.
  */
 export function showLocalNotification(payload: NotificationPayload): void {
   if (typeof window === 'undefined') return
+  if (typeof Notification === 'undefined') return
+  if (Notification.permission !== 'granted') return
 
-  // Si la app está en primer plano, usar la Notification API directamente
-  if (Notification.permission === 'granted') {
-    const notification = new Notification(payload.title, {
-      body: payload.body,
-      icon: payload.icon ?? DEFAULT_ICON,
-      tag: payload.tag ?? payload.type,
-      badge: DEFAULT_ICON,
-    })
+  const notification = new Notification(payload.title, {
+    body: payload.body,
+    icon: payload.icon ?? DEFAULT_ICON,
+    tag: payload.tag ?? payload.type,
+    badge: DEFAULT_ICON,
+  })
 
-    if (payload.url) {
-      notification.onclick = () => {
-        window.focus()
-        window.location.href = payload.url!
-        notification.close()
-      }
+  if (payload.url) {
+    notification.onclick = () => {
+      window.focus()
+      window.location.href = payload.url!
+      notification.close()
     }
   }
 }
 
+async function invokeSendPush(body: Record<string, unknown>): Promise<void> {
+  try {
+    const supabase = createClient()
+    const { error } = await supabase.functions.invoke('send-push', { body })
+    if (error) console.warn('[FURBITO Push] send-push error:', error.message)
+  } catch (err) {
+    console.warn('[FURBITO Push] invoke failed:', err)
+  }
+}
+
 /**
- * Envía push notification a todos los suscriptores de una comunidad.
- * Filtra por preferencia del tipo de notificación.
- *
- * NOTA: En producción esto debería ser una Supabase Edge Function
- * que recibe el payload y envía push via web-push library.
- * Por ahora, solo emitimos notificación local + guardamos en log.
+ * Envía push a todos los suscriptores de una comunidad.
  */
 export async function notifyCommunity(
   communityId: string,
   payload: NotificationPayload,
   excludePlayerId?: string
 ): Promise<void> {
-  const supabase = createClient()
-
-  // Obtener suscriptores de la comunidad
-  const { data: subs } = await supabase
-    .from('push_subscriptions')
-    .select('player_id, endpoint, key_auth, key_p256dh, preferences')
-    .eq('community_id', communityId)
-
-  if (!subs || subs.length === 0) return
-
-  // Filtrar por preferencia y excluir al emisor
-  const targets = subs.filter(sub => {
-    if (excludePlayerId && sub.player_id === excludePlayerId) return false
-    const prefs = sub.preferences as Record<string, boolean> | null
-    if (prefs && prefs[payload.type] === false) return false
-    return true
+  await invokeSendPush({
+    community_id: communityId,
+    title: payload.title,
+    body: payload.body,
+    url: payload.url,
+    type: payload.type,
+    icon: payload.icon,
+    exclude_player_id: excludePlayerId,
   })
-
-  // TODO: Cuando se implemente la Edge Function, aquí se hará el POST
-  // Por ahora logueamos los targets para debug
-  if (targets.length > 0) {
-    console.log(`[FURBITO Push] ${targets.length} targets para "${payload.type}" en comunidad ${communityId}`)
-  }
 }
 
 /**
- * Triggers de notificación — funciones helpers para cada evento
+ * Envía push a todos los dispositivos de un jugador concreto.
  */
+export async function notifyPlayer(
+  playerId: string,
+  payload: NotificationPayload
+): Promise<void> {
+  await invokeSendPush({
+    target_player_id: playerId,
+    title: payload.title,
+    body: payload.body,
+    url: payload.url,
+    type: payload.type,
+    icon: payload.icon,
+  })
+}
+
+// ── Helpers por tipo de evento ────────────────────────────────────────
+
 export function notifyEventCreated(
   communityId: string,
   eventTitle: string,
@@ -98,15 +114,15 @@ export function notifyEventCreated(
     tag: 'event-created',
   }
 
-  // Notificación local para el que crea (confirmación)
+  // Confirmación local inmediata al creador
   showLocalNotification({
     ...payload,
     title: 'Partido creado',
     body: `"${eventTitle}" publicado`,
   })
 
-  // Push al resto de la comunidad
-  notifyCommunity(communityId, payload, creatorPlayerId)
+  // Push real al resto de la comunidad
+  void notifyCommunity(communityId, payload, creatorPlayerId)
 }
 
 export function notifyMatchFinished(
@@ -125,18 +141,43 @@ export function notifyMatchFinished(
   }
 
   showLocalNotification(payload)
-  notifyCommunity(communityId, payload)
+  void notifyCommunity(communityId, payload)
 }
 
 export function notifyBadgeEarned(
   playerId: string,
   badgeName: string,
-  badgeEmoji: string
+  badgeEmoji: string,
+  url?: string
 ) {
-  showLocalNotification({
+  const payload: NotificationPayload = {
     title: 'Nueva insignia',
     body: `${badgeEmoji} ${badgeName}`,
     type: 'badge_earned',
     tag: `badge-${badgeName}`,
-  })
+    url,
+  }
+
+  // Fallback local (solo útil si el jugador es el que está viendo la app)
+  showLocalNotification(payload)
+
+  // Push real a todos los dispositivos del jugador que ganó la insignia
+  void notifyPlayer(playerId, payload)
+}
+
+export function notifyMvpSelected(
+  playerId: string,
+  eventTitle: string,
+  eventUrl: string
+) {
+  const payload: NotificationPayload = {
+    title: '👑 ¡Eres MVP!',
+    body: `Elegido MVP en "${eventTitle}"`,
+    type: 'mvp_selected',
+    tag: 'mvp-selected',
+    url: eventUrl,
+  }
+
+  showLocalNotification(payload)
+  void notifyPlayer(playerId, payload)
 }
