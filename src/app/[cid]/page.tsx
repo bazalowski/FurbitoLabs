@@ -140,6 +140,38 @@ export default function HomePage({ params }: HomePageProps) {
           </Link>
         )}
 
+        {/* Shortcut: Generador de equipos — rápido desde el menú principal */}
+        {isLoggedIn && players.length >= 2 && (
+          <button
+            type="button"
+            onClick={() => setShowTeams(prev => !prev)}
+            aria-expanded={showTeams}
+            className="w-full text-left select-none rounded-m p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+            style={{
+              background: 'var(--card)',
+              border: `1px solid ${showTeams ? communityColor + '88' : 'var(--border)'}`,
+              boxShadow: showTeams ? `0 0 0 1px ${communityColor}22 inset` : undefined,
+            }}
+          >
+            <span className="text-2xl">⚖️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">Generar equipos</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Prueba combinaciones rápidas sin abrir un partido.
+              </p>
+            </div>
+            <span
+              className="text-lg transition-transform"
+              style={{
+                color: showTeams ? communityColor : 'var(--muted)',
+                transform: showTeams ? 'rotate(90deg)' : 'none',
+              }}
+            >
+              {'›'}
+            </span>
+          </button>
+        )}
+
         {/* Hero: Próximo partido con CTAs inline */}
         {!eventsLoading && nextEvent && (
           <NextMatchHero
@@ -173,16 +205,17 @@ export default function HomePage({ params }: HomePageProps) {
           </div>
         )}
 
-        {/* Stats row 3-col compacto */}
+        {/* Stats row 3-col compacto — cada tarjeta navega a su sección */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Jugadores', value: players.length, icon: '👥' },
-            { label: 'Próximos', value: upcoming.length, icon: '📅' },
-            { label: 'Jugados', value: past.length, icon: '🏆' },
+            { label: 'Jugadores', value: players.length, icon: '👥', href: `/${cid}/jugadores` },
+            { label: 'Próximos', value: upcoming.length, icon: '📅', href: `/${cid}/partidos?tab=proximos` },
+            { label: 'Jugados', value: past.length, icon: '🏆', href: `/${cid}/partidos?tab=historial` },
           ].map(stat => (
-            <div
+            <Link
               key={stat.label}
-              className="rounded-m p-3 text-center"
+              href={stat.href}
+              className="rounded-m p-3 text-center block select-none active:scale-[0.97] transition-transform"
               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
             >
               <p className="text-xl">{stat.icon}</p>
@@ -193,7 +226,7 @@ export default function HomePage({ params }: HomePageProps) {
                 {stat.value}
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</p>
-            </div>
+            </Link>
           ))}
         </div>
 

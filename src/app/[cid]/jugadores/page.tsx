@@ -149,22 +149,73 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
         <TeamGenerator players={players} votes={votes} communityColor={session.communityColor} />
       </Modal>
 
-      {/* Add Player Modal */}
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Anadir jugador">
-        <div className="space-y-4">
+      {/* Add Player Modal — ventana interior a pantalla completa */}
+      <Modal
+        open={addOpen}
+        onClose={() => { if (!adding) { setAddOpen(false); setNewPosition(null); setNewName('') } }}
+        title="Añadir jugador"
+        variant="window"
+      >
+        <form
+          onSubmit={(e) => { e.preventDefault(); addPlayer() }}
+          className="space-y-5 h-full flex flex-col"
+        >
           <Input
             label="Nombre"
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder="Nombre del jugador"
+            autoFocus
           />
-          <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            Se generara un PIN numerico de 4 digitos para que el jugador pueda identificarse.
-          </p>
-          <Button onClick={addPlayer} disabled={adding || !newName.trim()} className="w-full">
-            {adding ? 'Anadiendo...' : 'Anadir jugador'}
+
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+              Posición (opcional)
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {([
+                { value: 'POR', label: 'POR', icon: '🧤' },
+                { value: 'DEF', label: 'DEF', icon: '🛡️' },
+                { value: 'MED', label: 'MED', icon: '🎯' },
+                { value: 'DEL', label: 'DEL', icon: '⚽' },
+              ] as const).map(pos => {
+                const active = newPosition === pos.value
+                return (
+                  <button
+                    key={pos.value}
+                    type="button"
+                    onClick={() => setNewPosition(active ? null : pos.value)}
+                    className="rounded-m py-3 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition-all"
+                    style={{
+                      background: active ? 'var(--comm-color, var(--accent))' : 'var(--card)',
+                      border: `1px solid ${active ? 'var(--comm-color, var(--accent))' : 'var(--border)'}`,
+                      color: active ? '#050d05' : 'var(--text)',
+                    }}
+                  >
+                    <span className="text-lg">{pos.icon}</span>
+                    <span className="tracking-wider">{pos.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div
+            className="rounded-m p-3 text-xs flex items-start gap-2"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--muted)' }}
+          >
+            <span>🔑</span>
+            <span>
+              Se generará un PIN numérico de 4 dígitos para que el jugador pueda identificarse al entrar a la comunidad.
+            </span>
+          </div>
+
+          <div className="flex-1" />
+
+          <Button type="submit" disabled={adding || !newName.trim()} className="w-full">
+            {adding ? 'Añadiendo...' : 'Añadir jugador'}
           </Button>
-        </div>
+        </form>
       </Modal>
     </div>
   )
