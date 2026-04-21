@@ -98,6 +98,31 @@ export default function HomePage({ params }: HomePageProps) {
           </Link>
         )}
 
+        {/* Community stats — justo bajo el perfil */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Jugadores', value: players.length, icon: '👥', href: `/${cid}/jugadores` },
+            { label: 'Próximos', value: upcoming.length, icon: '📅', href: `/${cid}/partidos?tab=proximos` },
+            { label: 'Jugados', value: past.length, icon: '🏆', href: `/${cid}/partidos?tab=historial` },
+          ].map(stat => (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="rounded-m p-3 text-center block select-none active:scale-[0.97] transition-transform"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+            >
+              <p className="text-xl">{stat.icon}</p>
+              <p
+                className="font-bebas text-2xl tracking-wider"
+                style={{ color: 'var(--comm-color, var(--accent))' }}
+              >
+                {stat.value}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</p>
+            </Link>
+          ))}
+        </div>
+
         {/* MVP reminder — solo si hay partidos con voto pendiente */}
         {isLoggedIn && mvpPending > 0 && (
           <Link
@@ -204,31 +229,6 @@ export default function HomePage({ params }: HomePageProps) {
             />
           </div>
         )}
-
-        {/* Stats row 3-col compacto — cada tarjeta navega a su sección */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Jugadores', value: players.length, icon: '👥', href: `/${cid}/jugadores` },
-            { label: 'Próximos', value: upcoming.length, icon: '📅', href: `/${cid}/partidos?tab=proximos` },
-            { label: 'Jugados', value: past.length, icon: '🏆', href: `/${cid}/partidos?tab=historial` },
-          ].map(stat => (
-            <Link
-              key={stat.label}
-              href={stat.href}
-              className="rounded-m p-3 text-center block select-none active:scale-[0.97] transition-transform"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-xl">{stat.icon}</p>
-              <p
-                className="font-bebas text-2xl tracking-wider"
-                style={{ color: 'var(--comm-color, var(--accent))' }}
-              >
-                {stat.value}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</p>
-            </Link>
-          ))}
-        </div>
 
         {/* Activity feed (últimas 5 líneas) */}
         <ActivityFeed events={events.slice(0, 10)} players={players} maxItems={5} />

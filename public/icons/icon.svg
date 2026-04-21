@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="FURBITO">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1f0d"/>
+      <stop offset="100%" stop-color="#050d05"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c8ff72"/>
+      <stop offset="100%" stop-color="#a8ff3e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="55%" r="55%">
+      <stop offset="0%" stop-color="#a8ff3e" stop-opacity="0.28"/>
+      <stop offset="55%" stop-color="#a8ff3e" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#a8ff3e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Rounded dark bg -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+  <!-- Soft glow -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#glow)"/>
+  <!-- Inner filo -->
+  <rect x="3" y="3" width="506" height="506" rx="109" ry="109" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="2"/>
+
+  <!-- Bold "F" monogram — solid, geometric, readable at 48px.
+       Body: vertical stem + two horizontal bars. -->
+  <g fill="url(#accent)">
+    <!-- vertical stem -->
+    <rect x="148" y="108" width="70" height="296" rx="14"/>
+    <!-- top bar -->
+    <rect x="148" y="108" width="232" height="66" rx="14"/>
+    <!-- middle bar -->
+    <rect x="148" y="216" width="180" height="58" rx="12"/>
+  </g>
+
+  <!-- Soccer ball accent: small ball at bottom-right of the F, reinforcing the futbol theme -->
+  <g transform="translate(360 370)">
+    <circle r="54" fill="#f0f0f0"/>
+    <circle r="54" fill="none" stroke="#050d05" stroke-opacity="0.15" stroke-width="2"/>
+    <g fill="#050d05">
+      <!-- Central pentagon -->
+      <polygon points="0,-20 19,-7 12,16 -12,16 -19,-7"/>
+      <!-- Three edge triangles (hexagon seam hints) -->
+      <polygon points="0,-20 19,-7 22,-34 -0,-42 -22,-34 -19,-7" opacity="0.0"/>
+    </g>
+    <g stroke="#050d05" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.9">
+      <line x1="0" y1="-20" x2="0" y2="-44"/>
+      <line x1="19" y1="-7" x2="40" y2="-22"/>
+      <line x1="-19" y1="-7" x2="-40" y2="-22"/>
+      <line x1="12" y1="16" x2="30" y2="40"/>
+      <line x1="-12" y1="16" x2="-30" y2="40"/>
+    </g>
+  </g>
+</svg>

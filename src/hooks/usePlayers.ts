@@ -43,12 +43,25 @@ export function usePlayer(playerId: string | null) {
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!playerId) { setLoading(false); return }
     const supabase = createClient()
-    supabase.from('players').select('*').eq('id', playerId).single()
-      .then(({ data }) => { setPlayer(data); setLoading(false) })
+    const { data } = await supabase.from('players').select('*').eq('id', playerId).single()
+    setPlayer(data)
+    setLoading(false)
   }, [playerId])
 
-  return { player, loading }
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!playerId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`player:${playerId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `id=eq.${playerId}` }, () => { load() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [playerId, load])
+
+  return { player, loading, reload: load }
 }

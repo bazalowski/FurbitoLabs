@@ -34,7 +34,7 @@ export function Header({ title, left, right }: HeaderProps) {
 export function Logo() {
   return (
     <span className="font-bebas text-2xl tracking-widest" style={{ color: 'var(--comm-color, var(--accent))' }}>
-      FURB<span style={{ color: 'var(--text)' }}>ITO</span>
+      FUR<span style={{ color: 'var(--text)' }}>BITO</span>
     </span>
   )
 }

@@ -169,21 +169,23 @@ export function BadgeInlineGrid({
                     </span>
                   </button>
                 ) : (
-                  <button
+                  <div
                     key={key}
-                    onClick={toggle}
-                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
+                    aria-disabled="true"
+                    title={`${def.name} — bloqueada`}
+                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px]"
                     style={{
                       background: 'var(--card)',
-                      border: `1px solid ${isSelected ? 'var(--muted)' : 'var(--border)'}`,
-                      opacity: 0.45,
+                      border: '1px solid var(--border)',
+                      opacity: 0.4,
+                      cursor: 'not-allowed',
                     }}
                   >
-                    <span className="text-lg">🔒</span>
+                    <span className="text-lg" aria-hidden="true">🔒</span>
                     <span className="text-[10px] font-bold leading-tight" style={{ color: 'var(--muted)' }}>
                       {def.name}
                     </span>
-                  </button>
+                  </div>
                 )
               }
 

@@ -16,7 +16,8 @@
       "Bash(npx tsc:*)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(node_modules/.bin/next build:*)",
-      "Bash(grep -E \"^tsc$|^next$\")"
+      "Bash(grep -E \"^tsc$|^next$\")",
+      "Bash(npx skills *)"
     ]
   }
 }

@@ -42,6 +42,12 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
   const [pinError, setPinError] = useState('')
   const [pinSaving, setPinSaving] = useState(false)
 
+  // Change name state
+  const [nameModalOpen, setNameModalOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+
   const myPlayer = session.playerId
   const isOwnProfile = myPlayer === pid
   const canVote = myPlayer && myPlayer !== pid
@@ -72,6 +78,29 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
     setVoteOpen(false)
     reloadVotes()
     setVoting(false)
+  }
+
+  async function handleNameChange() {
+    const trimmed = newName.trim()
+    if (trimmed.length < 2) { setNameError('El nombre debe tener al menos 2 caracteres'); return }
+    if (trimmed.length > 40) { setNameError('Máximo 40 caracteres'); return }
+    if (player && trimmed === player.name) { setNameError('El nuevo nombre debe ser diferente'); return }
+
+    setNameSaving(true)
+    setNameError('')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('players').update({ name: trimmed }).eq('id', pid)
+      if (error) { setNameError('Error al actualizar el nombre'); setNameSaving(false); return }
+      showToast('Nombre actualizado')
+      setNameModalOpen(false)
+      setNewName('')
+      setNameError('')
+    } catch {
+      setNameError('Error de conexión')
+    } finally {
+      setNameSaving(false)
+    }
   }
 
   async function handlePinChange() {
@@ -314,16 +343,26 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           </Card>
         )}
 
-        {/* ── Cambiar PIN (own profile) ─────────────── */}
+        {/* ── Cambiar nombre / PIN (own profile) ────── */}
         {isOwnProfile && (
-          <Button
-            className="w-full select-none"
-            variant="ghost"
-            onClick={() => setPinModalOpen(true)}
-            style={{ minHeight: 48 }}
-          >
-            🔑 Cambiar PIN
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              className="w-full select-none"
+              variant="ghost"
+              onClick={() => { setNewName(player.name); setNameModalOpen(true) }}
+              style={{ minHeight: 48 }}
+            >
+              ✏️ Cambiar nombre
+            </Button>
+            <Button
+              className="w-full select-none"
+              variant="ghost"
+              onClick={() => setPinModalOpen(true)}
+              style={{ minHeight: 48 }}
+            >
+              🔑 Cambiar PIN
+            </Button>
+          </div>
         )}
 
       </div>
@@ -462,6 +501,66 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
             <button
               onClick={() => { setPinModalOpen(false); setCurrentPin(''); setNewPin(''); setPinError('') }}
+              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
+              style={{ color: 'var(--muted)', minHeight: 48 }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Cambiar nombre ─────────────────────── */}
+      {nameModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setNameModalOpen(false); setNewName(''); setNameError('')
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="text-lg font-bold text-center">Cambiar nombre</h2>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
+                Nuevo nombre
+              </label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => { setNewName(e.target.value); setNameError('') }}
+                placeholder="Tu nombre"
+                maxLength={40}
+                autoFocus
+                className="w-full text-center text-base font-medium py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
+                style={{
+                  borderColor: nameError ? '#ef4444' : 'var(--border)',
+                  color: 'var(--fg)',
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ['--tw-ring-color' as any]: communityColor,
+                }}
+              />
+            </div>
+
+            {nameError && <p className="text-xs text-red-400 font-medium text-center">{nameError}</p>}
+
+            <button
+              onClick={handleNameChange}
+              disabled={nameSaving || newName.trim().length < 2}
+              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 select-none"
+              style={{ background: communityColor, color: '#000', minHeight: 48 }}
+            >
+              {nameSaving ? 'Guardando...' : 'Guardar nombre'}
+            </button>
+
+            <button
+              onClick={() => { setNameModalOpen(false); setNewName(''); setNameError('') }}
               className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
               style={{ color: 'var(--muted)', minHeight: 48 }}
             >

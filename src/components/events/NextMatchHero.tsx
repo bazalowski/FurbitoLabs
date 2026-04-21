@@ -25,6 +25,7 @@ export function NextMatchHero({
   teamsOpen,
 }: NextMatchHeroProps) {
   const [confirming, setConfirming] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const confirmed = (event.confirmations ?? []).filter(c => c.status === 'si')
   const pct = event.max_jugadores > 0
@@ -57,19 +58,65 @@ export function NextMatchHero({
 
   return (
     <div>
-      <p
-        className="uppercase mb-2"
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.14em',
-          color: 'var(--muted)',
-        }}
+      <button
+        type="button"
+        onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}
+        aria-controls="next-match-panel"
+        className="w-full flex items-center justify-between mb-2 active:opacity-80 transition-opacity select-none"
       >
-        Próximo partido
-      </p>
+        <span
+          className="uppercase"
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            color: 'var(--muted)',
+          }}
+        >
+          Próximo partido
+        </span>
+        <span
+          className="flex items-center gap-1.5"
+          style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--muted)' }}
+        >
+          <span className="tabular-nums" style={{ color: communityColor }}>
+            {confirmed.length}/{event.max_jugadores}
+          </span>
+          <span
+            aria-hidden="true"
+            className="transition-transform"
+            style={{ transform: expanded ? 'rotate(180deg)' : 'none', display: 'inline-block' }}
+          >
+            ▾
+          </span>
+        </span>
+      </button>
+      {!expanded ? (
+        <button
+          type="button"
+          id="next-match-panel"
+          onClick={() => setExpanded(true)}
+          className="w-full text-left rounded-m p-3 flex items-center gap-3 active:scale-[0.98] transition-transform select-none"
+          style={{
+            background: 'var(--card)',
+            border: `1px solid ${communityColor}33`,
+            boxShadow: 'var(--shadow-depth-1)',
+          }}
+        >
+          <span className="text-2xl" aria-hidden="true">⚽</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold truncate">{event.titulo}</p>
+            <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
+              🗓 {fmtDateTime(event.fecha, event.hora)}
+            </p>
+          </div>
+          <span className="text-lg" style={{ color: communityColor }}>▾</span>
+        </button>
+      ) : (
       <div
-        className="rounded-l overflow-hidden relative"
+        id="next-match-panel"
+        className="rounded-l overflow-hidden relative animate-slide-up"
         style={{
           background: 'var(--card)',
           border: `1px solid ${communityColor}33`,
@@ -261,6 +308,7 @@ export function NextMatchHero({
           </button>
         </div>
       </div>
+      )}
     </div>
   )
 }

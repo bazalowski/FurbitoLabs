@@ -30,7 +30,6 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
   const [teamGenOpen, setTeamGenOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newPosition, setNewPosition] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -47,14 +46,13 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
       community_id: cid,
       name: newName.trim(),
       code,
-      position: newPosition || null,
+      position: null,
     })
     if (error) {
       showToast('Error al anadir jugador')
     } else {
       showToast(`${newName} anadido - PIN: ${code}`)
       setNewName('')
-      setNewPosition(null)
       setAddOpen(false)
       reload()
     }
@@ -152,13 +150,13 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
       {/* Add Player Modal — ventana interior a pantalla completa */}
       <Modal
         open={addOpen}
-        onClose={() => { if (!adding) { setAddOpen(false); setNewPosition(null); setNewName('') } }}
+        onClose={() => { if (!adding) { setAddOpen(false); setNewName('') } }}
         title="Añadir jugador"
         variant="window"
       >
         <form
           onSubmit={(e) => { e.preventDefault(); addPlayer() }}
-          className="space-y-5 h-full flex flex-col"
+          className="h-full flex flex-col justify-center gap-6 max-w-sm mx-auto w-full"
         >
           <Input
             label="Nombre"
@@ -167,38 +165,6 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
             placeholder="Nombre del jugador"
             autoFocus
           />
-
-          <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-              Posición (opcional)
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              {([
-                { value: 'POR', label: 'POR', icon: '🧤' },
-                { value: 'DEF', label: 'DEF', icon: '🛡️' },
-                { value: 'MED', label: 'MED', icon: '🎯' },
-                { value: 'DEL', label: 'DEL', icon: '⚽' },
-              ] as const).map(pos => {
-                const active = newPosition === pos.value
-                return (
-                  <button
-                    key={pos.value}
-                    type="button"
-                    onClick={() => setNewPosition(active ? null : pos.value)}
-                    className="rounded-m py-3 text-xs font-bold flex flex-col items-center gap-1 active:scale-95 transition-all"
-                    style={{
-                      background: active ? 'var(--comm-color, var(--accent))' : 'var(--card)',
-                      border: `1px solid ${active ? 'var(--comm-color, var(--accent))' : 'var(--border)'}`,
-                      color: active ? '#050d05' : 'var(--text)',
-                    }}
-                  >
-                    <span className="text-lg">{pos.icon}</span>
-                    <span className="tracking-wider">{pos.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
 
           <div
             className="rounded-m p-3 text-xs flex items-start gap-2"
@@ -209,8 +175,6 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
               Se generará un PIN numérico de 4 dígitos para que el jugador pueda identificarse al entrar a la comunidad.
             </span>
           </div>
-
-          <div className="flex-1" />
 
           <Button type="submit" disabled={adding || !newName.trim()} className="w-full">
             {adding ? 'Añadiendo...' : 'Añadir jugador'}

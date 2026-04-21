@@ -224,7 +224,7 @@ export default function LoginPage() {
               textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
             }}
           >
-            FURB<span style={{ color: 'var(--text)' }}>ITO</span>
+            FUR<span style={{ color: 'var(--text)' }}>BITO</span>
           </div>
         </div>
 
