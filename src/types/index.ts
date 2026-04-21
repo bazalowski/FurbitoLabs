@@ -166,7 +166,7 @@ export interface BadgeDef {
   xp: number
 }
 
-export type TeamMode = 'balanced' | 'random' | 'snake' | 'captains'
+export type TeamMode = 'balanced' | 'random'
 
 // ── Tipos para formularios ─────────────────────────
 export interface NewEventForm {

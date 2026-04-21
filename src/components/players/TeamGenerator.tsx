@@ -44,8 +44,6 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
   const modes: { value: TeamMode; icon: string; label: string }[] = [
     { value: 'balanced', icon: '⚖️', label: 'Equilibrado' },
     { value: 'random',   icon: '🎲', label: 'Aleatorio' },
-    { value: 'snake',    icon: '🐍', label: 'Snake' },
-    { value: 'captains', icon: '👑', label: 'Capitanes' },
   ]
 
   /* ── Step 2: Result view ─────────────────────────────── */
