@@ -2,9 +2,9 @@ import type { Level } from '@/types'
 
 // ════════════════════════════════════════════════════
 //  99-level system
-//  XP curve: totalXP = floor(N * N * 0.77)
-//  Level 1 = 0 XP, Level 99 ~ 7544 XP
-//  Balanceo: 500 partidos + 250 goles + 250 asistencias ≈ nivel 99
+//  Coste por subida: (x → x+1) = 25 + x²  (x = nivel actual)
+//  totalXP(n) = 25·(n−1) + (n−1)·n·(2n−1)/6
+//  L1=0, L2=26, L3=55, L4=89, L5=130, ..., L99≈320999
 // ════════════════════════════════════════════════════
 
 const TIERS: { maxLevel: number; name: string; icon: string }[] = [
@@ -29,7 +29,8 @@ function getTier(level: number): { name: string; icon: string } {
 
 function xpForLevel(n: number): number {
   if (n <= 1) return 0
-  return Math.floor(n * n * 0.77)
+  const k = n - 1
+  return 25 * k + (k * (k + 1) * (2 * k + 1)) / 6
 }
 
 // Generate all 99 levels
