@@ -13,6 +13,7 @@ import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
+import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
 import { uid } from '@/lib/utils'
 import { notifyMatchFinished, notifyBadgeEarned, notifyMvpSelected } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
@@ -61,7 +62,7 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
 
   function initStats(pid: string): MatchPlayerStats {
     return stats[pid] ?? {
-      goles: 0, asistencias: 0, porteria_cero: false,
+      goles: 0, asistencias: 0, porteria_cero: 0,
       parada_penalti: false, chilena: false, olimpico: false, tacon: false,
     }
   }
@@ -127,7 +128,7 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       mvp_id: string | null; finalizado: boolean
       match_players: Array<{
         player_id: string; goles: number; asistencias: number
-        porteria_cero: boolean; parada_penalti: boolean
+        porteria_cero: number; parada_penalti: boolean
       }>
     }
 
@@ -142,7 +143,8 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
           playerTeam: team, golesA: ev.goles_a, golesB: ev.goles_b,
           goles: pmp.goles, asistencias: pmp.asistencias,
           isMVP: ev.mvp_id === pmp.player_id,
-          porteria_cero: pmp.porteria_cero, parada_penalti: pmp.parada_penalti,
+          porteria_cero: (pmp.porteria_cero ?? 0) > 0,
+          parada_penalti: pmp.parada_penalti,
         }
         const arr = historyByPlayer.get(pmp.player_id)
         if (arr) arr.push(hm); else historyByPlayer.set(pmp.player_id, [hm])
@@ -191,7 +193,7 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         partidos: player.partidos + 1, goles: player.goles + ps.goles,
         asistencias: player.asistencias + ps.asistencias,
         mvps: player.mvps + (isMVP ? 1 : 0),
-        partidos_cero: player.partidos_cero + (ps.porteria_cero ? 1 : 0),
+        partidos_cero: player.partidos_cero + ps.porteria_cero,
         xp: player.xp + xpGanado,
       }
 
@@ -480,9 +482,15 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                     {[
                       { label: '⚽ Goles', key: 'goles' as const, val: ps.goles },
                       { label: '🎯 Asistencias', key: 'asistencias' as const, val: ps.asistencias },
+                      { label: '🧤 P. a cero', key: 'porteria_cero' as const, val: ps.porteria_cero, hint: 'Los porteros rotan, pueden ser >1' },
                     ].map(stat => (
-                      <div key={stat.key}>
-                        <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>{stat.label}</p>
+                      <div key={stat.key} className={stat.key === 'porteria_cero' ? 'col-span-2' : ''}>
+                        <div className="flex items-baseline justify-between mb-1.5">
+                          <p className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</p>
+                          {'hint' in stat && stat.hint && (
+                            <p className="text-[10px]" style={{ color: 'var(--muted)', opacity: 0.7 }}>{stat.hint}</p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateStat(pid, stat.key, Math.max(0, stat.val - 1))}
@@ -504,7 +512,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
 
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      { key: 'porteria_cero' as const, label: '🧤 P.cero' },
                       { key: 'parada_penalti' as const, label: '🦸 Penalti' },
                       { key: 'chilena' as const, label: '🦅 Chilena' },
                       { key: 'olimpico' as const, label: '🌊 Olímpico' },
@@ -527,6 +534,29 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                       )
                     })}
                   </div>
+
+                  {/* Puntos Comunio en vivo */}
+                  {(() => {
+                    const bd = calcMatchPoints(ps)
+                    const tier = getPointsTier(bd.total)
+                    return (
+                      <div className="mt-3 flex items-center justify-between rounded-m px-3 py-2"
+                        style={{ background: 'var(--card2)', border: `1px solid ${tier.color}55` }}>
+                        <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                          Puntos
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                            3 + {bd.goles} + {bd.asistencias} + {bd.porterias}
+                          </p>
+                          <span className="font-bebas text-xl leading-none px-2 py-0.5 rounded"
+                            style={{ background: tier.gradient, color: tier.fg, letterSpacing: '-0.02em' }}>
+                            {bd.total}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}
@@ -593,9 +623,13 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                         <PlayerAvatar player={p} size={22} communityColor={communityColor} />
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] font-bold truncate">{p.name}</p>
-                          {(ps.goles > 0 || ps.asistencias > 0) && (
+                          {(ps.goles > 0 || ps.asistencias > 0 || ps.porteria_cero > 0) && (
                             <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
-                              {ps.goles > 0 && `⚽${ps.goles}`}{ps.goles > 0 && ps.asistencias > 0 && ' '}{ps.asistencias > 0 && `🎯${ps.asistencias}`}
+                              {ps.goles > 0 && `⚽${ps.goles}`}
+                              {ps.goles > 0 && ps.asistencias > 0 && ' '}
+                              {ps.asistencias > 0 && `🎯${ps.asistencias}`}
+                              {(ps.goles > 0 || ps.asistencias > 0) && ps.porteria_cero > 0 && ' '}
+                              {ps.porteria_cero > 0 && `🧤${ps.porteria_cero > 1 ? `×${ps.porteria_cero}` : ''}`}
                             </p>
                           )}
                         </div>
@@ -606,6 +640,108 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                 </div>
               ))}
             </div>
+
+            {/* ── Puntos Comunio: repartir puntos al final del partido ── */}
+            {allPlayers.length > 0 && (() => {
+              const rows = allPlayers
+                .map(pid => {
+                  const p = players.find(pl => pl.id === pid)
+                  if (!p) return null
+                  const ps = initStats(pid)
+                  const bd = calcMatchPoints(ps)
+                  const tier = getPointsTier(bd.total)
+                  return { pid, p, ps, bd, tier }
+                })
+                .filter(Boolean) as Array<{
+                  pid: string; p: Player; ps: MatchPlayerStats
+                  bd: ReturnType<typeof calcMatchPoints>
+                  tier: ReturnType<typeof getPointsTier>
+                }>
+              const sorted = [...rows].sort((a, b) => b.bd.total - a.bd.total)
+
+              return (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                      🎖️ Puntos Comunio
+                    </p>
+                    <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                      Partido {MATCH_POINTS.partido}pt · Gol {MATCH_POINTS.gol}pt · Asist {MATCH_POINTS.asistencia}pt · P.cero {MATCH_POINTS.porteria_cero}pt
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {sorted.map(({ pid, p, ps, bd, tier }) => {
+                      const isLegend = tier.key === 'leyenda'
+                      return (
+                        <div
+                          key={pid}
+                          className={`flex items-center gap-2.5 rounded-m px-3 py-2.5 ${isLegend ? 'legend-halo' : ''}`}
+                          style={{
+                            background: 'var(--card)',
+                            borderLeft: `3px solid ${tier.color}`,
+                            border: `1px solid ${tier.color}44`,
+                            borderLeftWidth: 3,
+                          }}
+                        >
+                          <PlayerAvatar player={p} size={28} communityColor={communityColor} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[13px] font-bold truncate">{p.name}</p>
+                              {mvpId === pid && <span className="text-xs" aria-hidden="true">👑</span>}
+                            </div>
+                            <p className="text-[10px] leading-tight" style={{ color: 'var(--muted)' }}>
+                              <span style={{ color: tier.color, fontWeight: 700 }}>{tier.label}</span>
+                              <span> · </span>
+                              <span>
+                                {MATCH_POINTS.partido}
+                                {ps.goles > 0 && ` + ${bd.goles}⚽`}
+                                {ps.asistencias > 0 && ` + ${bd.asistencias}🎯`}
+                                {ps.porteria_cero > 0 && ` + ${bd.porterias}🧤`}
+                              </span>
+                            </p>
+                          </div>
+                          <span
+                            className={`font-bebas text-2xl leading-none rounded-m px-3 py-1.5 ${isLegend ? 'legend-rainbow' : ''}`}
+                            style={{
+                              background: isLegend ? undefined : tier.gradient,
+                              color: tier.fg,
+                              letterSpacing: '-0.02em',
+                              boxShadow: isLegend ? undefined : tier.glow,
+                              minWidth: 54,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {bd.total}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Leyenda compacta de tiers */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {[
+                      { color: '#ef4444', label: '<5 mal' },
+                      { color: '#f97316', label: '5–7 regular' },
+                      { color: '#22c55e', label: '8–10 bueno' },
+                      { color: '#06b6d4', label: '11–19 excelente' },
+                    ].map(t => (
+                      <span key={t.label}
+                        className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-1"
+                        style={{ background: 'var(--card2)', color: t.color, border: `1px solid ${t.color}55` }}>
+                        ● {t.label}
+                      </span>
+                    ))}
+                    <span
+                      className="legend-rainbow text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-1"
+                      style={{ color: '#fff' }}>
+                      ★ 20+ leyenda
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
 
             <div className="flex gap-2 pt-2">
               <button onClick={() => setStep('stats')}

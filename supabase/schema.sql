@@ -112,7 +112,7 @@ CREATE TABLE match_players (
   player_id     TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   goles         INTEGER DEFAULT 0,
   asistencias   INTEGER DEFAULT 0,
-  porteria_cero BOOLEAN DEFAULT FALSE,
+  porteria_cero INTEGER DEFAULT 0 CHECK (porteria_cero >= 0),  -- contador: los porteros rotan, puede haber >1 por partido
   parada_penalti BOOLEAN DEFAULT FALSE,
   chilena       BOOLEAN DEFAULT FALSE,
   olimpico      BOOLEAN DEFAULT FALSE,

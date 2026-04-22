@@ -263,7 +263,7 @@ export function calcXP(mp: MatchPlayer, isMVP: boolean): number {
   xp += mp.asistencias * 2
   if (mp.goles >= 3) xp += 5 // hat trick bonus
   if (isMVP) xp += 10
-  if (mp.porteria_cero) xp += 3
+  if (mp.porteria_cero > 0) xp += 3
   if (mp.parada_penalti) xp += 5
   return Math.max(0, xp)
 }
@@ -360,7 +360,7 @@ export function detectBadges(
   const g = mp.goles
   const a = mp.asistencias
   const hazanas = [
-    mp.porteria_cero && 'porteria_cero',
+    mp.porteria_cero > 0 && 'porteria_cero',
     mp.parada_penalti && 'parada_penalti',
     mp.chilena && 'chilena',
     mp.olimpico && 'olimpico',
@@ -415,7 +415,7 @@ export function detectBadges(
   chk('asist_y_asist', g >= 2 && a >= 2)
   chk('asist_sin_gol', a >= 3 && g === 0)
   chk('asist_debut', player.partidos === 1 && a >= 1)
-  chk('asist_y_cero', a >= 1 && mp.porteria_cero)
+  chk('asist_y_cero', a >= 1 && mp.porteria_cero > 0)
   chk('media_asist', player.partidos >= 10 && player.asistencias / player.partidos >= 0.5)
   chk('gol_asist_iguales', player.goles >= 10 && player.goles === player.asistencias)
 
@@ -423,15 +423,15 @@ export function detectBadges(
   chk('chilena', mp.chilena)
   chk('olimpico', mp.olimpico)
   chk('tacon', mp.tacon)
-  chk('porteria_cero_1', mp.porteria_cero)
+  chk('porteria_cero_1', mp.porteria_cero > 0)
   chk('parada_penalti', mp.parada_penalti)
   chk('muro_5', player.partidos_cero >= 5)
   chk('muro_10', player.partidos_cero >= 10)
   chk('muro_25', player.partidos_cero >= 25)
   chk('doble_hazana', hzC >= 2)
   chk('triple_hazana', hzC >= 3)
-  chk('todo_cero', mp.porteria_cero && mp.parada_penalti)
-  chk('portero_goleador', g >= 1 && mp.porteria_cero)
+  chk('todo_cero', mp.porteria_cero > 0 && mp.parada_penalti)
+  chk('portero_goleador', g >= 1 && mp.porteria_cero > 0)
   chk('parada_y_asist', mp.parada_penalti && a >= 1)
   chk('gol_asist_hazana', g >= 1 && a >= 1 && hzC >= 1)
 
@@ -476,7 +476,7 @@ export function detectBadges(
   chk('hat_trick_mvp_combo', isMVP && g >= 3)
   chk('mvp_sin_gol', isMVP && g === 0)
   chk('mvp_debut', isMVP && player.partidos === 1)
-  chk('mvp_y_porteria', isMVP && mp.porteria_cero)
+  chk('mvp_y_porteria', isMVP && mp.porteria_cero > 0)
   chk('mvp_25_pct', player.partidos >= 10 && player.mvps / player.partidos > 0.25)
   chk('mvp_50_pct', player.partidos >= 10 && player.mvps / player.partidos > 0.5)
 
@@ -535,13 +535,13 @@ export function detectBadges(
   // Combos
   chk('gol_50_mvp_10', player.goles >= 50 && player.mvps >= 10)
   chk('partidos_100_goles_100', player.partidos >= 100 && player.goles >= 100)
-  chk('partido_perfecto', isMVP && g >= 2 && a >= 1 && mp.porteria_cero)
+  chk('partido_perfecto', isMVP && g >= 2 && a >= 1 && mp.porteria_cero > 0)
   chk('doble_doble', player.goles >= 10 && player.asistencias >= 10)
   chk('triple_doble', player.goles >= 10 && player.asistencias >= 10 && player.mvps >= 5)
 
   // New combo badges
   chk('hat_trick_asist', g >= 3 && a >= 2)
-  chk('mvp_hat_trick_clean', isMVP && g >= 3 && mp.porteria_cero)
+  chk('mvp_hat_trick_clean', isMVP && g >= 3 && mp.porteria_cero > 0)
   chk('gol_hat_asist_hat', g >= 3 && a >= 3)
   chk('goles_asist_100', player.goles >= 100 && player.asistencias >= 100)
   chk('partidos_50_mvp_25', player.partidos >= 50 && player.mvps >= 25)
@@ -559,7 +559,7 @@ export function detectBadges(
       goles: g,
       asistencias: a,
       isMVP,
-      porteria_cero: mp.porteria_cero,
+      porteria_cero: mp.porteria_cero > 0,
       parada_penalti: mp.parada_penalti,
       pistaId: meta.pistaId,
       fecha: meta.fecha,

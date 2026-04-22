@@ -207,7 +207,11 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             if (mp.chilena) feats.push(hazanaLabels.chilena)
             if (mp.olimpico) feats.push(hazanaLabels.olimpico)
             if (mp.tacon) feats.push(hazanaLabels.tacon)
-            if (mp.porteria_cero) feats.push(hazanaLabels.porteria_cero)
+            if (mp.porteria_cero > 0) {
+              feats.push(mp.porteria_cero > 1
+                ? `${hazanaLabels.porteria_cero} (×${mp.porteria_cero})`
+                : hazanaLabels.porteria_cero)
+            }
             if (mp.parada_penalti) feats.push(hazanaLabels.parada_penalti)
             if (feats.length) hazanas.push({ name: getName(mp.player_id), feats })
           }

@@ -92,7 +92,7 @@ export interface MatchPlayer {
   player_id: string
   goles: number
   asistencias: number
-  porteria_cero: boolean
+  porteria_cero: number           // contador (0..N): los porteros rotan; puede haber >1 por partido
   parada_penalti: boolean
   chilena: boolean
   olimpico: boolean
@@ -193,7 +193,7 @@ export interface PostMatchForm {
 export interface MatchPlayerStats {
   goles: number
   asistencias: number
-  porteria_cero: boolean
+  porteria_cero: number           // contador: puede ser 2+ si el portero roto ha mantenido varias veces la portería a cero
   parada_penalti: boolean
   chilena: boolean
   olimpico: boolean

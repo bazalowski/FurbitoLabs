@@ -68,7 +68,7 @@ export function PlayerTimeline({
         const resMeta = RESULT_META[res]
         const isMVP = ev.mvp_id === playerId
         const hazañas = [
-          m.porteria_cero && '🧤',
+          m.porteria_cero > 0 && (m.porteria_cero > 1 ? `🧤×${m.porteria_cero}` : '🧤'),
           m.parada_penalti && '🦸',
           m.chilena && '🦅',
           m.olimpico && '🌊',
