@@ -520,3 +520,292 @@ a:focus-visible {
 .legend-halo {
   animation: legendHalo 2.8s ease-in-out infinite;
 }
+
+/* ────────────────────────────────────────────────────────────
+   PREMIUM POLISH LAYER — "coat of paint" additive utilities
+   Todos los estilos son opt-in (se aplican por clase). No rompen
+   componentes existentes. Se usan desde Button, Card, BottomNav,
+   Header, Podium y elementos destacados.
+   ──────────────────────────────────────────────────────────── */
+
+/* Hairline highlight superior — ese filo metálico sutil que
+   separa un botón/tarjeta pulida del fondo. 1px desde dentro. */
+.hairline-top::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.22) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+}
+:root[data-theme="light"] .hairline-top::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.7) 50%,
+    transparent 100%
+  );
+}
+
+/* Glass overlay — gloss interior muy sutil para CTAs premium.
+   Se superpone como capa adicional sobre botones primary. */
+.gloss-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.04) 45%,
+    rgba(0,0,0,0.08) 100%
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.9;
+}
+
+/* Diagonal shine sweep — se dispara en hover (hover devices only).
+   Da la sensación de "reflejo de luz" al pasar por encima. */
+@keyframes shineSweep {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.shine-sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.shine-sweep::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.28) 50%,
+    transparent 100%
+  );
+  transform: translateX(-120%) skewX(-18deg);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .shine-sweep:hover::after,
+  .group:hover .shine-sweep::after,
+  button:hover > .shine-sweep::after,
+  a:hover > .shine-sweep::after {
+    animation: shineSweep 0.95s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Aura halo — círculo radial suave tintado. Para 1st place podium,
+   botones de estado "confirmado" y elementos con foco visual fuerte. */
+@keyframes auraBreathe {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+.aura-halo {
+  position: absolute;
+  inset: -14%;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    var(--aura-color, var(--comm-color, var(--accent))) 0%,
+    transparent 60%
+  );
+  filter: blur(14px);
+  opacity: 0.55;
+  animation: auraBreathe 3.4s ease-in-out infinite;
+  z-index: 0;
+}
+
+/* Micro-float — para medallas del podio o elementos destacados. */
+@keyframes microFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.micro-float {
+  animation: microFloat 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Cards con hover glow tintado — al pasar el cursor (no touch),
+   el borde se ilumina con el community color. */
+@media (hover: hover) {
+  .card-glow:hover {
+    border-color: color-mix(in srgb, var(--comm-color, var(--accent)) 45%, transparent) !important;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 2px 4px rgba(0,0,0,0.4),
+      0 12px 32px color-mix(in srgb, var(--comm-color, var(--accent)) 22%, transparent) !important;
+  }
+}
+
+/* Botones premium — shadow tintada por variante.
+   Se aplica vía atributos data-tone para que el color base sea
+   independiente del componente. */
+.btn-tone {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-tone[data-tone="accent"] {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.32) inset,
+    0 1px 2px rgba(0,0,0,0.35),
+    0 10px 26px -8px color-mix(in srgb, var(--comm-color, var(--accent)) 55%, transparent);
+}
+.btn-tone[data-tone="danger"] {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 1px 2px rgba(0,0,0,0.4),
+    0 10px 26px -8px rgba(239, 68, 68, 0.55);
+}
+.btn-tone[data-tone="glass"] {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 1px 2px rgba(0,0,0,0.35),
+    0 6px 16px var(--shadow-tint);
+}
+@media (hover: hover) {
+  .btn-tone[data-tone="accent"]:hover {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.38) inset,
+      0 2px 4px rgba(0,0,0,0.4),
+      0 16px 36px -8px color-mix(in srgb, var(--comm-color, var(--accent)) 70%, transparent);
+  }
+  .btn-tone[data-tone="danger"]:hover {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.22) inset,
+      0 2px 4px rgba(0,0,0,0.45),
+      0 16px 36px -8px rgba(239, 68, 68, 0.7);
+  }
+}
+
+/* BottomNav active — halo suave detrás del icono activo.
+   Sustituye el mini trazo superior por una iluminación completa. */
+.nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  border-radius: 12px;
+  transition: background 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out);
+}
+.nav-icon-wrap[data-active="true"] {
+  background: color-mix(in srgb, var(--comm-color, var(--accent)) 14%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--comm-color, var(--accent)) 28%, transparent) inset,
+    0 6px 18px -6px color-mix(in srgb, var(--comm-color, var(--accent)) 45%, transparent);
+}
+
+/* Header — línea inferior con gradiente sutil que emerge desde el
+   centro hacia los lados. Más refinado que un border de 1px plano. */
+.header-underline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 18%,
+    color-mix(in srgb, var(--comm-color, var(--accent)) 35%, var(--border)) 50%,
+    var(--border) 82%,
+    transparent 100%
+  );
+  opacity: 0.9;
+}
+
+/* Chip pulse — pequeña palpitación para contadores "en vivo"
+   (confirmados, MVPs pendientes). Más discreto que un blink. */
+@keyframes chipPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--comm-color, var(--accent)) 35%, transparent); }
+  50%      { box-shadow: 0 0 0 4px color-mix(in srgb, var(--comm-color, var(--accent)) 0%, transparent); }
+}
+.chip-pulse {
+  animation: chipPulse 2.4s ease-in-out infinite;
+}
+
+/* Reflejo en podio — superficie del plinth con "mirror" sutil.
+   Se usa como overlay absoluto. */
+.plinth-reflect::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.02) 22%,
+    transparent 55%
+  );
+  mix-blend-mode: overlay;
+}
+:root[data-theme="light"] .plinth-reflect::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.9) 0%,
+    rgba(255,255,255,0.35) 22%,
+    transparent 55%
+  );
+}
+
+/* Stat tile — preset reutilizable para tarjetas stat pequeñas con
+   número grande. Añade hairline + hover glow + micro-lift del número. */
+.stat-tile {
+  position: relative;
+  overflow: hidden;
+}
+.stat-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 100% at 50% 0%,
+    color-mix(in srgb, var(--comm-color, var(--accent)) 10%, transparent) 0%,
+    transparent 60%
+  );
+  opacity: 0.7;
+}
+
+/* Reduced motion: cancelar animaciones de la capa de polish. */
+@media (prefers-reduced-motion: reduce) {
+  .aura-halo,
+  .micro-float,
+  .chip-pulse,
+  .legend-rainbow,
+  .legend-halo {
+    animation: none !important;
+  }
+  .shine-sweep::after {
+    display: none !important;
+  }
+}

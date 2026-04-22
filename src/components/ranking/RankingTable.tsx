@@ -119,34 +119,45 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
               <Link
                 key={player.id}
                 href={`/${communityId}/jugadores/${player.id}`}
-                className="no-lift flex flex-col items-center gap-1.5 flex-1 max-w-[110px] active:scale-95 transition-transform"
+                className="no-lift flex flex-col items-center gap-1.5 flex-1 max-w-[110px] active:scale-95 transition-transform relative"
               >
                 {/* Medal */}
                 <span
-                  className="leading-none"
+                  className={isFirst ? 'leading-none micro-float' : 'leading-none'}
                   style={{
                     fontSize: isFirst ? 30 : 22,
-                    filter: isFirst ? `drop-shadow(0 2px 6px ${communityColor}55)` : 'none',
+                    filter: isFirst ? `drop-shadow(0 2px 10px ${communityColor}88)` : 'none',
                   }}
                   aria-hidden="true"
                 >
                   {meta.medal}
                 </span>
 
-                {/* Avatar */}
-                <Avatar
-                  name={player.name}
-                  avatar={player.avatar}
-                  size={isFirst ? 64 : 46}
-                  fontSize={isFirst ? 18 : 13}
-                  fontWeight={600}
-                  communityColor={communityColor}
-                  borderColor={meta.labelColor}
-                  boxShadow={isFirst
-                    ? `0 0 0 3px ${communityColor}14, 0 8px 24px ${communityColor}40, 0 2px 6px rgba(0,0,0,0.4)`
-                    : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`
-                  }
-                />
+                {/* Avatar wrapper — halo animado solo en 1st */}
+                <div className="relative" style={{ ['--aura-color' as string]: communityColor }}>
+                  {isFirst && (
+                    <span
+                      aria-hidden="true"
+                      className="aura-halo"
+                      style={{ inset: '-22%' }}
+                    />
+                  )}
+                  <div className="relative">
+                    <Avatar
+                      name={player.name}
+                      avatar={player.avatar}
+                      size={isFirst ? 64 : 46}
+                      fontSize={isFirst ? 18 : 13}
+                      fontWeight={600}
+                      communityColor={communityColor}
+                      borderColor={meta.labelColor}
+                      boxShadow={isFirst
+                        ? `0 0 0 3px ${communityColor}22, 0 10px 28px ${communityColor}55, 0 2px 6px rgba(0,0,0,0.45)`
+                        : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`
+                      }
+                    />
+                  </div>
+                </div>
 
                 {/* Name */}
                 <p
@@ -174,18 +185,18 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                   {getValue(player)}
                 </p>
 
-                {/* Podium plinth — inner border + tint shadow */}
+                {/* Podium plinth — inner border + tint shadow + mirror reflect */}
                 <div
-                  className="w-full rounded-t-m relative overflow-hidden"
+                  className="plinth-reflect w-full rounded-t-m relative overflow-hidden"
                   style={{
                     height: meta.height,
                     background: isFirst
-                      ? `linear-gradient(180deg, ${communityColor}2b 0%, ${communityColor}10 100%)`
+                      ? `linear-gradient(180deg, ${communityColor}33 0%, ${communityColor}12 55%, ${communityColor}05 100%)`
                       : 'var(--card)',
-                    border: `1px solid ${isFirst ? communityColor + '55' : 'var(--border)'}`,
+                    border: `1px solid ${isFirst ? communityColor + '66' : 'var(--border)'}`,
                     borderBottom: 'none',
                     boxShadow: isFirst
-                      ? `0 -6px 20px ${communityColor}1c inset, 0 1px 0 rgba(255,255,255,0.06) inset`
+                      ? `0 -6px 22px ${communityColor}22 inset, 0 1px 0 rgba(255,255,255,0.08) inset`
                       : '0 1px 0 rgba(255,255,255,0.04) inset',
                   }}
                 >
@@ -195,7 +206,8 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                     style={{
                       fontSize: isFirst ? 42 : 28,
                       letterSpacing: '-0.02em',
-                      color: isFirst ? `${communityColor}33` : 'rgba(255,255,255,0.06)',
+                      color: isFirst ? `${communityColor}40` : 'rgba(255,255,255,0.06)',
+                      textShadow: isFirst ? `0 0 12px ${communityColor}33` : 'none',
                     }}
                     aria-hidden="true"
                   >

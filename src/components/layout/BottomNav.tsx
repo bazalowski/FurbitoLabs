@@ -118,12 +118,31 @@ export function BottomNav({ communityId, communityColor = '#a8ff3e', role, playe
           <>
             {active && (
               <span
-                className="absolute top-[-1px] left-1/4 right-1/4 h-0.5 rounded-b"
-                style={{ background: communityColor }}
+                aria-hidden="true"
+                className="absolute top-[-1px] left-[38%] right-[38%] h-[2px] rounded-b"
+                style={{
+                  background: `linear-gradient(90deg, transparent 0%, ${communityColor} 50%, transparent 100%)`,
+                  boxShadow: `0 0 10px ${communityColor}99`,
+                }}
               />
             )}
-            <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(.45)', transform: active ? 'translateY(-1px)' : 'none', transition: 'all .2s' }}>
-              {isAcceder ? '🔑' : item.icon}
+            <span
+              className="nav-icon-wrap"
+              data-active={active || isAcceder ? 'true' : 'false'}
+              style={{
+                ['--comm-color' as string]: communityColor,
+              }}
+            >
+              <span
+                className="text-xl leading-none"
+                style={{
+                  filter: active || isAcceder ? 'none' : 'grayscale(1) opacity(.48)',
+                  transform: active ? 'translateY(-1px) scale(1.05)' : 'none',
+                  transition: 'transform .22s var(--ease-spring), filter .2s',
+                }}
+              >
+                {isAcceder ? '🔑' : item.icon}
+              </span>
             </span>
             <span
               className="text-[10px] font-bold uppercase tracking-wide max-w-[56px] overflow-hidden text-ellipsis whitespace-nowrap"

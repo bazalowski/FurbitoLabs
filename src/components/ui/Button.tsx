@@ -13,6 +13,13 @@ const variantStyles: Record<string, React.CSSProperties> = {
   ghost:     { background: 'transparent',      color: 'var(--muted)',  border: '1px solid var(--border)' },
 }
 
+const variantTone: Record<string, string> = {
+  primary: 'accent',
+  secondary: 'glass',
+  danger: 'danger',
+  ghost: 'glass',
+}
+
 const sizeClasses: Record<string, string> = {
   sm: 'px-3 py-3 text-xs min-h-[48px]',
   md: 'px-4 py-3 text-sm min-h-[48px]',
@@ -28,19 +35,27 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const showShine = variant === 'primary' || variant === 'danger'
+  const showGloss = variant === 'primary' || variant === 'danger'
+
   return (
     <button
       {...props}
       disabled={disabled}
+      data-tone={variantTone[variant]}
       className={cn(
-        'rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97] select-none cursor-pointer',
+        'btn-tone hairline-top rounded-m font-bold uppercase tracking-wider transition-all active:scale-[0.97] select-none cursor-pointer',
         sizeClasses[size],
         disabled && 'opacity-50 !cursor-not-allowed',
         className
       )}
       style={{ WebkitUserSelect: 'none', userSelect: 'none', ...variantStyles[variant], ...style }}
     >
-      {children}
+      {showGloss && <span className="gloss-overlay" aria-hidden="true" />}
+      {showShine && <span className="shine-sweep" aria-hidden="true" />}
+      <span className="relative z-[1] inline-flex items-center justify-center gap-1.5 w-full">
+        {children}
+      </span>
     </button>
   )
 }
