@@ -1,9 +1,16 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useSession } from '@/stores/session'
+import { usePlayer } from '@/hooks/usePlayers'
+import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
+import { showToast } from '@/components/ui/Toast'
+import { BADGE_DEFS } from '@/lib/game/badges'
+import { notifyBadgeEarned } from '@/lib/notifications/notification-service'
 
 interface AyudaPageProps {
   params: { cid: string }
@@ -32,14 +39,75 @@ const SECTIONS: Section[] = [
 
 export default function AyudaPage({ params }: AyudaPageProps) {
   const { cid } = params
+  const router = useRouter()
   const session = useSession()
   const communityColor = session.communityColor || '#a8ff3e'
 
+  const isLoggedIn = (session.role === 'player' || session.role === 'admin') && !!session.playerId
+  const { player: me, reload: reloadMe } = usePlayer(isLoggedIn ? session.playerId : null)
+
+  // Award "tutorial" badge on first visit
+  const awardedRef = useRef(false)
+  useEffect(() => {
+    if (!me || !session.playerId || awardedRef.current) return
+    if (me.badges.includes('tutorial')) return
+
+    awardedRef.current = true
+    const def = BADGE_DEFS['tutorial']
+    if (!def) return
+
+    const newBadges = [...me.badges, 'tutorial']
+    const newXp = me.xp + def.xp
+
+    const supabase = createClient()
+    supabase
+      .from('players')
+      .update({ badges: newBadges, xp: newXp })
+      .eq('id', session.playerId)
+      .then(({ error }) => {
+        if (error) {
+          awardedRef.current = false
+          return
+        }
+        showToast(`${def.icon} Insignia desbloqueada: ${def.name} (+${def.xp} XP)`)
+        notifyBadgeEarned(session.playerId!, def.name, def.icon, `/${cid}`)
+        reloadMe()
+      })
+  }, [me, session.playerId, cid, reloadMe])
+
+  // FAB "volver al índice" — visible cuando se scrollea hacia abajo
+  const [showTocFab, setShowTocFab] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setShowTocFab(window.scrollY > 300)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  function goBack() {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push(`/${cid}`)
+    }
+  }
+
   return (
     <div className="view-enter">
-      <Header title="Ayuda" />
+      <Header
+        title="Ayuda"
+        left={
+          <button
+            onClick={goBack}
+            aria-label="Volver"
+            className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center text-lg active:scale-90 transition-transform"
+            style={{ color: 'var(--fg)' }}
+          >
+            {'←'}
+          </button>
+        }
+      />
 
-      <div className="px-4 pt-2 pb-28 space-y-4">
+      <div id="ayuda-top" className="px-4 pt-2 pb-28 space-y-4">
         {/* Intro */}
         <Card>
           <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
@@ -268,6 +336,30 @@ export default function AyudaPage({ params }: AyudaPageProps) {
           </Link>
         </Card>
       </div>
+
+      {/* FAB: volver al índice */}
+      <button
+        type="button"
+        onClick={() => {
+          const el = document.getElementById('ayuda-top')
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          else window.scrollTo({ top: 0, behavior: 'smooth' })
+        }}
+        aria-label="Volver al índice"
+        className="fixed z-40 rounded-full shadow-lg flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider select-none active:scale-95 transition-all"
+        style={{
+          right: 'max(16px, calc((100vw - 500px) / 2 + 16px))',
+          bottom: 'calc(var(--nav-h, 64px) + var(--safe-bottom, 0px) + 16px)',
+          background: communityColor,
+          color: '#000',
+          opacity: showTocFab ? 1 : 0,
+          transform: showTocFab ? 'translateY(0)' : 'translateY(20px)',
+          pointerEvents: showTocFab ? 'auto' : 'none',
+        }}
+      >
+        <span aria-hidden="true">{'↑'}</span>
+        <span>Índice</span>
+      </button>
     </div>
   )
 }

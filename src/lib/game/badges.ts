@@ -251,6 +251,9 @@ export const BADGE_DEFS: Record<string, BadgeDef> = {
   // ── Meta badges extended ───────────────────────────
   leyenda_175:       { icon: '🏛️', name: 'Titán',          desc: 'Consigue 175 badges',              xp: 2500 },
   leyenda_200:       { icon: '👑', name: 'Panteón',         desc: 'Consigue 200 badges',              xp: 3000 },
+
+  // ── Onboarding ─────────────────────────────────────
+  tutorial:          { icon: '🎓', name: 'Manual del Jugador', desc: 'Completa el tutorial de bienvenida', xp: 15 },
 }
 
 // ════════════════════════════════════════════════════

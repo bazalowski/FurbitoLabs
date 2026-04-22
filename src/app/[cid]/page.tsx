@@ -165,6 +165,28 @@ export default function HomePage({ params }: HomePageProps) {
           </Link>
         )}
 
+        {/* Tutorial onboarding — solo si el jugador aún no tiene la insignia */}
+        {isLoggedIn && me && !me.badges.includes('tutorial') && (
+          <Link
+            href={`/${cid}/ayuda`}
+            className="block select-none rounded-m p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+            style={{
+              background: 'var(--card)',
+              border: `1px solid ${communityColor}55`,
+              boxShadow: `0 0 0 1px ${communityColor}22 inset`,
+            }}
+          >
+            <span className="text-2xl">🎓</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">Cómo usar Furbito</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                Tutorial de bienvenida · gana la insignia Manual del Jugador.
+              </p>
+            </div>
+            <span className="text-lg" style={{ color: communityColor }}>{'›'}</span>
+          </Link>
+        )}
+
         {/* Hero: Próximo partido con CTAs inline */}
         {!eventsLoading && nextEvent && (
           <NextMatchHero
