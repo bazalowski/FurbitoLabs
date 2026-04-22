@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePlayerMatches } from '@/hooks/usePlayerMatches'
+import { calcMatchPoints, getPointsTier } from '@/lib/game/scoring'
 import { fmtDate } from '@/lib/utils'
 
 interface PlayerTimelineProps {
@@ -74,6 +75,13 @@ export function PlayerTimeline({
           m.olimpico && '🌊',
           m.tacon && '👠',
         ].filter(Boolean) as string[]
+        const pts = calcMatchPoints({
+          goles: m.goles,
+          asistencias: m.asistencias,
+          porteria_cero: m.porteria_cero,
+        })
+        const tier = getPointsTier(pts.total)
+        const isLegend = tier.key === 'leyenda'
 
         return (
           <Link
@@ -108,8 +116,20 @@ export function PlayerTimeline({
               {m.asistencias > 0 && <span>🎯 {m.asistencias}</span>}
               {isMVP && <span style={{ color: 'var(--gold, #ffd700)' }}>👑 MVP</span>}
               {hazañas.length > 0 && <span>{hazañas.join(' ')}</span>}
+              <span
+                className={`ml-auto inline-flex items-center gap-1 font-bold rounded px-2 py-0.5 ${isLegend ? 'legend-rainbow' : ''}`}
+                style={{
+                  background: isLegend ? undefined : tier.gradient,
+                  color: tier.fg,
+                  boxShadow: isLegend ? undefined : tier.glow,
+                  letterSpacing: '-0.01em',
+                }}
+                title={`${tier.label} · ${pts.total} Puntos Furbito`}
+              >
+                🎖️ {pts.total}
+              </span>
               {m.xp_ganado > 0 && (
-                <span className="ml-auto font-bold" style={{ color: communityColor }}>
+                <span className="font-bold" style={{ color: communityColor }}>
                   +{m.xp_ganado} XP
                 </span>
               )}

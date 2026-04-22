@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { getLevel } from '@/lib/game/levels'
-import { getPlayerRating } from '@/lib/game/scoring'
+import { getPlayerRating, calcPlayerTotalPoints } from '@/lib/game/scoring'
 import { Avatar } from '@/components/ui/Avatar'
 import type { Player, Vote } from '@/types'
 
-type RankTab = 'xp' | 'goles' | 'asistencias' | 'mvps' | 'partidos' | 'rating'
+type RankTab = 'puntos' | 'goles' | 'asistencias' | 'mvps' | 'partidos' | 'rating'
 
 const TABS: { key: RankTab; label: string; icon: string }[] = [
-  { key: 'xp',          label: 'XP',      icon: '⭐' },
+  { key: 'puntos',      label: 'Puntos',  icon: '🎖️' },
   { key: 'goles',       label: 'Goles',   icon: '⚽' },
   { key: 'asistencias', label: 'Asist.',  icon: '🎯' },
   { key: 'mvps',        label: 'MVPs',    icon: '👑' },
@@ -25,6 +25,9 @@ function sortPlayers(players: Player[], votes: Vote[], tab: RankTab): Player[] {
       const rb = getPlayerRating(b.id, votes)?.avg ?? 0
       return rb - ra
     }
+    if (tab === 'puntos') {
+      return calcPlayerTotalPoints(b) - calcPlayerTotalPoints(a)
+    }
     return (b[tab] as number) - (a[tab] as number)
   })
 }
@@ -38,13 +41,16 @@ interface RankingTableProps {
 }
 
 export function RankingTable({ players, votes, communityId, communityColor = '#a8ff3e', adminIds = [] }: RankingTableProps) {
-  const [tab, setTab] = useState<RankTab>('xp')
+  const [tab, setTab] = useState<RankTab>('puntos')
   const sorted = sortPlayers(players, votes, tab)
 
   const getValue = (p: Player): string => {
     if (tab === 'rating') {
       const r = getPlayerRating(p.id, votes)
       return r ? r.avg.toFixed(1) : '—'
+    }
+    if (tab === 'puntos') {
+      return String(calcPlayerTotalPoints(p))
     }
     return String(p[tab] ?? 0)
   }

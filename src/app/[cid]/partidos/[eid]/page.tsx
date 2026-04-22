@@ -17,6 +17,7 @@ import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { MvpVoting } from '@/components/events/MvpVoting'
 import { PostMatchRating } from '@/components/events/PostMatchRating'
 import { calcXP } from '@/lib/game/badges'
+import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
 import type { Confirmation, MatchPlayer } from '@/types'
 
 type DetailTab = 'convocados' | 'equipos' | 'resultado'
@@ -191,6 +192,112 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             <p className="text-sm">Partido no finalizado</p>
           </div>
         )}
+
+        {/* Equipos + Puntos Furbito del partido */}
+        {event.finalizado && matchPlayers.length > 0 && (() => {
+          const getPlayer = (pid: string) => players.find(p => p.id === pid)
+          const mpByPid = new Map(matchPlayers.map(mp => [mp.player_id, mp]))
+
+          const renderTeamPanel = (label: string, ids: string[], isWinner: boolean | null) => (
+            <div
+              className="rounded-m p-3"
+              style={{
+                background: 'var(--card)',
+                border: `1px solid ${isWinner ? communityColor + '66' : 'var(--border)'}`,
+                boxShadow: isWinner ? `0 0 0 1px ${communityColor}22, 0 6px 18px -8px ${communityColor}66` : undefined,
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-bebas text-base tracking-wider" style={{ color: communityColor }}>
+                  {label}
+                </p>
+                {isWinner && <span className="text-sm" aria-hidden="true">🏆</span>}
+              </div>
+              <div className="space-y-1.5">
+                {ids.map(pid => {
+                  const p = getPlayer(pid)
+                  if (!p) return null
+                  const mp = mpByPid.get(pid)
+                  const stats = {
+                    goles: mp?.goles ?? 0,
+                    asistencias: mp?.asistencias ?? 0,
+                    porteria_cero: mp?.porteria_cero ?? 0,
+                  }
+                  const bd = calcMatchPoints(stats)
+                  const tier = getPointsTier(bd.total)
+                  const isLegend = tier.key === 'leyenda'
+                  const isMVP = event.mvp_id === pid
+                  return (
+                    <div
+                      key={pid}
+                      className={`flex items-center gap-2 rounded-m px-2.5 py-2 ${isLegend ? 'legend-halo' : ''}`}
+                      style={{
+                        background: 'var(--card2)',
+                        borderLeft: `3px solid ${tier.color}`,
+                        border: `1px solid ${tier.color}33`,
+                        borderLeftWidth: 3,
+                      }}
+                    >
+                      <PlayerAvatar player={p} size={24} communityColor={communityColor} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-[12px] font-bold truncate">{p.name}</p>
+                          {isMVP && <span className="text-[11px]" aria-hidden="true">👑</span>}
+                        </div>
+                        {(stats.goles > 0 || stats.asistencias > 0 || stats.porteria_cero > 0) && (
+                          <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                            {stats.goles > 0 && `⚽${stats.goles}`}
+                            {stats.goles > 0 && stats.asistencias > 0 && ' '}
+                            {stats.asistencias > 0 && `🎯${stats.asistencias}`}
+                            {(stats.goles > 0 || stats.asistencias > 0) && stats.porteria_cero > 0 && ' '}
+                            {stats.porteria_cero > 0 && `🧤${stats.porteria_cero > 1 ? `×${stats.porteria_cero}` : ''}`}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`font-bebas text-lg leading-none rounded px-2 py-1 ${isLegend ? 'legend-rainbow' : ''}`}
+                        style={{
+                          background: isLegend ? undefined : tier.gradient,
+                          color: tier.fg,
+                          letterSpacing: '-0.02em',
+                          boxShadow: isLegend ? undefined : tier.glow,
+                          minWidth: 38,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {bd.total}
+                      </span>
+                    </div>
+                  )
+                })}
+                {ids.length === 0 && (
+                  <p className="text-[11px] text-center py-2" style={{ color: 'var(--muted)' }}>—</p>
+                )}
+              </div>
+            </div>
+          )
+
+          const a = event.goles_a, b = event.goles_b
+          const winnerA = a != null && b != null ? a > b : null
+          const winnerB = a != null && b != null ? b > a : null
+
+          return (
+            <div>
+              <div className="flex items-baseline justify-between mb-2">
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                  🎖️ Puntos Furbito
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                  Partido {MATCH_POINTS.partido} · Gol {MATCH_POINTS.gol} · Asist {MATCH_POINTS.asistencia} · P.cero {MATCH_POINTS.porteria_cero}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {renderTeamPanel('Equipo A', event.equipo_a ?? [], winnerA)}
+                {renderTeamPanel('Equipo B', event.equipo_b ?? [], winnerB)}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Post-match summary */}
         {event.finalizado && matchPlayers.length > 0 && (() => {

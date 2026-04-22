@@ -94,6 +94,18 @@ export function getPointsTier(points: number): TierMeta {
   return TIERS_BY_KEY.mal
 }
 
+// Puntos Furbito totales acumulados por jugador a partir de sus stats de comunidad.
+export function calcPlayerTotalPoints(
+  p: Pick<Player, 'partidos' | 'goles' | 'asistencias' | 'partidos_cero'>
+): number {
+  return (
+    p.partidos * MATCH_POINTS.partido +
+    p.goles * MATCH_POINTS.gol +
+    p.asistencias * MATCH_POINTS.asistencia +
+    p.partidos_cero * MATCH_POINTS.porteria_cero
+  )
+}
+
 
 export const SKILLS = [
   { key: 'ataque',    label: 'Ataque',    icon: '⚔️'  },
