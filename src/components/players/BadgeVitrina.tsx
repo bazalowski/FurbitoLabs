@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { BADGE_DEFS } from '@/lib/game/badges'
 import { BadgeArt } from '@/components/ui/BadgeArt'
+import { Modal } from '@/components/ui/Modal'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
 
@@ -127,14 +128,6 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
   )
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !saving) onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [saving, onClose])
-
   function toggle(key: string) {
     setSelected(prev => {
       if (prev.includes(key)) return prev.filter(k => k !== key)
@@ -175,32 +168,13 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
   const availableBadges = unlocked.filter(k => BADGE_DEFS[k])
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-[90]"
-        style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)' }}
-        onClick={() => !saving && onClose()}
-      />
-      <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app z-[95] rounded-t-2xl px-4 pt-3 pb-6 animate-slide-up flex flex-col"
-        style={{
-          background: 'var(--bg)',
-          borderTop: '1px solid var(--border)',
-          maxHeight: '85vh',
-        }}
-      >
-        <div className="w-10 h-1 rounded-full mx-auto mb-3" style={{ background: 'var(--border)' }} />
-
-        <div className="flex items-center justify-between mb-1">
-          <p className="font-bebas text-xl tracking-wider">🖼️ Tu expositor</p>
-          <button
-            onClick={() => !saving && onClose()}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-sm select-none"
-            style={{ background: 'var(--border)', color: 'var(--muted)' }}
-          >
-            ✕
-          </button>
-        </div>
+    <Modal
+      open
+      onClose={() => { if (!saving) onClose() }}
+      title="🖼️ Tu expositor"
+      variant="window"
+    >
+      <div className="h-full flex flex-col">
         <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
           Elige hasta {VITRINA_SLOTS} insignias para mostrar en tu perfil.
         </p>
@@ -316,6 +290,6 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
           {saving ? 'Guardando...' : '💾 Guardar expositor'}
         </button>
       </div>
-    </>
+    </Modal>
   )
 }

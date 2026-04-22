@@ -235,12 +235,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Subtitle — arcade style */}
+        {/* Tagline */}
         <p
-          className="text-center text-[11px] font-bold uppercase mb-1"
-          style={{ color: 'var(--accent)', letterSpacing: '0.4em' }}
+          className="text-center text-[13px] font-bold mb-1"
+          style={{ color: 'var(--accent)', letterSpacing: '0.12em' }}
         >
-          RETRO · ARCADE · FÚTBOL
+          Tu app de comunidades de fútbol
         </p>
         <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
           Introduce el PIN de tu comunidad
