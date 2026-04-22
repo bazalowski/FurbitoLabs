@@ -173,8 +173,18 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
       onClose={() => { if (!saving) onClose() }}
       title="🖼️ Tu expositor"
       variant="window"
+      footer={
+        <button
+          onClick={save}
+          disabled={saving}
+          className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
+          style={{ background: accentColor, color: '#000' }}
+        >
+          {saving ? 'Guardando...' : '💾 Guardar expositor'}
+        </button>
+      }
     >
-      <div className="h-full flex flex-col">
+      <div>
         <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
           Elige hasta {VITRINA_SLOTS} insignias para mostrar en tu perfil.
         </p>
@@ -242,7 +252,7 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
         </div>
 
         {/* Catálogo de disponibles */}
-        <div className="flex-1 overflow-y-auto -mx-4 px-4 min-h-0">
+        <div>
           {availableBadges.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>
               Aún no tienes insignias desbloqueadas. ¡Juega partidos para ganarlas!
@@ -280,15 +290,6 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
             </div>
           )}
         </div>
-
-        <button
-          onClick={save}
-          disabled={saving}
-          className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide mt-3 active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
-          style={{ background: accentColor, color: '#000' }}
-        >
-          {saving ? 'Guardando...' : '💾 Guardar expositor'}
-        </button>
       </div>
     </Modal>
   )

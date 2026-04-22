@@ -60,6 +60,7 @@ export function PostMatchRating({
   }
 
   async function submitRating(playerId: string) {
+    if (isRated(playerId)) { showToast('Ya has valorado a este jugador'); return }
     const playerRatings = ratings[playerId]
     if (!playerRatings) { showToast('Puntua todas las habilidades'); return }
     const allFilled = SKILLS.every(s => playerRatings[s.key] >= 1 && playerRatings[s.key] <= 5)
@@ -73,13 +74,7 @@ export function PostMatchRating({
       voted_id: playerId,
       ...playerRatings,
     }
-
-    const existing = getExistingVote(playerId)
-    if (existing) {
-      await supabase.from('votes').update(payload).eq('id', existing.id)
-    } else {
-      await supabase.from('votes').insert(payload)
-    }
+    await supabase.from('votes').insert(payload)
 
     showToast('Valoracion guardada')
     setSaving(prev => ({ ...prev, [playerId]: false }))
@@ -104,41 +99,34 @@ export function PostMatchRating({
 
           return (
             <Card key={player.id}>
-              {/* Player header - clickable to expand */}
+              {/* Player header - clickable to expand (blocked if already rated) */}
               <button
                 onClick={() => {
-                  if (isExpanded) {
-                    setExpanded(null)
-                  } else {
-                    // Pre-fill with existing vote if editing
-                    const existing = getExistingVote(player.id)
-                    if (existing) {
-                      const prefill: Record<string, number> = {}
-                      SKILLS.forEach(s => {
-                        prefill[s.key] = existing[s.key as keyof Vote] as number
-                      })
-                      setRatings(prev => ({ ...prev, [player.id]: prefill }))
-                    }
-                    setExpanded(player.id)
-                  }
+                  if (rated) { showToast('Solo puedes valorar una vez a cada jugador'); return }
+                  setExpanded(isExpanded ? null : player.id)
                 }}
-                className="flex items-center gap-2 w-full text-left select-none"
+                disabled={rated}
+                className="flex items-center gap-2 w-full text-left select-none disabled:cursor-default"
                 style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
               >
                 <PlayerAvatar player={player} size={32} communityColor={communityColor} />
                 <span className="text-sm font-semibold flex-1 truncate">{player.name}</span>
-                {rated && (
-                  <span className="text-xs font-bold" style={{ color: communityColor }}>
-                    Valorado
+                {rated ? (
+                  <span
+                    className="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
+                    style={{ background: '#22c55e22', color: '#22c55e' }}
+                  >
+                    ✓ Valorado
+                  </span>
+                ) : (
+                  <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                    {isExpanded ? '▲' : '▼'}
                   </span>
                 )}
-                <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                  {isExpanded ? '▲' : '▼'}
-                </span>
               </button>
 
               {/* Rating form (expanded) */}
-              {isExpanded && (
+              {isExpanded && !rated && (
                 <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
                   {SKILLS.map(skill => (
                     <div key={skill.key} className="mb-2.5">
@@ -177,7 +165,7 @@ export function PostMatchRating({
                     className="w-full mt-1"
                     size="sm"
                   >
-                    {isSaving ? 'Guardando...' : rated ? 'Actualizar valoracion' : 'Enviar valoracion'}
+                    {isSaving ? 'Guardando...' : 'Enviar valoracion'}
                   </Button>
                 </div>
               )}
@@ -187,7 +175,7 @@ export function PostMatchRating({
       </div>
 
       <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
-        Valora a los jugadores del 1 al 5 en cada habilidad.
+        Valora a los jugadores del 1 al 5 en cada habilidad. Solo puedes valorar una vez por jugador.
       </p>
     </div>
   )

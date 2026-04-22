@@ -15,7 +15,7 @@ interface TeamGeneratorProps {
 
 export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTeamsGenerated }: TeamGeneratorProps) {
   const [mode, setMode] = useState<TeamMode>('balanced')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(players.map(p => p.id)))
   const [result, setResult] = useState<TeamGeneratorResult | null>(null)
 
   const togglePlayer = (id: string) => {

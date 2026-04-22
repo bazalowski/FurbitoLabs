@@ -8,6 +8,7 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { BadgeShowcase } from '@/components/ui/Badge'
 import { BadgeVitrina } from '@/components/players/BadgeVitrina'
@@ -69,18 +70,14 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
   async function submitVote() {
     if (!myPlayer || !player) return
+    if (existingVote) { showToast('Ya has valorado a este jugador'); setVoteOpen(false); return }
     const allFilled = SKILLS.every(s => rating[s.key] >= 1 && rating[s.key] <= 5)
     if (!allFilled) { showToast('Puntúa todas las habilidades'); return }
 
     setVoting(true)
     const supabase = createClient()
     const payload = { community_id: cid, voter_id: myPlayer, voted_id: pid, ...rating }
-
-    if (existingVote) {
-      await supabase.from('votes').update(payload).eq('id', existingVote.id)
-    } else {
-      await supabase.from('votes').insert(payload)
-    }
+    await supabase.from('votes').insert(payload)
 
     showToast('✅ Valoración guardada')
     setVoteOpen(false)
@@ -346,12 +343,17 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         {/* Visible para cualquiera que no sea el propio jugador */}
         {!isOwnProfile && (
           <button
-            onClick={() => canVote ? setVoteOpen(true) : openPinModal()}
-            className="w-full h-12 rounded-m font-bold text-sm tracking-wide uppercase active:scale-[0.98] transition-transform select-none"
+            onClick={() => {
+              if (!canVote) { openPinModal(); return }
+              if (existingVote) { showToast('Ya has valorado a este jugador'); return }
+              setVoteOpen(true)
+            }}
+            disabled={!!(canVote && existingVote)}
+            className="w-full h-12 rounded-m font-bold text-sm tracking-wide uppercase active:scale-[0.98] transition-transform select-none disabled:opacity-60 disabled:active:scale-100"
             style={{ background: communityColor, color: '#000' }}
           >
             {canVote
-              ? (existingVote ? '✏️ Editar valoración' : '⭐ Valorar jugador')
+              ? (existingVote ? '✓ Ya valorado' : '⭐ Valorar jugador')
               : '🔑 Acceder para valorar'}
           </button>
         )}
@@ -395,80 +397,59 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
       </div>
 
-      {/* ── Bottom-sheet: Valorar ─────────────────────── */}
-      {voteOpen && canVote && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setVoteOpen(false)}
-          />
-          {/* Sheet */}
-          <div
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app z-50 rounded-t-2xl px-4 pt-3 pb-8 animate-slide-up"
-            style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)' }}
+      {/* ── Modal: Valorar (centrado) ─────────────────── */}
+      <Modal
+        open={voteOpen && !!canVote && !existingVote}
+        onClose={() => { if (!voting) setVoteOpen(false) }}
+        title={`⭐ Valorar a ${player.name}`}
+        footer={
+          <button
+            onClick={submitVote}
+            disabled={voting}
+            className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
+            style={{ background: communityColor, color: '#000' }}
           >
-            {/* Handle */}
-            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: 'var(--border)' }} />
+            {voting ? 'Guardando...' : '✅ Enviar valoración'}
+          </button>
+        }
+      >
+        <p className="text-xs mb-2" style={{ color: 'var(--muted)' }}>Puntúa del 1 al 5 cada habilidad</p>
+        <p className="text-[11px] mb-4" style={{ color: 'var(--muted)', opacity: 0.8 }}>
+          Solo puedes valorar una vez. No podrás cambiarlo después.
+        </p>
 
-            <div className="flex items-center justify-between mb-4">
-              <p className="font-bebas text-xl tracking-wider">
-                ⭐ Valorar a {player.name}
-              </p>
-              <button
-                onClick={() => setVoteOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
-                style={{ background: 'var(--border)', color: 'var(--muted)' }}
-              >
-                ✕
-              </button>
+        <div className="space-y-3">
+          {SKILLS.map(skill => (
+            <div key={skill.key}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-bold">
+                  {skill.icon} {skill.label}
+                </span>
+                <span className="text-sm font-bebas tracking-wider" style={{ color: communityColor }}>
+                  {rating[skill.key] ?? '—'}
+                </span>
+              </div>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4, 5].map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setRating(r => ({ ...r, [skill.key]: v }))}
+                    className="flex-1 py-2.5 rounded-s text-sm font-bold transition-all active:scale-95 select-none"
+                    style={{
+                      minHeight: 44,
+                      background: (rating[skill.key] ?? 0) >= v ? communityColor : 'var(--card)',
+                      color: (rating[skill.key] ?? 0) >= v ? '#050d05' : 'var(--muted)',
+                      border: `1px solid ${(rating[skill.key] ?? 0) >= v ? communityColor : 'var(--border)'}`,
+                    }}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
             </div>
-
-            <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>Puntúa del 1 al 5 cada habilidad</p>
-
-            <div className="space-y-3">
-              {SKILLS.map(skill => (
-                <div key={skill.key}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-bold">
-                      {skill.icon} {skill.label}
-                    </span>
-                    <span className="text-sm font-bebas tracking-wider" style={{ color: communityColor }}>
-                      {rating[skill.key] ?? '—'}
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4, 5].map(v => (
-                      <button
-                        key={v}
-                        onClick={() => setRating(r => ({ ...r, [skill.key]: v }))}
-                        className="flex-1 py-2.5 rounded-s text-sm font-bold transition-all active:scale-95"
-                        style={{
-                          background: (rating[skill.key] ?? 0) >= v ? communityColor : 'var(--card)',
-                          color: (rating[skill.key] ?? 0) >= v ? '#050d05' : 'var(--muted)',
-                          border: `1px solid ${(rating[skill.key] ?? 0) >= v ? communityColor : 'var(--border)'}`,
-                        }}
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={submitVote}
-              disabled={voting}
-              className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide mt-5 active:scale-[0.98] transition-transform disabled:opacity-50"
-              style={{ background: communityColor, color: '#000' }}
-            >
-              {voting ? 'Guardando...' : '✅ Enviar valoración'}
-            </button>
-          </div>
-        </>
-      )}
+          ))}
+        </div>
+      </Modal>
 
       {/* ── Modal: Cambiar PIN ────────────────────────── */}
       {pinModalOpen && (

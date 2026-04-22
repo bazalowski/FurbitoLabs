@@ -62,21 +62,14 @@ export default function ValorarPage({ params }: ValorarPageProps) {
     [existingVotes]
   )
 
-  // When selecting a player, pre-fill ratings if already voted
+  // When selecting a player, go to rate step (blocked if already voted)
   function handleSelectPlayer(player: Player) {
-    setSelectedPlayer(player)
-    const existing = existingVotes.find(v => v.voted_id === player.id)
-    if (existing) {
-      setRatings({
-        ataque: existing.ataque,
-        defensa: existing.defensa,
-        tecnica: existing.tecnica,
-        velocidad: existing.velocidad,
-        empeno: existing.empeno,
-      })
-    } else {
-      setRatings({})
+    if (ratedIds.has(player.id)) {
+      showToast('Solo puedes valorar una vez a cada jugador')
+      return
     }
+    setSelectedPlayer(player)
+    setRatings({})
     setStep('rate')
   }
 
@@ -88,10 +81,14 @@ export default function ValorarPage({ params }: ValorarPageProps) {
 
   async function handleSubmit() {
     if (!selectedPlayer || !session.playerId || !allRated) return
+    if (ratedIds.has(selectedPlayer.id)) {
+      showToast('Ya has valorado a este jugador')
+      setStep('select')
+      return
+    }
     setSubmitting(true)
 
     const supabase = createClient()
-    const existing = existingVotes.find(v => v.voted_id === selectedPlayer.id)
 
     const voteData = {
       community_id: cid,
@@ -104,19 +101,7 @@ export default function ValorarPage({ params }: ValorarPageProps) {
       empeno: ratings.empeno,
     }
 
-    let error
-    if (existing) {
-      const res = await supabase
-        .from('votes')
-        .update(voteData)
-        .eq('id', existing.id)
-      error = res.error
-    } else {
-      const res = await supabase
-        .from('votes')
-        .insert(voteData)
-      error = res.error
-    }
+    const { error } = await supabase.from('votes').insert(voteData)
 
     setSubmitting(false)
 
@@ -125,7 +110,6 @@ export default function ValorarPage({ params }: ValorarPageProps) {
       return
     }
 
-    // Refresh existing votes
     await loadExistingVotes()
     setStep('done')
   }
@@ -208,14 +192,9 @@ export default function ValorarPage({ params }: ValorarPageProps) {
             <div className="flex flex-col items-center gap-3 py-4">
               <PlayerAvatar player={selectedPlayer} size={64} communityColor={communityColor} />
               <span className="font-bebas text-xl tracking-wider">{selectedPlayer.name}</span>
-              {ratedIds.has(selectedPlayer.id) && (
-                <span
-                  className="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
-                  style={{ background: '#22c55e22', color: '#22c55e' }}
-                >
-                  Actualizando valoracion
-                </span>
-              )}
+              <span className="text-[10px] text-center" style={{ color: 'var(--muted)' }}>
+                Solo puedes valorar una vez. No podrás cambiarlo después.
+              </span>
             </div>
 
             {/* Skill rows */}
