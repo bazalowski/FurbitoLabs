@@ -41,3 +41,9 @@ Thumbs.db
 Public Key:.md
 *.pem
 *.key
+
+# Claude Code / AIDesigner skill config (local)
+.claude/
+.mcp.json
+.agents/
+tsconfig.tsbuildinfo
