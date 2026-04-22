@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { getLevel } from '@/lib/game/levels'
-import { getPlayerRating, calcPlayerTotalPoints } from '@/lib/game/scoring'
+import { getPlayerRating, calcPlayerTotalPoints, getPointsTier } from '@/lib/game/scoring'
 import { Avatar } from '@/components/ui/Avatar'
+import { useRecentMatchPoints } from '@/hooks/useRecentMatchPoints'
 import type { Player, Vote } from '@/types'
 
 type RankTab = 'puntos' | 'goles' | 'asistencias' | 'mvps' | 'partidos' | 'rating'
@@ -43,6 +44,10 @@ interface RankingTableProps {
 export function RankingTable({ players, votes, communityId, communityColor = '#a8ff3e', adminIds = [] }: RankingTableProps) {
   const [tab, setTab] = useState<RankTab>('puntos')
   const sorted = sortPlayers(players, votes, tab)
+  const isPointsTab = tab === 'puntos'
+
+  // Carga los sparklines solo cuando la tab activa es "puntos"
+  const { data: recentPoints } = useRecentMatchPoints(isPointsTab ? communityId : null, 5)
 
   const getValue = (p: Player): string => {
     if (tab === 'rating') {
@@ -72,11 +77,49 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
   ]
 
   return (
-    <div className="space-y-4">
-      {/* ── Scrollable pill tabs ──────────────────────── */}
+    <div className="space-y-4" style={{ ['--aura-color' as string]: communityColor }}>
+      {/* ── Tabs: Puntos hero + resto glass ─────────────── */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x scrollbar-none">
         {TABS.map(t => {
           const active = tab === t.key
+          const isHero = t.key === 'puntos'
+
+          if (isHero) {
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`relative flex-shrink-0 snap-start rounded-full min-h-[36px] active:scale-95 ${active ? 'legend-rainbow' : ''}`}
+                style={{
+                  padding: '1.5px',
+                  boxShadow: active ? `0 0 18px ${communityColor}55` : 'none',
+                }}
+              >
+                <span
+                  className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] uppercase"
+                  style={{
+                    background: active ? 'rgba(5,13,5,0.92)' : 'var(--card)',
+                    color: active ? '#fff' : 'var(--muted)',
+                    border: active ? '0.5px solid rgba(255,255,255,0.12)' : '1px solid var(--border)',
+                    fontWeight: 800,
+                    letterSpacing: '0.1em',
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={active ? 'animate-pulse' : ''}
+                    style={{ filter: active ? `drop-shadow(0 0 4px ${communityColor})` : 'none' }}
+                  >
+                    {t.icon}
+                  </span>
+                  <span className={active ? 'legend-rainbow font-bebas text-[13px] tracking-wider' : 'font-bold'}>
+                    {t.label}
+                  </span>
+                </span>
+              </button>
+            )
+          }
+
           return (
             <button
               key={t.key}
@@ -106,126 +149,159 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
         })}
       </div>
 
-      {/* ── Podio visual top 3 ───────────────────────── */}
+      {/* ── Podio visual top 3 ─────────────────────────── */}
       {top3.length > 0 && (
-        <div className="flex items-end justify-center gap-2 pt-3 pb-1">
-          {podiumOrder.map((player) => {
-            if (!player) return null
-            const originalPos = sorted.indexOf(player) + 1
-            const meta = podiumMeta.find(m => m.pos === originalPos) ?? podiumMeta[2]
-            const isFirst = originalPos === 1
+        <div className="relative">
+          {/* Ambient glow detrás del #1 (solo tab puntos) */}
+          {isPointsTab && (
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+              style={{
+                top: -20,
+                width: 220,
+                height: 140,
+                background: `radial-gradient(ellipse at center, ${communityColor}33 0%, transparent 70%)`,
+                filter: 'blur(20px)',
+              }}
+            />
+          )}
 
-            return (
-              <Link
-                key={player.id}
-                href={`/${communityId}/jugadores/${player.id}`}
-                className="no-lift flex flex-col items-center gap-1.5 flex-1 max-w-[110px] active:scale-95 transition-transform relative"
-              >
-                {/* Medal */}
-                <span
-                  className={isFirst ? 'leading-none micro-float' : 'leading-none'}
-                  style={{
-                    fontSize: isFirst ? 30 : 22,
-                    filter: isFirst ? `drop-shadow(0 2px 10px ${communityColor}88)` : 'none',
-                  }}
-                  aria-hidden="true"
+          <div className="flex items-end justify-center gap-2 pt-3 pb-1 relative">
+            {podiumOrder.map((player) => {
+              if (!player) return null
+              const originalPos = sorted.indexOf(player) + 1
+              const meta = podiumMeta.find(m => m.pos === originalPos) ?? podiumMeta[2]
+              const isFirst = originalPos === 1
+              const value = getValue(player)
+              const pts = calcPlayerTotalPoints(player)
+              const tier = getPointsTier(Math.min(pts, 30))
+
+              return (
+                <Link
+                  key={player.id}
+                  href={`/${communityId}/jugadores/${player.id}`}
+                  className="no-lift flex flex-col items-center gap-1.5 flex-1 max-w-[110px] active:scale-95 transition-transform relative"
                 >
-                  {meta.medal}
-                </span>
-
-                {/* Avatar wrapper — halo animado solo en 1st */}
-                <div className="relative" style={{ ['--aura-color' as string]: communityColor }}>
-                  {isFirst && (
-                    <span
-                      aria-hidden="true"
-                      className="aura-halo"
-                      style={{ inset: '-22%' }}
-                    />
-                  )}
-                  <div className="relative">
-                    <Avatar
-                      name={player.name}
-                      avatar={player.avatar}
-                      size={isFirst ? 64 : 46}
-                      fontSize={isFirst ? 18 : 13}
-                      fontWeight={600}
-                      communityColor={communityColor}
-                      borderColor={meta.labelColor}
-                      boxShadow={isFirst
-                        ? `0 0 0 3px ${communityColor}22, 0 10px 28px ${communityColor}55, 0 2px 6px rgba(0,0,0,0.45)`
-                        : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Name */}
-                <p
-                  className="text-center truncate w-full px-1 leading-tight"
-                  style={{
-                    fontSize: isFirst ? 13 : 12,
-                    fontWeight: isFirst ? 700 : 600,
-                    color: isFirst ? communityColor : 'var(--text)',
-                    letterSpacing: isFirst ? '-0.01em' : 0,
-                  }}
-                >
-                  {player.name.split(' ')[0]}
-                </p>
-
-                {/* Value — display number con tracking negativo y tabular */}
-                <p
-                  className="font-bebas leading-none"
-                  style={{
-                    fontSize: isFirst ? 30 : 22,
-                    letterSpacing: '-0.015em',
-                    color: meta.labelColor,
-                    textShadow: isFirst ? `0 0 18px ${meta.labelColor}55` : 'none',
-                  }}
-                >
-                  {getValue(player)}
-                </p>
-
-                {/* Podium plinth — inner border + tint shadow + mirror reflect */}
-                <div
-                  className="plinth-reflect w-full rounded-t-m relative overflow-hidden"
-                  style={{
-                    height: meta.height,
-                    background: isFirst
-                      ? `linear-gradient(180deg, ${communityColor}33 0%, ${communityColor}12 55%, ${communityColor}05 100%)`
-                      : 'var(--card)',
-                    border: `1px solid ${isFirst ? communityColor + '66' : 'var(--border)'}`,
-                    borderBottom: 'none',
-                    boxShadow: isFirst
-                      ? `0 -6px 22px ${communityColor}22 inset, 0 1px 0 rgba(255,255,255,0.08) inset`
-                      : '0 1px 0 rgba(255,255,255,0.04) inset',
-                  }}
-                >
-                  {/* Position numeral grabado en el plinth */}
+                  {/* Medal */}
                   <span
-                    className="font-bebas absolute inset-x-0 bottom-1 text-center leading-none select-none"
+                    className={isFirst ? 'leading-none micro-float' : 'leading-none'}
                     style={{
-                      fontSize: isFirst ? 42 : 28,
-                      letterSpacing: '-0.02em',
-                      color: isFirst ? `${communityColor}40` : 'rgba(255,255,255,0.06)',
-                      textShadow: isFirst ? `0 0 12px ${communityColor}33` : 'none',
+                      fontSize: isFirst ? 30 : 22,
+                      filter: isFirst ? `drop-shadow(0 2px 10px ${communityColor}88)` : 'none',
                     }}
                     aria-hidden="true"
                   >
-                    {originalPos}
+                    {meta.medal}
                   </span>
-                </div>
-              </Link>
-            )
-          })}
+
+                  {/* Avatar wrapper — halo animado solo en 1st */}
+                  <div className="relative" style={{ ['--aura-color' as string]: communityColor }}>
+                    {isFirst && (
+                      <span
+                        aria-hidden="true"
+                        className="aura-halo"
+                        style={{ inset: '-22%' }}
+                      />
+                    )}
+                    <div className="relative">
+                      <Avatar
+                        name={player.name}
+                        avatar={player.avatar}
+                        size={isFirst ? 64 : 46}
+                        fontSize={isFirst ? 18 : 13}
+                        fontWeight={600}
+                        communityColor={communityColor}
+                        borderColor={meta.labelColor}
+                        boxShadow={isFirst
+                          ? `0 0 0 3px ${communityColor}22, 0 10px 28px ${communityColor}55, 0 2px 6px rgba(0,0,0,0.45)`
+                          : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <p
+                    className="text-center truncate w-full px-1 leading-tight"
+                    style={{
+                      fontSize: isFirst ? 13 : 12,
+                      fontWeight: isFirst ? 700 : 600,
+                      color: isFirst ? communityColor : 'var(--text)',
+                      letterSpacing: isFirst ? '-0.01em' : 0,
+                    }}
+                  >
+                    {player.name.split(' ')[0]}
+                  </p>
+
+                  {/* Value — en tab puntos, #1 con rainbow si tier 'leyenda'-equivalent (pts≥20) */}
+                  <p
+                    className={`font-bebas leading-none ${isPointsTab && isFirst && pts >= 20 ? 'legend-rainbow' : ''}`}
+                    style={{
+                      fontSize: isFirst ? 30 : 22,
+                      letterSpacing: '-0.015em',
+                      color: isPointsTab && isFirst && pts >= 20 ? undefined : (isPointsTab && isFirst ? tier.color : meta.labelColor),
+                      textShadow: isFirst ? `0 0 18px ${meta.labelColor}55` : 'none',
+                    }}
+                  >
+                    {value}
+                  </p>
+
+                  {/* Podium plinth */}
+                  <div
+                    className="plinth-reflect w-full rounded-t-m relative overflow-hidden"
+                    style={{
+                      height: meta.height,
+                      background: isFirst
+                        ? `linear-gradient(180deg, ${communityColor}33 0%, ${communityColor}12 55%, ${communityColor}05 100%)`
+                        : 'var(--card)',
+                      border: `1px solid ${isFirst ? communityColor + '66' : 'var(--border)'}`,
+                      borderBottom: 'none',
+                      boxShadow: isFirst
+                        ? `0 -6px 22px ${communityColor}22 inset, 0 1px 0 rgba(255,255,255,0.08) inset`
+                        : '0 1px 0 rgba(255,255,255,0.04) inset',
+                    }}
+                  >
+                    {/* Neon top-line (solo #1) */}
+                    {isFirst && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-x-0 top-0 h-px"
+                        style={{
+                          background: `linear-gradient(90deg, transparent, ${communityColor}, transparent)`,
+                          boxShadow: `0 0 6px ${communityColor}99`,
+                        }}
+                      />
+                    )}
+                    <span
+                      className="font-bebas absolute inset-x-0 bottom-1 text-center leading-none select-none"
+                      style={{
+                        fontSize: isFirst ? 42 : 28,
+                        letterSpacing: '-0.02em',
+                        color: isFirst ? `${communityColor}40` : 'rgba(255,255,255,0.06)',
+                        textShadow: isFirst ? `0 0 12px ${communityColor}33` : 'none',
+                      }}
+                      aria-hidden="true"
+                    >
+                      {originalPos}
+                    </span>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
 
-      {/* ── Lista 4th+ ───────────────────────────────── */}
+      {/* ── Lista 4th+ ─────────────────────────────────── */}
       {rest.length > 0 && (
         <div className="space-y-1.5">
           {rest.map((player, index) => {
             const pos = index + 4
             const level = getLevel(player.xp)
+            const spark = isPointsTab ? recentPoints[player.id] : undefined
+            const totalPts = calcPlayerTotalPoints(player)
+            const rowTier = isPointsTab ? getPointsTier(Math.min(totalPts, 30)) : null
 
             return (
               <Link key={player.id} href={`/${communityId}/jugadores/${player.id}`}>
@@ -276,23 +352,72 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                     </p>
                   </div>
 
-                  {/* Value */}
-                  <p
-                    className="font-bebas flex-shrink-0 leading-none"
-                    style={{
-                      fontSize: 22,
-                      letterSpacing: '-0.015em',
-                      color: communityColor,
-                    }}
-                  >
-                    {getValue(player)}
-                  </p>
+                  {/* Sparkline — últimos 5 partidos (solo tab puntos) */}
+                  {isPointsTab && spark && spark.length > 0 && (
+                    <Sparkline points={spark} />
+                  )}
+
+                  {/* Value — chip tier-coloreado en tab puntos, plano en el resto */}
+                  {isPointsTab && rowTier ? (
+                    <span
+                      className="font-bebas flex-shrink-0 leading-none rounded px-2.5 py-1 text-center"
+                      style={{
+                        fontSize: 20,
+                        letterSpacing: '-0.015em',
+                        color: rowTier.color,
+                        background: `${rowTier.color}14`,
+                        border: `1px solid ${rowTier.color}44`,
+                        minWidth: 52,
+                      }}
+                    >
+                      {getValue(player)}
+                    </span>
+                  ) : (
+                    <p
+                      className="font-bebas flex-shrink-0 leading-none"
+                      style={{
+                        fontSize: 22,
+                        letterSpacing: '-0.015em',
+                        color: communityColor,
+                      }}
+                    >
+                      {getValue(player)}
+                    </p>
+                  )}
                 </div>
               </Link>
             )
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Sparkline: barras tier-coloreadas de los últimos N partidos. */
+function Sparkline({ points }: { points: number[] }) {
+  const max = Math.max(20, ...points) // mínimo 20 para que 20+ (leyenda) rellenen 100%
+  return (
+    <div
+      className="flex items-end gap-[2px] h-4 flex-shrink-0"
+      style={{ width: 36 }}
+      aria-hidden="true"
+    >
+      {points.map((p, i) => {
+        const tier = getPointsTier(p)
+        const h = Math.max(12, Math.round((p / max) * 100))
+        return (
+          <span
+            key={i}
+            className="w-1 rounded-t-[1px]"
+            style={{
+              height: `${h}%`,
+              background: tier.color,
+              boxShadow: `0 0 3px ${tier.color}66`,
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

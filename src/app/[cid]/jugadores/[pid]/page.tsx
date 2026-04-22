@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { BadgeShowcase } from '@/components/ui/Badge'
 import { BadgeVitrina } from '@/components/players/BadgeVitrina'
 import { PlayerTimeline } from '@/components/players/PlayerTimeline'
+import { PointsEvolutionChart } from '@/components/players/PointsEvolutionChart'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
@@ -324,6 +325,13 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             ))}
           </div>
         </div>
+
+        {/* ── Gráfica: evolución de puntos por partido ── */}
+        <PointsEvolutionChart
+          playerId={pid}
+          communityId={cid}
+          communityColor={communityColor}
+        />
 
         {/* Catálogo completo (collapsible) — muestra todas, marcando las desbloqueadas */}
         <BadgeShowcase unlockedKeys={player.badges} accentColor={communityColor} />
