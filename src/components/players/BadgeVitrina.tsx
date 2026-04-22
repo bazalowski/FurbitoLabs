@@ -189,6 +189,16 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
           Elige hasta {VITRINA_SLOTS} insignias para mostrar en tu perfil.
         </p>
 
+        {/* CTA Guardar — siempre visible arriba (el footer puede quedar oculto por teclado) */}
+        <button
+          onClick={save}
+          disabled={saving}
+          className="w-full h-11 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none mb-4"
+          style={{ background: accentColor, color: '#000' }}
+        >
+          {saving ? 'Guardando...' : '💾 Guardar expositor'}
+        </button>
+
         {/* Preview slots (ordenable) */}
         <div className="grid grid-cols-5 gap-1.5 mb-4">
           {Array.from({ length: VITRINA_SLOTS }).map((_, i) => {

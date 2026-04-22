@@ -11,9 +11,21 @@ interface TeamGeneratorProps {
   votes: Vote[]
   communityColor?: string
   onTeamsGenerated?: (result: TeamGeneratorResult | null) => void
+  /** Si se pasa, aparece un CTA primario "Confirmar equipos" en la vista de resultado */
+  onConfirmTeams?: (result: TeamGeneratorResult) => void | Promise<void>
+  confirmLabel?: string
+  confirming?: boolean
 }
 
-export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTeamsGenerated }: TeamGeneratorProps) {
+export function TeamGenerator({
+  players,
+  votes,
+  communityColor = '#a8ff3e',
+  onTeamsGenerated,
+  onConfirmTeams,
+  confirmLabel = '✅ Confirmar equipos',
+  confirming = false,
+}: TeamGeneratorProps) {
   const [mode, setMode] = useState<TeamMode>('balanced')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(players.map(p => p.id)))
   const [result, setResult] = useState<TeamGeneratorResult | null>(null)
@@ -50,78 +62,111 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
   if (result) {
     return (
       <div className="space-y-3">
-        {/* Back button */}
-        <button
-          onClick={goBack}
-          className="flex items-center gap-1 text-xs font-bold"
-          style={{ color: communityColor }}
-        >
-          ← Volver a selección
-        </button>
-
-        {/* Balance indicator — compact */}
-        <div
-          className="px-3 py-2 rounded-m text-center"
-          style={{ background: result.bal.color + '22', border: `1px solid ${result.bal.color}44` }}
-        >
-          <p className="font-bold text-xs" style={{ color: result.bal.color }}>
-            {result.bal.label} — {result.bal.msg}
-          </p>
+        {/* Top bar: back + balance chip */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goBack}
+            className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold active:scale-[0.95] transition-transform select-none"
+            style={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              color: 'var(--muted)',
+            }}
+            aria-label="Volver a selección"
+          >
+            ←
+          </button>
+          <div
+            className="flex-1 px-3 py-2 rounded-m text-center"
+            style={{ background: result.bal.color + '22', border: `1px solid ${result.bal.color}55` }}
+          >
+            <p className="font-bold text-xs" style={{ color: result.bal.color }}>
+              {result.bal.label} · <span style={{ opacity: 0.85 }}>{result.bal.msg}</span>
+            </p>
+          </div>
         </div>
 
-        {/* Teams side by side */}
+        {/* Teams side by side — layout premium */}
         <div className="grid grid-cols-2 gap-2">
           {(['teamA', 'teamB'] as const).map((team, i) => (
             <div
               key={team}
-              className="rounded-m p-2 space-y-1.5"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+              className="card hairline-top p-3"
+              style={{ borderColor: communityColor + '44' }}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-bebas text-lg tracking-wider">Equipo {i === 0 ? 'A' : 'B'}</span>
-                <span className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>
+              <div className="flex items-baseline justify-between mb-2 pb-2" style={{ borderBottom: `1px solid ${communityColor}22` }}>
+                <span className="font-bebas text-xl tracking-wider" style={{ color: communityColor }}>
+                  Equipo {i === 0 ? 'A' : 'B'}
+                </span>
+                <span className="text-[10px] font-bold tabular-nums" style={{ color: 'var(--muted)' }}>
                   {i === 0 ? result.sumA : result.sumB} pts
                 </span>
               </div>
-              {result[team].map(p => (
-                <div key={p.id} className="flex items-center gap-1.5">
-                  <PlayerAvatar player={p} size={24} communityColor={communityColor} />
-                  <span className="text-[11px] font-semibold truncate flex-1">{p.name}</span>
-                  <span className="text-[10px] shrink-0" style={{ color: 'var(--muted)' }}>{p._score.toFixed(1)}</span>
-                </div>
-              ))}
+              <div className="space-y-1.5">
+                {result[team].map(p => (
+                  <div key={p.id} className="flex items-center gap-1.5">
+                    <PlayerAvatar player={p} size={24} communityColor={communityColor} />
+                    <span className="text-[11px] font-semibold truncate flex-1">{p.name}</span>
+                    <span
+                      className="text-[10px] font-bold shrink-0 tabular-nums px-1.5 py-0.5 rounded-full"
+                      style={{ background: communityColor + '15', color: communityColor }}
+                    >
+                      {p._score.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
 
-        <Button onClick={generate} variant="ghost" className="w-full text-sm">
-          🔄 Regenerar
-        </Button>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button onClick={generate} variant="ghost" className="flex-1 text-sm">
+            🔄 Regenerar
+          </Button>
+          {onConfirmTeams && (
+            <button
+              type="button"
+              onClick={() => onConfirmTeams(result)}
+              disabled={confirming}
+              className="flex-1 h-11 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
+              style={{ background: communityColor, color: '#050d05' }}
+            >
+              {confirming ? 'Guardando…' : confirmLabel}
+            </button>
+          )}
+        </div>
       </div>
     )
   }
 
   /* ── Step 1: Mode + Selection + Generate ─────────────── */
+  const allSelected = selectedIds.size === players.length
   return (
     <div className="space-y-3">
-      {/* Mode selector — horizontal scrollable pills */}
+      {/* Mode selector — horizontal pills */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>Modo</p>
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
-          {modes.map(m => (
-            <button
-              key={m.value}
-              onClick={() => { setMode(m.value); setResult(null) }}
-              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap"
-              style={{
-                background: mode === m.value ? communityColor + '22' : 'var(--card)',
-                border: `1.5px solid ${mode === m.value ? communityColor : 'var(--border)'}`,
-                color: mode === m.value ? communityColor : 'var(--foreground)',
-              }}
-            >
-              {m.icon} {m.label}
-            </button>
-          ))}
+        <div className="flex gap-1.5">
+          {modes.map(m => {
+            const active = mode === m.value
+            return (
+              <button
+                key={m.value}
+                onClick={() => { setMode(m.value); setResult(null) }}
+                className="flex-1 px-3 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.97] select-none"
+                style={{
+                  background: active ? communityColor + '22' : 'var(--card)',
+                  border: `1.5px solid ${active ? communityColor : 'var(--border)'}`,
+                  color: active ? communityColor : 'var(--foreground)',
+                  boxShadow: active ? `0 0 0 3px ${communityColor}11` : undefined,
+                }}
+              >
+                {m.icon} {m.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -133,14 +178,14 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
           </p>
           <button
             onClick={() => {
-              if (selectedIds.size === players.length) setSelectedIds(new Set())
+              if (allSelected) setSelectedIds(new Set())
               else setSelectedIds(new Set(players.map(p => p.id)))
               setResult(null)
             }}
-            className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-            style={{ color: communityColor, background: communityColor + '15' }}
+            className="text-[11px] font-bold px-2.5 py-1 rounded-full active:scale-[0.95] transition-transform select-none"
+            style={{ color: communityColor, background: communityColor + '15', border: `1px solid ${communityColor}33` }}
           >
-            {selectedIds.size === players.length ? 'Ninguno' : 'Todos'}
+            {allSelected ? 'Ninguno' : 'Todos'}
           </button>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
@@ -150,10 +195,11 @@ export function TeamGenerator({ players, votes, communityColor = '#a8ff3e', onTe
               <button
                 key={p.id}
                 onClick={() => togglePlayer(p.id)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-m text-left transition-all"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-m text-left transition-all active:scale-[0.97] select-none"
                 style={{
                   background: selected ? communityColor + '22' : 'var(--card)',
                   border: `1.5px solid ${selected ? communityColor + '88' : 'var(--border)'}`,
+                  boxShadow: selected ? `0 0 0 2px ${communityColor}11` : undefined,
                 }}
               >
                 <PlayerAvatar player={p} size={24} communityColor={communityColor} />

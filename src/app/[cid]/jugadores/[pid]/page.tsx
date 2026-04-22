@@ -20,6 +20,7 @@ import { showToast } from '@/components/ui/Toast'
 import { Avatar, isAvatarUrl } from '@/components/ui/Avatar'
 import { uploadPlayerAvatar, deletePlayerAvatar } from '@/lib/supabase/avatars'
 import { openPinModal } from '@/lib/utils'
+import Link from 'next/link'
 
 interface PlayerProfilePageProps {
   params: { cid: string; pid: string }
@@ -375,23 +376,37 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
         {/* ── Cambiar nombre / PIN (own profile) ────── */}
         {isOwnProfile && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              className="w-full select-none"
-              variant="ghost"
-              onClick={() => { setNewName(player.name); setNameModalOpen(true) }}
-              style={{ minHeight: 48 }}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                className="w-full select-none"
+                variant="ghost"
+                onClick={() => { setNewName(player.name); setNameModalOpen(true) }}
+                style={{ minHeight: 48 }}
+              >
+                ✏️ Cambiar nombre
+              </Button>
+              <Button
+                className="w-full select-none"
+                variant="ghost"
+                onClick={() => setPinModalOpen(true)}
+                style={{ minHeight: 48 }}
+              >
+                🔑 Cambiar PIN
+              </Button>
+            </div>
+            <Link
+              href={`/${cid}/ayuda`}
+              className="w-full flex items-center justify-center rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
+              style={{
+                minHeight: 48,
+                background: communityColor + '15',
+                color: communityColor,
+                border: `1px solid ${communityColor}55`,
+              }}
             >
-              ✏️ Cambiar nombre
-            </Button>
-            <Button
-              className="w-full select-none"
-              variant="ghost"
-              onClick={() => setPinModalOpen(true)}
-              style={{ minHeight: 48 }}
-            >
-              🔑 Cambiar PIN
-            </Button>
+              🎓 Ver tutorial
+            </Link>
           </div>
         )}
 

@@ -6,19 +6,28 @@ import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/stores/session'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
-import type { Community } from '@/types'
 
 type LoginTab = 'join' | 'create'
+type Gate = 'chooser' | 'auth'
+
+const GATE_KEY = 'furbito_gate_dismissed'
+const GATE_VISITS = 'furbito_gate_visits'
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useSession(s => s.login)
 
+  // Gate inicial: "Usuario nuevo" / "Ya tengo un PIN".
+  // La primera vez se muestra siempre; a partir de la segunda el usuario
+  // puede marcar "No volver a mostrar" y saltarlo.
+  const [gate, setGate] = useState<Gate>('auth')
+  const [gateVisits, setGateVisits] = useState(0)
+  const [newUserOpen, setNewUserOpen] = useState(false)
+
   const [tab, setTab] = useState<LoginTab>('join')
 
-  // Join tab
+  // Join tab — solo PIN de comunidad (código opcional eliminado)
   const [pin, setPin] = useState('')
-  const [playerCode, setPlayerCode] = useState('')
   const [joinError, setJoinError] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
 
@@ -30,19 +39,18 @@ export default function LoginPage() {
   const [createLoading, setCreateLoading] = useState(false)
   const [createError, setCreateError] = useState('')
 
-  // Admin PIN
-  const [adminPin, setAdminPin] = useState('')
-
-  // Communities list
-  const [communities, setCommunities] = useState<Community[]>([])
-
   // Shake animation flag
   const [shaking, setShaking] = useState(false)
 
   useEffect(() => {
-    createClient().from('communities').select('id, name, color, pin').then(({ data }) => {
-      if (data) setCommunities(data as Community[])
-    })
+    if (typeof window === 'undefined') return
+    const dismissed = localStorage.getItem(GATE_KEY) === '1'
+    const visits = Number(localStorage.getItem(GATE_VISITS) ?? '0')
+    setGateVisits(visits)
+    if (!dismissed) {
+      setGate('chooser')
+      localStorage.setItem(GATE_VISITS, String(visits + 1))
+    }
   }, [])
 
   const triggerShake = useCallback(() => {
@@ -86,28 +94,9 @@ export default function LoginPage() {
       return
     }
 
-    // If player code provided, identify as player
-    if (playerCode.trim()) {
-      const { data: player } = await supabase
-        .from('players')
-        .select('*')
-        .eq('community_id', community.id)
-        .eq('code', playerCode.toUpperCase())
-        .maybeSingle()
-
-      if (!player) {
-        setJoinError('Código de jugador no encontrado en esta comunidad.')
-        triggerShake()
-        setJoinLoading(false)
-        return
-      }
-
-      const adminIds: string[] = community.admin_ids ?? []
-      const isCommAdmin = adminIds.includes(player.id) || community.comm_admin_id === player.id
-      login(community.id, community.color, isCommAdmin ? 'admin' : 'player', player.id)
-    } else {
-      login(community.id, community.color, 'guest')
-    }
+    // Entra como guest; el usuario introduce su PIN de jugador luego
+    // desde el icono 🔑 del layout para identificarse.
+    login(community.id, community.color, 'guest')
 
     router.push(`/${community.id}`)
     setJoinLoading(false)
@@ -193,16 +182,125 @@ export default function LoginPage() {
     router.push(`/${community.id}`)
   }
 
-  function handleCommunityCard(c: Community) {
-    setPin(c.pin)
-    setTab('join')
-    // Auto-submit after filling PIN
-    setTimeout(() => {
-      const form = document.getElementById('join-form') as HTMLFormElement | null
-      if (form) form.requestSubmit()
-    }, 100)
+  /* ═════════ Gate inicial ═════════ */
+  if (gate === 'chooser') {
+    const canDismiss = gateVisits >= 2
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+        <OnboardingOverlay />
+        <div className="w-full max-w-app">
+
+          {/* Crest + wordmark */}
+          <div className="text-center mb-3">
+            <img
+              src="/icons/icon.svg"
+              alt="FURBITO"
+              width={112}
+              height={112}
+              className="animate-float inline-block"
+              style={{ filter: 'drop-shadow(0 6px 24px rgba(168,255,62,0.25))' }}
+            />
+          </div>
+          <div className="text-center mb-1">
+            <div
+              className="font-bebas text-6xl tracking-widest"
+              style={{
+                color: 'var(--accent)',
+                transform: 'skewX(-8deg)',
+                display: 'inline-block',
+                textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
+              }}
+            >
+              FUR<span style={{ color: 'var(--text)' }}>BITO</span>
+            </div>
+          </div>
+          <p
+            className="text-center text-[13px] font-bold mb-1"
+            style={{ color: 'var(--accent)', letterSpacing: '0.12em' }}
+          >
+            Tu app de comunidades de fútbol
+          </p>
+          <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
+            ¿Cómo quieres empezar?
+          </p>
+
+          {/* Chooser cards */}
+          <div className="space-y-3">
+            <button
+              onClick={() => setNewUserOpen(true)}
+              className="w-full text-left rounded-l p-5 transition-all active:scale-[0.98] select-none"
+              style={{
+                background: 'var(--bg2)',
+                border: '1px solid var(--accent)',
+                boxShadow: '0 0 0 3px rgba(168,255,62,0.08), 0 10px 30px rgba(168,255,62,0.12)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl leading-none">🆕</span>
+                <div className="flex-1">
+                  <p className="font-bebas text-2xl tracking-wider" style={{ color: 'var(--accent)' }}>
+                    Usuario nuevo
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                    Únete con el PIN de la comunidad. Te crea tu jugador y tu PIN personal.
+                  </p>
+                </div>
+                <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setGate('auth')}
+              className="w-full text-left rounded-l p-5 transition-all active:scale-[0.98] select-none"
+              style={{
+                background: 'var(--bg2)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-3xl leading-none">🔑</span>
+                <div className="flex-1">
+                  <p className="font-bebas text-2xl tracking-wider">
+                    Ya tengo un PIN
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                    Entra directamente con el PIN de tu comunidad.
+                  </p>
+                </div>
+                <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+              </div>
+            </button>
+          </div>
+
+          {canDismiss && (
+            <button
+              onClick={() => {
+                localStorage.setItem(GATE_KEY, '1')
+                setGate('auth')
+              }}
+              className="w-full mt-4 py-2 text-xs uppercase tracking-wider font-bold active:scale-[0.98] transition-transform select-none"
+              style={{ color: 'var(--muted)' }}
+            >
+              No volver a mostrar
+            </button>
+          )}
+
+          <p className="text-center text-xs mt-6" style={{ color: 'var(--muted)' }}>
+            FURBITO v2.1 · Powered by Supabase
+          </p>
+        </div>
+
+        {newUserOpen && (
+          <NewUserModal
+            onClose={() => setNewUserOpen(false)}
+            triggerShake={triggerShake}
+          />
+        )}
+      </div>
+    )
   }
 
+  /* ═════════ Login clásico (PIN comunidad) ═════════ */
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
       <OnboardingOverlay />
@@ -292,27 +390,6 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Tu código de jugador <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={playerCode}
-                  onChange={e => setPlayerCode(e.target.value)}
-                  placeholder="Ej: AX3K"
-                  maxLength={4}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold uppercase tracking-widest outline-none text-center"
-                  style={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
-                />
-                <p className="text-xs mt-1 text-center" style={{ color: 'var(--muted)' }}>
-                  Déjalo vacío para entrar como invitado
-                </p>
-              </div>
               {joinError && (
                 <p className="text-sm font-semibold text-center" style={{ color: 'var(--red)' }}>{joinError}</p>
               )}
@@ -324,6 +401,9 @@ export default function LoginPage() {
               >
                 {joinLoading ? 'Buscando...' : 'ENTRAR'}
               </button>
+              <p className="text-center text-xs" style={{ color: 'var(--muted)' }}>
+                Una vez dentro, pulsa 🔑 arriba a la derecha para identificarte con tu PIN personal.
+              </p>
             </form>
           )}
 
@@ -425,39 +505,200 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Community cards grid */}
-        {communities.length > 0 && (
-          <div className="mt-6">
-            <p className="text-xs font-bold uppercase tracking-wider mb-3 text-center" style={{ color: 'var(--muted)' }}>
-              Comunidades disponibles
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {communities.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => handleCommunityCard(c)}
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-m text-left transition-all active:scale-[0.97]"
-                  style={{
-                    background: 'rgba(255,255,255,0.045)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <span
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ background: c.color }}
-                  />
-                  <span className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-                    {c.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <p className="text-center text-xs mt-6" style={{ color: 'var(--muted)' }}>
           FURBITO v2.1 · Powered by Supabase
         </p>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────── Modal: Usuario nuevo ─────────── */
+
+interface NewUserModalProps {
+  onClose: () => void
+  triggerShake: () => void
+}
+
+function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
+  const router = useRouter()
+  const login = useSession(s => s.login)
+
+  const [communityPin, setCommunityPin] = useState('')
+  const [name, setName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [createdCode, setCreatedCode] = useState<string | null>(null)
+  const [createdCommunityId, setCreatedCommunityId] = useState<string | null>(null)
+  const [createdColor, setCreatedColor] = useState<string | null>(null)
+  const [createdPlayerId, setCreatedPlayerId] = useState<string | null>(null)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    const nm = name.trim()
+    if (nm.length < 2) { setError('Introduce un nombre de al menos 2 caracteres.'); return }
+    if (!communityPin.trim()) { setError('Introduce el PIN de la comunidad.'); return }
+
+    setLoading(true)
+    const supabase = createClient()
+
+    const { data: community, error: commErr } = await supabase
+      .from('communities')
+      .select('id, color, pin')
+      .eq('pin', communityPin.toUpperCase())
+      .maybeSingle()
+
+    if (commErr || !community) {
+      setError('PIN de comunidad no encontrado.')
+      triggerShake()
+      setLoading(false)
+      return
+    }
+
+    // Evitar duplicados por nombre exacto en la misma comunidad (opcional defensivo)
+    const playerId = uid()
+    const playerCode = genPlayerCode()
+
+    const { error: insertErr } = await supabase.from('players').insert({
+      id: playerId,
+      community_id: community.id,
+      name: nm,
+      code: playerCode,
+    })
+
+    if (insertErr) {
+      setError(`No se pudo crear el jugador: ${insertErr.message}`)
+      setLoading(false)
+      return
+    }
+
+    setCreatedCode(playerCode)
+    setCreatedCommunityId(community.id)
+    setCreatedColor(community.color)
+    setCreatedPlayerId(playerId)
+    setLoading(false)
+  }
+
+  function enterAsNewPlayer() {
+    if (!createdCommunityId || !createdColor || !createdPlayerId) return
+    login(createdCommunityId, createdColor, 'player', createdPlayerId)
+    router.push(`/${createdCommunityId}`)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose() }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="newuser-title"
+        className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
+        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+      >
+        {!createdCode ? (
+          <>
+            <h2 id="newuser-title" className="text-lg font-bold text-center">🆕 Usuario nuevo</h2>
+            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
+              Pide a tu admin el PIN de la comunidad, elige tu nombre y te crearemos un PIN personal de 4 dígitos.
+            </p>
+
+            <form onSubmit={submit} className="flex flex-col gap-3">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
+                  PIN de comunidad
+                </label>
+                <input
+                  type="text"
+                  value={communityPin}
+                  onChange={e => { setCommunityPin(e.target.value); setError('') }}
+                  placeholder="Ej: FURIA24"
+                  maxLength={20}
+                  className="w-full px-4 py-3 rounded-m text-center text-base font-bold uppercase tracking-[0.3em] outline-none"
+                  style={{
+                    background: 'var(--bg2)',
+                    border: `1px solid ${error ? 'var(--red)' : 'var(--border)'}`,
+                    color: 'var(--accent)',
+                  }}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
+                  Tu nombre
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => { setName(e.target.value); setError('') }}
+                  placeholder="Ej: Carlos"
+                  maxLength={30}
+                  className="w-full px-4 py-3 rounded-m text-base font-bold outline-none"
+                  style={{
+                    background: 'var(--bg2)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                  }}
+                  required
+                />
+              </div>
+
+              {error && (
+                <p className="text-xs text-center font-semibold" style={{ color: 'var(--red)' }}>{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
+                style={{ background: 'var(--accent)', color: '#050d05', minHeight: 48 }}
+              >
+                {loading ? 'Creando…' : 'Crear mi usuario'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="text-xs uppercase tracking-wide opacity-60 hover:opacity-100 transition-opacity select-none"
+                style={{ color: 'var(--muted)', minHeight: 44 }}
+              >
+                Cancelar
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-bold text-center">✅ ¡Listo!</h2>
+            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
+              Guarda este PIN — lo necesitas para identificarte como jugador.
+            </p>
+            <div
+              className="rounded-m p-5 text-center"
+              style={{ background: 'var(--bg2)', border: '1px solid var(--accent)' }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+                Tu PIN de jugador
+              </p>
+              <p
+                className="font-bebas text-5xl tracking-[0.3em] mt-1"
+                style={{ color: 'var(--accent)', textShadow: '0 0 20px rgba(168,255,62,0.4)' }}
+              >
+                {createdCode}
+              </p>
+            </div>
+            <button
+              onClick={enterAsNewPlayer}
+              className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
+              style={{ background: 'var(--accent)', color: '#050d05', minHeight: 48 }}
+            >
+              Entrar a la comunidad
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

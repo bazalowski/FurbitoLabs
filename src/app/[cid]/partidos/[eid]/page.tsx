@@ -6,6 +6,7 @@ import { useSession } from '@/stores/session'
 import { useEvent } from '@/hooks/useEvents'
 import { usePlayers } from '@/hooks/usePlayers'
 import { usePistas } from '@/hooks/usePistas'
+import { useVotes } from '@/hooks/useVotes'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/Button'
@@ -14,13 +15,14 @@ import { EventForm } from '@/components/events/EventForm'
 import { showToast } from '@/components/ui/Toast'
 import { fmtDateTime } from '@/lib/utils'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
+import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { MvpVoting } from '@/components/events/MvpVoting'
 import { PostMatchRating } from '@/components/events/PostMatchRating'
 import { calcXP } from '@/lib/game/badges'
 import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
 import { finalizeMvpByVotes } from '@/lib/game/mvp-finalize'
 import { useMvpVotes } from '@/hooks/useMvpVotes'
-import type { Confirmation, MatchPlayer } from '@/types'
+import type { Confirmation, MatchPlayer, TeamGeneratorResult } from '@/types'
 
 type DetailTab = 'convocados' | 'equipos' | 'resultado'
 
@@ -35,11 +37,14 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const { event, loading, reload: reloadEvent } = useEvent(eid)
   const { players } = usePlayers(cid)
   const { pistas } = usePistas(cid)
+  const { votes } = useVotes(cid)
   const { votes: mvpVotes } = useMvpVotes(eid)
   const [editOpen, setEditOpen] = useState(false)
   const [adminConfirming, setAdminConfirming] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<DetailTab>('convocados')
   const [closingMvp, setClosingMvp] = useState(false)
+  const [teamGenOpen, setTeamGenOpen] = useState(false)
+  const [confirmingTeams, setConfirmingTeams] = useState(false)
 
   // match_players llega embebido en el Event vía el hook (con realtime). Evitamos
   // una query aparte para que cualquier cambio (admin cierra MVP, re-registra
@@ -98,6 +103,27 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     router.push(`/${cid}/partidos`)
   }
 
+  async function confirmTeams(result: TeamGeneratorResult) {
+    if (!event || confirmingTeams) return
+    setConfirmingTeams(true)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('events')
+      .update({
+        equipo_a: result.teamA.map(p => p.id),
+        equipo_b: result.teamB.map(p => p.id),
+      })
+      .eq('id', event.id)
+    setConfirmingTeams(false)
+    if (error) {
+      showToast('No se pudieron guardar los equipos')
+      return
+    }
+    showToast('✅ Equipos confirmados')
+    setTeamGenOpen(false)
+    reloadEvent()
+  }
+
   async function closeMvpVoting() {
     if (!event || closingMvp) return
     if (mvpVotes.length === 0) {
@@ -139,48 +165,75 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     { key: 'resultado', label: 'Resultado' },
   ]
 
+  // Pool de jugadores para el generador: confirmados "sí" o, si no hay confirmaciones, toda la comunidad.
+  const teamPool = (() => {
+    const ids = (event?.confirmations ?? []).filter(c => c.status === 'si').map(c => c.player_id)
+    return ids.length >= 2 ? players.filter(p => ids.includes(p.id)) : players
+  })()
+
   // ── Equipos tab content ────────────────────────────────────────
   function renderEquipos() {
     if (!event) return null
     const teamA = (event.equipo_a ?? []).map(id => players.find(p => p.id === id)).filter(Boolean) as typeof players
     const teamB = (event.equipo_b ?? []).map(id => players.find(p => p.id === id)).filter(Boolean) as typeof players
-
-    if (teamA.length === 0 && teamB.length === 0) {
-      return (
-        <div className="text-center py-10" style={{ color: 'var(--muted)' }}>
-          <p className="text-3xl mb-3">⚖️</p>
-          <p className="font-bold text-sm">Sin equipos generados</p>
-          {!event.finalizado && isAdmin && (
-            <p className="text-xs mt-2">Genera equipos al registrar el resultado</p>
-          )}
-        </div>
-      )
-    }
+    const hasTeams = teamA.length > 0 || teamB.length > 0
+    const canEditTeams = isAdmin && !event.finalizado
 
     return (
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'Equipo A', team: teamA },
-          { label: 'Equipo B', team: teamB },
-        ].map(({ label, team }) => (
-          <div
-            key={label}
-            className="rounded-m p-3"
-            style={{ background: 'var(--card)', border: `1px solid ${communityColor}33` }}
-          >
-            <p className="font-bebas text-lg tracking-wider text-center mb-3" style={{ color: communityColor }}>
-              {label}
-            </p>
-            <div className="space-y-2">
-              {team.map(p => (
-                <div key={p.id} className="flex items-center gap-2">
-                  <PlayerAvatar player={p} size={28} communityColor={communityColor} />
-                  <span className="text-xs font-semibold truncate">{p.name}</span>
+      <div className="space-y-4">
+        {/* Teams snapshot */}
+        {hasTeams ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Equipo A', team: teamA },
+              { label: 'Equipo B', team: teamB },
+            ].map(({ label, team }) => (
+              <div
+                key={label}
+                className="card hairline-top p-3"
+                style={{ borderColor: communityColor + '44' }}
+              >
+                <p
+                  className="font-bebas text-lg tracking-wider text-center mb-3 pb-2"
+                  style={{ color: communityColor, borderBottom: `1px solid ${communityColor}22` }}
+                >
+                  {label}
+                </p>
+                <div className="space-y-2">
+                  {team.length === 0 && (
+                    <p className="text-[11px] text-center py-2" style={{ color: 'var(--muted)' }}>—</p>
+                  )}
+                  {team.map(p => (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <PlayerAvatar player={p} size={28} communityColor={communityColor} />
+                      <span className="text-xs font-semibold truncate">{p.name}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="text-center py-10" style={{ color: 'var(--muted)' }}>
+            <p className="text-3xl mb-3">⚖️</p>
+            <p className="font-bold text-sm">Sin equipos generados</p>
+            {canEditTeams && (
+              <p className="text-xs mt-2">Úsalo el botón ⚡ para generar y confirmar</p>
+            )}
+          </div>
+        )}
+
+        {/* Admin: abrir generador (para crear o regenerar) */}
+        {canEditTeams && (
+          <button
+            type="button"
+            onClick={() => setTeamGenOpen(true)}
+            className="w-full h-11 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
+            style={{ background: communityColor, color: '#050d05' }}
+          >
+            ⚡ {hasTeams ? 'Regenerar equipos' : 'Generar equipos'}
+          </button>
+        )}
       </div>
     )
   }
@@ -631,6 +684,29 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar evento">
         <EventForm communityId={cid} pistas={pistas} event={event}
           onDone={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />
+      </Modal>
+
+      {/* Generador de equipos (admin, solo si no finalizado) */}
+      <Modal
+        open={teamGenOpen}
+        onClose={() => { if (!confirmingTeams) setTeamGenOpen(false) }}
+        title="⚡ Generar equipos"
+        variant="window"
+      >
+        {teamPool.length < 2 ? (
+          <p className="text-sm text-center py-6" style={{ color: 'var(--muted)' }}>
+            Necesitas al menos 2 jugadores confirmados (o de la comunidad) para generar equipos.
+          </p>
+        ) : (
+          <TeamGenerator
+            players={teamPool}
+            votes={votes}
+            communityColor={communityColor}
+            onConfirmTeams={confirmTeams}
+            confirming={confirmingTeams}
+            confirmLabel="✅ Confirmar equipos"
+          />
+        )}
       </Modal>
     </div>
   )

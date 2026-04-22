@@ -1,17 +1,15 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/stores/session'
 import { useEvent } from '@/hooks/useEvents'
 import { usePlayers } from '@/hooks/usePlayers'
-import { useVotes } from '@/hooks/useVotes'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
-import { Modal } from '@/components/ui/Modal'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
-import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
 import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
 import { uid } from '@/lib/utils'
@@ -36,7 +34,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
   const session = useSession()
   const { event } = useEvent(eid)
   const { players, reload: reloadPlayers } = usePlayers(cid)
-  const { votes } = useVotes(cid)
 
   const [golesA, setGolesA] = useState(0)
   const [golesB, setGolesB] = useState(0)
@@ -45,9 +42,25 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
   const [stats, setStats] = useState<Record<string, MatchPlayerStats>>({})
   const [saving, setSaving] = useState(false)
   const [step, setStep] = useState<Step>('marcador')
-  const [genOpen, setGenOpen] = useState(false)
 
   const communityColor = session.communityColor
+
+  // Pre-cargar los equipos ya confirmados desde la pestaña Equipos (si existen).
+  useEffect(() => {
+    if (!event) return
+    if (equipoA.length === 0 && equipoB.length === 0) {
+      const preA = event.equipo_a ?? []
+      const preB = event.equipo_b ?? []
+      if (preA.length || preB.length) {
+        setEquipoA(preA)
+        setEquipoB(preB)
+        const init: Record<string, MatchPlayerStats> = {}
+        ;[...preA, ...preB].forEach(pid => { init[pid] = initStats(pid) })
+        setStats(prev => ({ ...init, ...prev }))
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id])
 
   const confirmados = useMemo(() => {
     if (!event?.confirmations) return []
@@ -80,14 +93,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       setEquipoB(prev => inB ? prev.filter(id => id !== pid) : [...prev, pid])
       if (inA) setEquipoA(prev => prev.filter(id => id !== pid))
     }
-  }
-
-  function handleTeamsGenerated(a: string[], b: string[]) {
-    setEquipoA(a); setEquipoB(b)
-    const init: Record<string, MatchPlayerStats> = {}
-    ;[...a, ...b].forEach(pid => { init[pid] = initStats(pid) })
-    setStats(prev => ({ ...init, ...prev }))
-    setGenOpen(false)
   }
 
   // ── Auto-validation ────────────────────────────────────────────
@@ -326,14 +331,17 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                 <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
                   Asignar jugadores
                 </p>
-                <button
-                  onClick={() => setGenOpen(true)}
-                  className="text-xs font-bold px-3 py-1.5 rounded-m active:scale-95"
+                <Link
+                  href={`/${cid}/partidos/${eid}`}
+                  className="text-xs font-bold px-3 py-1.5 rounded-m active:scale-95 select-none"
                   style={{ background: communityColor + '22', color: communityColor }}
                 >
-                  ⚡ Auto-generar
-                </button>
+                  ⚡ Generar en «Equipos»
+                </Link>
               </div>
+              <p className="text-[11px] mb-2" style={{ color: 'var(--muted)' }}>
+                Los equipos ya confirmados en la pestaña «Equipos» del partido aparecen aquí precargados.
+              </p>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[
@@ -738,19 +746,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         )}
       </div>
 
-      {/* Team generator modal */}
-      <Modal open={genOpen} onClose={() => setGenOpen(false)} title="⚡ Generar equipos">
-        <TeamGenerator
-          players={confirmados}
-          votes={votes}
-          communityColor={communityColor}
-          onTeamsGenerated={(result) => {
-            if (result) {
-              handleTeamsGenerated(result.teamA.map(p => p.id), result.teamB.map(p => p.id))
-            }
-          }}
-        />
-      </Modal>
     </div>
   )
 }
