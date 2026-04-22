@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BADGE_DEFS } from '@/lib/game/badges'
+import { BadgeArt } from '@/components/ui/BadgeArt'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
 
@@ -68,7 +69,7 @@ export function BadgeVitrina({
                   boxShadow: `0 4px 14px ${accentColor}11`,
                 }}
               >
-                <span className="text-2xl leading-none">{def.icon}</span>
+                <BadgeArt badgeKey={key!} size={40} />
                 <span
                   className="text-[9px] font-bold leading-tight text-center line-clamp-1"
                   style={{ color: 'var(--fg)' }}
@@ -92,7 +93,7 @@ export function BadgeVitrina({
                 opacity: editable ? 1 : 0.5,
               }}
             >
-              <span className="text-xl opacity-50">➕</span>
+              <span className="text-xl opacity-50">+</span>
               <span className="text-[9px] font-bold leading-tight">Vacío</span>
             </button>
           )
@@ -220,7 +221,7 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
               >
                 {def ? (
                   <>
-                    <span className="text-2xl leading-none">{def.icon}</span>
+                    <BadgeArt badgeKey={key!} size={40} />
                     <span className="text-[8px] font-bold tabular-nums" style={{ color: 'var(--muted)' }}>
                       #{i + 1}
                     </span>
@@ -292,7 +293,7 @@ function VitrinaEditor({ playerId, current, unlocked, accentColor, onClose }: Vi
                       boxShadow: isSel ? `0 0 0 2px ${accentColor}55` : undefined,
                     }}
                   >
-                    <span className="text-xl leading-none">{def.icon}</span>
+                    <BadgeArt badgeKey={key} size={38} />
                     <span
                       className="text-[10px] font-bold leading-tight text-center line-clamp-2"
                       style={{ color: isSel ? accentColor : 'var(--fg)' }}

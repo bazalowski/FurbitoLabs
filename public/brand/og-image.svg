@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="FURBITO">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#0f2a14"/>
+      <stop offset="55%" stop-color="#0a1408"/>
+      <stop offset="100%" stop-color="#050d05"/>
+    </linearGradient>
+    <linearGradient id="pitch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e4a26"/>
+      <stop offset="100%" stop-color="#0b2411"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#e8ffa8"/>
+      <stop offset="50%" stop-color="#a8ff3e"/>
+      <stop offset="100%" stop-color="#58c516"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff2a8"/>
+      <stop offset="45%" stop-color="#ffd43e"/>
+      <stop offset="80%" stop-color="#d49b0e"/>
+      <stop offset="100%" stop-color="#8a6006"/>
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff7dc"/>
+      <stop offset="55%" stop-color="#ffe79c"/>
+      <stop offset="100%" stop-color="#c9a043"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#a8ff3e" stop-opacity="0.22"/>
+      <stop offset="60%" stop-color="#a8ff3e" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#a8ff3e" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="pgrid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#a8ff3e" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+    <pattern id="pstripes" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="28" height="28" fill="transparent"/>
+      <rect x="0" y="0" width="14" height="28" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+    <clipPath id="shieldClip">
+      <path d="M 760 140 L 1120 140 L 1120 340 C 1120 420, 1050 480, 940 540 C 830 480, 760 420, 760 340 Z"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#pgrid)"/>
+  <rect width="1200" height="630" fill="url(#spot)"/>
+
+  <!-- Scanline arcade bar top -->
+  <rect x="0" y="0" width="1200" height="14" fill="url(#gold)"/>
+  <rect x="0" y="14" width="1200" height="4" fill="#a8ff3e" opacity="0.8"/>
+  <rect x="0" y="616" width="1200" height="4" fill="#a8ff3e" opacity="0.8"/>
+  <rect x="0" y="620" width="1200" height="10" fill="url(#gold)"/>
+
+  <!-- === WORDMARK LEFT === -->
+  <g font-family="'Bebas Neue','Arial Black',Impact,sans-serif" font-weight="900" transform="skewX(-8)">
+    <text x="82" y="340" font-size="200" letter-spacing="4" fill="#000" opacity="0.5" transform="translate(6 7)">FURBITO</text>
+    <text x="82" y="340" font-size="200" letter-spacing="4" fill="none" stroke="#0a1408" stroke-width="16" stroke-linejoin="round" paint-order="stroke">FURBITO</text>
+    <text x="82" y="340" font-size="200" letter-spacing="4" fill="none" stroke="url(#gold)" stroke-width="7" paint-order="stroke">FURBITO</text>
+    <text x="82" y="340" font-size="200" letter-spacing="4" fill="url(#word)">FURBITO</text>
+    <text x="82" y="340" font-size="200" letter-spacing="4" fill="#ffffff" opacity="0.3" clip-path="inset(0 0 55% 0)">FURBITO</text>
+  </g>
+
+  <!-- Tagline -->
+  <g font-family="'Bebas Neue','Arial Black',sans-serif" font-weight="900">
+    <text x="80" y="408" font-size="32" letter-spacing="14" fill="#a8ff3e">RETRO · ARCADE · FÚTBOL</text>
+    <text x="80" y="448" font-size="22" letter-spacing="10" fill="#ffd43e" opacity="0.9">COMUNIDAD · PARTIDOS · RANKING · LEYENDAS</text>
+  </g>
+
+  <!-- Press Start -->
+  <g transform="translate(80 500)">
+    <rect x="0" y="0" width="340" height="58" rx="6" fill="#0a1408" stroke="url(#gold)" stroke-width="3"/>
+    <rect x="0" y="0" width="340" height="58" rx="6" fill="url(#neon)" opacity="0.08"/>
+    <text x="170" y="39" text-anchor="middle" font-family="'Bebas Neue','Arial Black',sans-serif" font-weight="900" font-size="26" letter-spacing="8" fill="#a8ff3e">► PRESS START</text>
+  </g>
+
+  <!-- Stats chips -->
+  <g transform="translate(452 500)" font-family="'Bebas Neue',sans-serif" font-weight="900">
+    <g>
+      <rect width="92" height="58" rx="6" fill="#0a1408" stroke="#a8ff3e" stroke-opacity="0.5" stroke-width="2"/>
+      <text x="46" y="30" text-anchor="middle" font-size="22" fill="#a8ff3e">XP</text>
+      <text x="46" y="50" text-anchor="middle" font-size="14" fill="#fff7dc" opacity="0.7">LEVEL UP</text>
+    </g>
+    <g transform="translate(104 0)">
+      <rect width="92" height="58" rx="6" fill="#0a1408" stroke="#ffd43e" stroke-opacity="0.55" stroke-width="2"/>
+      <text x="46" y="30" text-anchor="middle" font-size="22" fill="#ffd43e">MVP</text>
+      <text x="46" y="50" text-anchor="middle" font-size="14" fill="#fff7dc" opacity="0.7">LEGEND</text>
+    </g>
+    <g transform="translate(208 0)">
+      <rect width="92" height="58" rx="6" fill="#0a1408" stroke="#ff3e88" stroke-opacity="0.55" stroke-width="2"/>
+      <text x="46" y="30" text-anchor="middle" font-size="22" fill="#ff3e88">GOL</text>
+      <text x="46" y="50" text-anchor="middle" font-size="14" fill="#fff7dc" opacity="0.7">COMBO</text>
+    </g>
+  </g>
+
+  <!-- === CREST RIGHT === -->
+  <g>
+    <path d="M 760 140 L 1120 140 L 1120 340 C 1120 420, 1050 480, 940 540 C 830 480, 760 420, 760 340 Z"
+          fill="#000" opacity="0.4" transform="translate(0 10)"/>
+    <path d="M 760 140 L 1120 140 L 1120 340 C 1120 420, 1050 480, 940 540 C 830 480, 760 420, 760 340 Z"
+          fill="url(#gold)"/>
+    <path d="M 776 156 L 1104 156 L 1104 336 C 1104 410, 1040 466, 940 520 C 840 466, 776 410, 776 336 Z"
+          fill="url(#pitch)"/>
+    <g clip-path="url(#shieldClip)">
+      <rect x="760" y="140" width="360" height="400" fill="url(#pstripes)"/>
+      <rect x="920" y="140" width="40" height="400" fill="#ffffff" fill-opacity="0.05"/>
+      <rect x="776" y="156" width="328" height="40" fill="#0a1408" fill-opacity="0.55"/>
+      <rect x="776" y="194" width="328" height="2" fill="url(#gold)" fill-opacity="0.55"/>
+    </g>
+    <g font-family="'Bebas Neue','Arial Black',sans-serif" font-weight="900" letter-spacing="6">
+      <text x="940" y="184" text-anchor="middle" font-size="24" fill="#fff7dc">FURBITO</text>
+    </g>
+
+    <!-- F -->
+    <g transform="translate(816 216)">
+      <g transform="translate(5 6)" opacity="0.55">
+        <path d="M 50 0 L 190 0 L 180 40 L 78 40 L 70 80 L 168 80 L 158 118 L 60 118 L 44 196 L 0 196 Z" fill="#000"/>
+      </g>
+      <path d="M 50 0 L 190 0 L 180 40 L 78 40 L 70 80 L 168 80 L 158 118 L 60 118 L 44 196 L 0 196 Z"
+            fill="url(#neon)" stroke="#0a1408" stroke-width="3" stroke-linejoin="round"/>
+    </g>
+    <!-- Ball -->
+    <g transform="translate(1020 420)">
+      <circle r="36" fill="#fff7dc" stroke="#0a1408" stroke-width="3"/>
+      <circle cx="-11" cy="-11" r="11" fill="#ffffff" opacity="0.7"/>
+      <polygon points="0,-14 13,-4 8,12 -8,12 -13,-4" fill="#0a1408"/>
+      <g stroke="#0a1408" stroke-width="2.5" stroke-linecap="round" fill="none">
+        <line x1="0"  y1="-14" x2="0"   y2="-28"/>
+        <line x1="13" y1="-4"  x2="26"  y2="-14"/>
+        <line x1="-13" y1="-4" x2="-26" y2="-14"/>
+        <line x1="8"  y1="12"  x2="18"  y2="26"/>
+        <line x1="-8" y1="12"  x2="-18" y2="26"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Bottom label -->
+  <g font-family="'Bebas Neue',sans-serif" font-weight="900">
+    <text x="1120" y="588" text-anchor="end" font-size="18" letter-spacing="8" fill="#ffd43e" opacity="0.85">EST · 2025 · CLUB</text>
+  </g>
+</svg>

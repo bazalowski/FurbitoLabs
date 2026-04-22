@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { BADGE_DEFS } from '@/lib/game/badges'
+import { BadgeArt } from './BadgeArt'
 import { cn } from '@/lib/utils'
 
 interface BadgeChipProps {
@@ -8,11 +9,8 @@ interface BadgeChipProps {
   showName?: boolean
 }
 
-const sizeStyles = {
-  sm: { icon: 'text-lg', name: 'text-xs' },
-  md: { icon: 'text-2xl', name: 'text-xs' },
-  lg: { icon: 'text-4xl', name: 'text-sm' },
-}
+const SIZE_PX = { sm: 32, md: 48, lg: 72 }
+const NAME_CLS = { sm: 'text-[10px]', md: 'text-xs', lg: 'text-sm' }
 
 export function BadgeChip({ badgeKey, size = 'md', showName = false }: BadgeChipProps) {
   const def = BADGE_DEFS[badgeKey]
@@ -24,9 +22,9 @@ export function BadgeChip({ badgeKey, size = 'md', showName = false }: BadgeChip
       style={{ background: 'var(--card)', border: '1px solid var(--border-a)' }}
       title={`${def.name} — ${def.desc}`}
     >
-      <span className={sizeStyles[size].icon}>{def.icon}</span>
+      <BadgeArt badgeKey={badgeKey} size={SIZE_PX[size]} />
       {showName && (
-        <span className={cn('font-bold text-center leading-tight', sizeStyles[size].name)} style={{ color: 'var(--muted)' }}>
+        <span className={cn('font-bold text-center leading-tight', NAME_CLS[size])} style={{ color: 'var(--muted)' }}>
           {def.name}
         </span>
       )}
@@ -79,7 +77,7 @@ function BadgeDetailPanel({
       className="rounded-m p-3 flex items-center gap-3 animate-pop relative"
       style={{ background: 'var(--card)', border: `1px solid ${accentColor}44` }}
     >
-      <span className="text-3xl shrink-0">{def.icon}</span>
+      <BadgeArt badgeKey={badgeKey} size={56} />
       <div className="flex-1 min-w-0">
         <p className="font-bebas text-base tracking-wider leading-tight" style={{ color: accentColor }}>
           {def.name}
@@ -156,14 +154,14 @@ export function BadgeInlineGrid({
                   <button
                     key={key}
                     onClick={toggle}
-                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px] transition-all active:scale-95"
+                    className="flex flex-col items-center gap-1 p-1.5 rounded-m text-center select-none transition-all active:scale-95"
                     style={{
                       background: 'var(--card)',
                       border: `1px solid ${isSelected ? accentColor : `${accentColor}44`}`,
                       boxShadow: isSelected ? `0 0 0 2px ${accentColor}55` : undefined,
                     }}
                   >
-                    <span className="text-lg">{def.icon}</span>
+                    <BadgeArt badgeKey={key} size={44} />
                     <span className="text-[10px] font-bold leading-tight" style={{ color: 'var(--fg)' }}>
                       {def.name}
                     </span>
@@ -173,15 +171,14 @@ export function BadgeInlineGrid({
                     key={key}
                     aria-disabled="true"
                     title={`${def.name} — bloqueada`}
-                    className="flex flex-col items-center gap-0.5 p-1.5 rounded-m text-center select-none min-h-[48px]"
+                    className="flex flex-col items-center gap-1 p-1.5 rounded-m text-center select-none"
                     style={{
                       background: 'var(--card)',
                       border: '1px solid var(--border)',
-                      opacity: 0.4,
                       cursor: 'not-allowed',
                     }}
                   >
-                    <span className="text-lg" aria-hidden="true">🔒</span>
+                    <BadgeArt badgeKey={key} size={44} locked />
                     <span className="text-[10px] font-bold leading-tight" style={{ color: 'var(--muted)' }}>
                       {def.name}
                     </span>

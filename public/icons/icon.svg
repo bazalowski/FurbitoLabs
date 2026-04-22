@@ -1,54 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="FURBITO">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FURBITO">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#0d1f0d"/>
       <stop offset="100%" stop-color="#050d05"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#c8ff72"/>
-      <stop offset="100%" stop-color="#a8ff3e"/>
+    <linearGradient id="pitch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e4a26"/>
+      <stop offset="100%" stop-color="#0b2411"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="55%" r="55%">
+    <linearGradient id="neon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8ffa8"/>
+      <stop offset="50%" stop-color="#a8ff3e"/>
+      <stop offset="100%" stop-color="#58c516"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff2a8"/>
+      <stop offset="45%" stop-color="#ffd43e"/>
+      <stop offset="100%" stop-color="#8a6006"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="60%">
       <stop offset="0%" stop-color="#a8ff3e" stop-opacity="0.28"/>
-      <stop offset="55%" stop-color="#a8ff3e" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#a8ff3e" stop-opacity="0"/>
     </radialGradient>
+    <clipPath id="sclip">
+      <path d="M 88 96 L 424 96 L 424 262 C 424 326, 368 378, 256 428 C 144 378, 88 326, 88 262 Z"/>
+    </clipPath>
   </defs>
 
-  <!-- Rounded dark bg -->
   <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
-  <!-- Soft glow -->
   <rect width="512" height="512" rx="112" ry="112" fill="url(#glow)"/>
-  <!-- Inner filo -->
-  <rect x="3" y="3" width="506" height="506" rx="109" ry="109" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="2"/>
+  <rect x="3" y="3" width="506" height="506" rx="109" ry="109" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="2"/>
 
-  <!-- Bold "F" monogram — solid, geometric, readable at 48px.
-       Body: vertical stem + two horizontal bars. -->
-  <g fill="url(#accent)">
-    <!-- vertical stem -->
-    <rect x="148" y="108" width="70" height="296" rx="14"/>
-    <!-- top bar -->
-    <rect x="148" y="108" width="232" height="66" rx="14"/>
-    <!-- middle bar -->
-    <rect x="148" y="216" width="180" height="58" rx="12"/>
+  <!-- Shield -->
+  <path d="M 88 96 L 424 96 L 424 262 C 424 326, 368 378, 256 428 C 144 378, 88 326, 88 262 Z"
+        fill="#000" opacity="0.4" transform="translate(0 8)"/>
+  <path d="M 88 96 L 424 96 L 424 262 C 424 326, 368 378, 256 428 C 144 378, 88 326, 88 262 Z"
+        fill="url(#gold)"/>
+  <path d="M 104 112 L 408 112 L 408 260 C 408 318, 360 364, 256 408 C 152 364, 104 318, 104 260 Z"
+        fill="url(#pitch)"/>
+  <g clip-path="url(#sclip)">
+    <rect x="220" y="96" width="72" height="332" fill="#ffffff" fill-opacity="0.05"/>
   </g>
 
-  <!-- Soccer ball accent: small ball at bottom-right of the F, reinforcing the futbol theme -->
-  <g transform="translate(360 370)">
-    <circle r="54" fill="#f0f0f0"/>
-    <circle r="54" fill="none" stroke="#050d05" stroke-opacity="0.15" stroke-width="2"/>
-    <g fill="#050d05">
-      <!-- Central pentagon -->
-      <polygon points="0,-20 19,-7 12,16 -12,16 -19,-7"/>
-      <!-- Three edge triangles (hexagon seam hints) -->
-      <polygon points="0,-20 19,-7 22,-34 -0,-42 -22,-34 -19,-7" opacity="0.0"/>
+  <!-- Big F -->
+  <g transform="translate(140 158)">
+    <g transform="translate(5 6)" opacity="0.55">
+      <path d="M 50 0 L 218 0 L 206 46 L 84 46 L 75 92 L 190 92 L 178 136 L 66 136 L 46 228 L 0 228 Z" fill="#000"/>
     </g>
-    <g stroke="#050d05" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.9">
-      <line x1="0" y1="-20" x2="0" y2="-44"/>
-      <line x1="19" y1="-7" x2="40" y2="-22"/>
-      <line x1="-19" y1="-7" x2="-40" y2="-22"/>
-      <line x1="12" y1="16" x2="30" y2="40"/>
-      <line x1="-12" y1="16" x2="-30" y2="40"/>
+    <path d="M 50 0 L 218 0 L 206 46 L 84 46 L 75 92 L 190 92 L 178 136 L 66 136 L 46 228 L 0 228 Z"
+          fill="url(#neon)" stroke="#0a1408" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Ball -->
+  <g transform="translate(340 320)">
+    <circle r="44" fill="#fff7dc" stroke="#0a1408" stroke-width="3"/>
+    <circle cx="-14" cy="-14" r="14" fill="#ffffff" opacity="0.7"/>
+    <polygon points="0,-16 15,-5 9,13 -9,13 -15,-5" fill="#0a1408"/>
+    <g stroke="#0a1408" stroke-width="3" stroke-linecap="round" fill="none">
+      <line x1="0"  y1="-16" x2="0"   y2="-34"/>
+      <line x1="15" y1="-5"  x2="32"  y2="-18"/>
+      <line x1="-15" y1="-5" x2="-32" y2="-18"/>
+      <line x1="9"  y1="13"  x2="22"  y2="30"/>
+      <line x1="-9" y1="13"  x2="-22" y2="30"/>
     </g>
   </g>
 </svg>

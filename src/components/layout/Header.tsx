@@ -31,10 +31,23 @@ export function Header({ title, left, right }: HeaderProps) {
   )
 }
 
-export function Logo() {
+export function Logo({ size = 28 }: { size?: number }) {
   return (
-    <span className="font-bebas text-2xl tracking-widest" style={{ color: 'var(--comm-color, var(--accent))' }}>
-      FUR<span style={{ color: 'var(--text)' }}>BITO</span>
+    <span className="inline-flex items-center gap-2 select-none">
+      <img
+        src="/icons/icon.svg"
+        alt=""
+        aria-hidden="true"
+        width={size}
+        height={size}
+        style={{ width: size, height: size, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}
+      />
+      <span
+        className="font-bebas text-2xl tracking-widest"
+        style={{ color: 'var(--comm-color, var(--accent))', transform: 'skewX(-6deg)' }}
+      >
+        FUR<span style={{ color: 'var(--text)' }}>BITO</span>
+      </span>
     </span>
   )
 }

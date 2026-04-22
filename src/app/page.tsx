@@ -208,19 +208,26 @@ export default function LoginPage() {
       <OnboardingOverlay />
       <div className="w-full max-w-app">
 
-        {/* Floating football */}
-        <div className="text-center mb-4">
-          <span className="animate-float inline-block text-4xl" role="img" aria-label="football">
-            ⚽
-          </span>
+        {/* Crest */}
+        <div className="text-center mb-3">
+          <img
+            src="/icons/icon.svg"
+            alt="FURBITO"
+            width={112}
+            height={112}
+            className="animate-float inline-block"
+            style={{ filter: 'drop-shadow(0 6px 24px rgba(168,255,62,0.25))' }}
+          />
         </div>
 
-        {/* Logo */}
-        <div className="text-center mb-2">
+        {/* Wordmark */}
+        <div className="text-center mb-1">
           <div
             className="font-bebas text-6xl tracking-widest"
             style={{
               color: 'var(--accent)',
+              transform: 'skewX(-8deg)',
+              display: 'inline-block',
               textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
             }}
           >
@@ -228,7 +235,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Subtitle */}
+        {/* Subtitle — arcade style */}
+        <p
+          className="text-center text-[11px] font-bold uppercase mb-1"
+          style={{ color: 'var(--accent)', letterSpacing: '0.4em' }}
+        >
+          RETRO · ARCADE · FÚTBOL
+        </p>
         <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
           Introduce el PIN de tu comunidad
         </p>
