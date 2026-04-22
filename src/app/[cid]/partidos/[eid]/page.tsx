@@ -18,6 +18,8 @@ import { MvpVoting } from '@/components/events/MvpVoting'
 import { PostMatchRating } from '@/components/events/PostMatchRating'
 import { calcXP } from '@/lib/game/badges'
 import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
+import { finalizeMvpByVotes } from '@/lib/game/mvp-finalize'
+import { useMvpVotes } from '@/hooks/useMvpVotes'
 import type { Confirmation, MatchPlayer } from '@/types'
 
 type DetailTab = 'convocados' | 'equipos' | 'resultado'
@@ -33,22 +35,20 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const { event, loading, reload: reloadEvent } = useEvent(eid)
   const { players } = usePlayers(cid)
   const { pistas } = usePistas(cid)
+  const { votes: mvpVotes } = useMvpVotes(eid)
   const [editOpen, setEditOpen] = useState(false)
   const [adminConfirming, setAdminConfirming] = useState<Record<string, boolean>>({})
-  const [matchPlayers, setMatchPlayers] = useState<MatchPlayer[]>([])
   const [activeTab, setActiveTab] = useState<DetailTab>('convocados')
   const [closingMvp, setClosingMvp] = useState(false)
+
+  // match_players llega embebido en el Event vía el hook (con realtime). Evitamos
+  // una query aparte para que cualquier cambio (admin cierra MVP, re-registra
+  // resultado, etc.) se propague automáticamente a esta vista.
+  const matchPlayers: MatchPlayer[] = event?.match_players ?? []
 
   useEffect(() => {
     if (event?.finalizado) setActiveTab('resultado')
   }, [event?.finalizado])
-
-  useEffect(() => {
-    if (!event?.finalizado) return
-    const supabase = createClient()
-    supabase.from('match_players').select('*').eq('event_id', eid)
-      .then(({ data }) => { if (data) setMatchPlayers(data) })
-  }, [event?.finalizado, eid])
 
   const myPlayer = players.find(p => p.id === session.playerId)
   const myConf = event?.confirmations?.find(c => c.player_id === session.playerId)
@@ -100,16 +100,35 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   async function closeMvpVoting() {
     if (!event || closingMvp) return
-    if (!confirm('¿Cerrar la votación del MVP ahora? Nadie más podrá votar.')) return
+    if (mvpVotes.length === 0) {
+      showToast('Aún no hay votos: no se puede determinar el MVP')
+      return
+    }
+    if (!confirm('¿Cerrar la votación del MVP ahora? Se proclamará MVP al más votado y nadie más podrá votar.')) return
     setClosingMvp(true)
-    const supabase = createClient()
-    await supabase.from('events')
-      .update({ mvp_voting_closes_at: new Date().toISOString() })
-      .eq('id', event.id)
+    const result = await finalizeMvpByVotes(event.id)
     await reloadEvent()
     setClosingMvp(false)
-    showToast('🔒 Votación MVP cerrada')
+    if (result) showToast(`🏆 MVP: ${result.winnerName}`)
+    else        showToast('🔒 Votación cerrada')
   }
+
+  // Auto-finalize: si la votación ya ha cerrado por plazo pero no hay MVP
+  // oficial y sí hay votos, proclamar ganador. Corre una vez cuando se dan
+  // todas las condiciones.
+  useEffect(() => {
+    if (!event?.finalizado) return
+    if (event.mvp_id) return
+    const closesAtMs = event.mvp_voting_closes_at ? new Date(event.mvp_voting_closes_at).getTime() : null
+    if (closesAtMs === null || Date.now() < closesAtMs) return
+    if (mvpVotes.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      const res = await finalizeMvpByVotes(event.id)
+      if (!cancelled && res) await reloadEvent()
+    })()
+    return () => { cancelled = true }
+  }, [event?.id, event?.finalizado, event?.mvp_id, event?.mvp_voting_closes_at, mvpVotes.length, reloadEvent])
 
   if (loading) return <div className="p-4" style={{ color: 'var(--muted)' }}>Cargando...</div>
   if (!event) return <div className="p-4" style={{ color: 'var(--muted)' }}>Evento no encontrado</div>

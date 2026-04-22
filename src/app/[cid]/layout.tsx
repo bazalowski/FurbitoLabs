@@ -29,6 +29,9 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
   const [pinLoading, setPinLoading] = useState(false)
+  // Reveal progresivo: al tipear se muestra brevemente el último dígito y luego
+  // se enmascara. El resto siempre van con •. Paste → sin reveal.
+  const [pinRevealIdx, setPinRevealIdx] = useState<number | null>(null)
 
   // Exit confirmation modal state
   const [showExitModal, setShowExitModal] = useState(false)
@@ -62,6 +65,18 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
     window.addEventListener('furbito:open-pin', handler)
     return () => window.removeEventListener('furbito:open-pin', handler)
   }, [])
+
+  // Enmascarar dígito recién tipeado tras 650ms (patrón estilo iOS)
+  useEffect(() => {
+    if (pinRevealIdx === null) return
+    const t = setTimeout(() => setPinRevealIdx(null), 650)
+    return () => clearTimeout(t)
+  }, [pinRevealIdx])
+
+  // Si el modal se cierra, resetea el reveal
+  useEffect(() => {
+    if (!showPinModal) setPinRevealIdx(null)
+  }, [showPinModal])
 
   async function handlePinSubmit() {
     if (pinInput.length !== 4) {
@@ -180,31 +195,71 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
             <h2 id="pin-modal-title" className="text-lg font-bold text-center">Introduce tu PIN de jugador</h2>
 
             <label htmlFor="pin-input" className="sr-only">PIN de 4 dígitos</label>
-            <input
-              id="pin-input"
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              value={pinInput}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, '').slice(0, 4)
-                setPinInput(v)
-                setPinError('')
-              }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit() }}
-              placeholder="0000"
-              autoFocus
-              pattern="[0-9]*"
-              aria-describedby={pinError ? 'pin-error' : undefined}
-              aria-invalid={!!pinError}
-              className="w-full text-center text-3xl font-mono tracking-[0.5em] py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
-              style={{
-                borderColor: pinError ? '#ef4444' : 'var(--border)',
-                color: 'var(--fg)',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ['--tw-ring-color' as any]: session.communityColor,
-              }}
-            />
+            <div className="relative w-full">
+              {/* Slots visibles: 4 celdas con dígito revelado / enmascarado */}
+              <div
+                className="flex justify-center gap-2 pointer-events-none select-none"
+                aria-hidden="true"
+              >
+                {[0, 1, 2, 3].map(i => {
+                  const filled = i < pinInput.length
+                  const reveal = filled && i === pinRevealIdx
+                  const active = !filled && i === pinInput.length && !pinLoading
+                  return (
+                    <div
+                      key={i}
+                      className="w-12 h-14 rounded-xl flex items-center justify-center font-mono text-2xl font-bold transition-all"
+                      style={{
+                        border: `1.5px solid ${pinError ? '#ef4444' : active ? session.communityColor : 'var(--border)'}`,
+                        background: 'var(--card2, rgba(255,255,255,0.03))',
+                        color: 'var(--fg)',
+                        boxShadow: active
+                          ? `0 0 0 3px ${session.communityColor}22`
+                          : reveal
+                            ? `0 0 0 3px ${session.communityColor}33`
+                            : undefined,
+                      }}
+                    >
+                      {filled ? (reveal ? pinInput[i] : '•') : ''}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Input transparente encima para capturar teclado (numérico en móvil) */}
+              <input
+                id="pin-input"
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={pinInput}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 4)
+                  // Solo revelamos si se ha añadido un carácter (teclear, no borrar/pegar 1-0)
+                  if (raw.length > pinInput.length) {
+                    setPinRevealIdx(raw.length - 1)
+                  } else {
+                    setPinRevealIdx(null)
+                  }
+                  setPinInput(raw)
+                  setPinError('')
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit() }}
+                autoFocus
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
+                aria-describedby={pinError ? 'pin-error' : undefined}
+                aria-invalid={!!pinError}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{
+                  // Oculta el caret; los slots ya dan feedback visual del cursor
+                  caretColor: 'transparent',
+                  // Mantiene el teclado numérico foco sin mostrar nada
+                  color: 'transparent',
+                  background: 'transparent',
+                }}
+              />
+            </div>
 
             {pinError && (
               <p id="pin-error" role="alert" className="text-xs text-red-400 font-medium">{pinError}</p>

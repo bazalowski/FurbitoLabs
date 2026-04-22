@@ -15,7 +15,7 @@ import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
 import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
 import { uid } from '@/lib/utils'
-import { notifyMatchFinished, notifyBadgeEarned, notifyMvpSelected } from '@/lib/notifications/notification-service'
+import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
 
 type Step = 'marcador' | 'stats' | 'resumen'
@@ -42,7 +42,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
   const [golesB, setGolesB] = useState(0)
   const [equipoA, setEquipoA] = useState<string[]>([])
   const [equipoB, setEquipoB] = useState<string[]>([])
-  const [mvpId, setMvpId] = useState<string | null>(null)
   const [stats, setStats] = useState<Record<string, MatchPlayerStats>>({})
   const [saving, setSaving] = useState(false)
   const [step, setStep] = useState<Step>('marcador')
@@ -162,18 +161,18 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     }
 
     // Cierre automático de votación MVP: 24h tras el guardado del resultado.
+    // El admin NO elige MVP — lo decide el voto popular (finalizeMvpByVotes).
     const mvpVotingClosesAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
     await supabase.from('events').update({
       finalizado: true, goles_a: golesA, goles_b: golesB,
-      equipo_a: equipoA, equipo_b: equipoB, mvp_id: mvpId,
+      equipo_a: equipoA, equipo_b: equipoB, mvp_id: null,
       mvp_voting_closes_at: mvpVotingClosesAt,
     }).eq('id', eid)
 
     for (const pid of allPlayers) {
       const ps = initStats(pid)
       const equipo = equipoA.includes(pid) ? 'A' : 'B'
-      const isMVP = mvpId === pid
       const player = players.find(p => p.id === pid)
       if (!player) continue
 
@@ -184,7 +183,9 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         chilena: ps.chilena, olimpico: ps.olimpico, tacon: ps.tacon,
         equipo, xp_ganado: 0,
       }
-      const xpGanado = calcXP(mpData as any, isMVP)
+      // isMVP=false en el guardado inicial: los bonus de MVP (xp, mvps,
+      // insignias mvp_*) se aplican cuando la votación se cierra.
+      const xpGanado = calcXP(mpData as any, false)
       mpData.xp_ganado = xpGanado
       await supabase.from('match_players').upsert(mpData)
 
@@ -192,7 +193,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         ...player,
         partidos: player.partidos + 1, goles: player.goles + ps.goles,
         asistencias: player.asistencias + ps.asistencias,
-        mvps: player.mvps + (isMVP ? 1 : 0),
         partidos_cero: player.partidos_cero + ps.porteria_cero,
         xp: player.xp + xpGanado,
       }
@@ -203,7 +203,7 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
         history: historyByPlayer.get(pid) ?? [],
         pistasStats: { addedByPlayer: pistasAddedByPlayer.get(pid) ?? 0 },
       }
-      const newBadges = detectBadges(updatedPlayer, mpData as any, isMVP, ctx)
+      const newBadges = detectBadges(updatedPlayer, mpData as any, false, ctx)
       const allBadges = [...player.badges, ...newBadges]
 
       if (newBadges.length > 0) {
@@ -217,7 +217,7 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
 
       await supabase.from('players').update({
         partidos: updatedPlayer.partidos, goles: updatedPlayer.goles,
-        asistencias: updatedPlayer.asistencias, mvps: updatedPlayer.mvps,
+        asistencias: updatedPlayer.asistencias,
         partidos_cero: updatedPlayer.partidos_cero,
         xp: updatedPlayer.xp + badgeXP, badges: allBadges,
       }).eq('id', pid)
@@ -226,7 +226,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     showToast('🏁 Resultado guardado')
     const eventUrl = `/${cid}/partidos/${eid}`
     notifyMatchFinished(cid, event.titulo, golesA, golesB, eventUrl)
-    if (mvpId) notifyMvpSelected(mvpId, event.titulo, eventUrl)
     reloadPlayers()
     router.push(`/${cid}/partidos/${eid}`)
     setSaving(false)
@@ -396,32 +395,18 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
               </div>
             </div>
 
-            {/* MVP */}
+            {/* MVP info — ya no se elige aquí, lo decide la votación popular. */}
             {allPlayers.length > 0 && (
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-                  👑 MVP del partido
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {allPlayers.map(pid => {
-                    const p = players.find(pl => pl.id === pid)
-                    if (!p) return null
-                    const sel = mvpId === pid
-                    return (
-                      <button key={pid}
-                        onClick={() => setMvpId(sel ? null : pid)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-m text-xs font-bold transition-all active:scale-95 min-h-[44px]"
-                        style={{
-                          background: sel ? communityColor : 'var(--card)',
-                          color: sel ? '#050d05' : 'var(--muted)',
-                          border: `1px solid ${sel ? 'transparent' : 'var(--border)'}`,
-                        }}
-                      >
-                        <PlayerAvatar player={p} size={20} communityColor={communityColor} />
-                        {p.name}
-                      </button>
-                    )
-                  })}
+              <div
+                className="rounded-m p-3 flex items-start gap-2.5"
+                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+              >
+                <span className="text-lg leading-none mt-0.5" aria-hidden="true">👑</span>
+                <div className="flex-1">
+                  <p className="text-xs font-bold" style={{ color: 'var(--fg)' }}>MVP por voto popular</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
+                    Al guardar, se abre 24h de votación. Podrás cerrarla antes desde la ficha del partido si ya nadie va a votar.
+                  </p>
                 </div>
               </div>
             )}
@@ -475,7 +460,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                       style={{ background: communityColor + '22', color: communityColor }}>
                       Eq.{team}
                     </span>
-                    {mvpId === pid && <span className="text-sm">👑</span>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-3">
@@ -586,12 +570,9 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
               <p className="font-bebas text-6xl tracking-widest" style={{ color: communityColor }}>
                 {golesA} — {golesB}
               </p>
-              {mvpId && (() => {
-                const mvp = players.find(p => p.id === mvpId)
-                return mvp ? (
-                  <p className="text-sm mt-2" style={{ color: 'var(--gold, #ffd700)' }}>👑 MVP: {mvp.name}</p>
-                ) : null
-              })()}
+              <p className="text-[11px] mt-2" style={{ color: 'var(--muted)' }}>
+                👑 MVP por voto popular (24h tras guardar)
+              </p>
             </div>
 
             {/* Auto-validation warning (non-blocking) */}
@@ -633,7 +614,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                             </p>
                           )}
                         </div>
-                        {mvpId === pid && <span className="text-xs">👑</span>}
                       </div>
                     )
                   })}
@@ -688,7 +668,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-[13px] font-bold truncate">{p.name}</p>
-                              {mvpId === pid && <span className="text-xs" aria-hidden="true">👑</span>}
                             </div>
                             <p className="text-[10px] leading-tight" style={{ color: 'var(--muted)' }}>
                               <span style={{ color: tier.color, fontWeight: 700 }}>{tier.label}</span>

@@ -70,5 +70,21 @@ export function useEvent(eventId: string | null) {
 
   useEffect(() => { load() }, [load])
 
+  // Realtime: refetch on any change to this event, its confirmations, match_players or mvp_votes.
+  // (Filters supported only for events/confirmations/match_players where the FK column lives on the row;
+  // mvp_votes has no FK filter support at the RLS level so we re-query on any change to be safe.)
+  useEffect(() => {
+    if (!eventId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`event:${eventId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events',        filter: `id=eq.${eventId}` },        () => { load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'confirmations', filter: `event_id=eq.${eventId}` },  () => { load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'match_players', filter: `event_id=eq.${eventId}` },  () => { load() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mvp_votes',     filter: `event_id=eq.${eventId}` },  () => { load() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [eventId, load])
+
   return { event, loading, reload: load }
 }
