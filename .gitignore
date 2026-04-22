@@ -36,3 +36,8 @@ Thumbs.db
 .vercel
 .aidesigner/*
 !.aidesigner/.gitkeep
+
+# Local notes / keys (nunca commitear)
+Public Key:.md
+*.pem
+*.key
