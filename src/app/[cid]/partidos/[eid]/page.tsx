@@ -334,7 +334,11 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {(['si', 'quiza', 'no'] as const).map(status => {
-                const labels = { si: '✅ Voy', quiza: '🤔 Quizá', no: '❌ No voy' }
+                const cfg = {
+                  si:    { label: '✅ Sí voy',  active: { bg: '#22c55e',         fg: '#031a09' }, idle: { bg: 'rgba(34,197,94,0.10)',  fg: '#22c55e', border: 'rgba(34,197,94,0.35)' } },
+                  quiza: { label: '🤔 Quizá',   active: { bg: '#f59e0b',         fg: '#1a1205' }, idle: { bg: 'rgba(245,158,11,0.10)', fg: '#f59e0b', border: 'rgba(245,158,11,0.35)' } },
+                  no:    { label: '❌ No voy',  active: { bg: '#ef4444',         fg: '#fff'     }, idle: { bg: 'rgba(239,68,68,0.10)',  fg: '#ef4444', border: 'rgba(239,68,68,0.35)' } },
+                }[status]
                 const isActive = myConf?.status === status
                 return (
                   <button key={status}
@@ -342,12 +346,13 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                     className="py-3.5 rounded-m text-sm font-bold transition-all active:scale-[0.97] select-none"
                     style={{
                       minHeight: '48px',
-                      background: isActive ? communityColor : 'var(--card)',
-                      color: isActive ? '#050d05' : 'var(--muted)',
-                      border: `1px solid ${isActive ? 'transparent' : 'var(--border)'}`,
+                      background: isActive ? cfg.active.bg : cfg.idle.bg,
+                      color:      isActive ? cfg.active.fg : cfg.idle.fg,
+                      border:     `1px solid ${isActive ? 'transparent' : cfg.idle.border}`,
+                      boxShadow:  isActive ? `0 6px 18px ${cfg.active.bg}44, 0 1px 0 rgba(255,255,255,0.2) inset` : undefined,
                     }}
                   >
-                    {labels[status]}
+                    {cfg.label}
                   </button>
                 )
               })}

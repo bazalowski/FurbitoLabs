@@ -70,11 +70,6 @@ export function PlayerCard({
               {posBadge}
             </span>
           )}
-          {isAdmin && (
-            <span className="absolute -top-0.5 -right-0.5 text-[11px] leading-none" aria-label="Admin">
-              👑
-            </span>
-          )}
         </div>
 
         {/* Name + level + XP bar */}

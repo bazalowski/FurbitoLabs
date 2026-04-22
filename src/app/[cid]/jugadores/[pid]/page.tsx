@@ -9,7 +9,8 @@ import { useVotes } from '@/hooks/useVotes'
 import { Header } from '@/components/layout/Header'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { BadgeChip, BadgeInlineGrid, BadgeShowcase } from '@/components/ui/Badge'
+import { BadgeShowcase } from '@/components/ui/Badge'
+import { BadgeVitrina } from '@/components/players/BadgeVitrina'
 import { PlayerTimeline } from '@/components/players/PlayerTimeline'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
@@ -221,11 +222,6 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
                 📷
               </button>
             )}
-            {isProfileAdmin && (
-              <span className="absolute -top-1 -right-1 text-base pointer-events-none" style={{ filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.6))' }}>
-                👑
-              </span>
-            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -260,14 +256,14 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           </div>
         </div>
 
-        {/* ── Vitrina (featured badges) ─────────────── */}
-        {player.vitrina.length > 0 && (
-          <div className="flex gap-2">
-            {player.vitrina.map(b => (
-              <BadgeChip key={b} badgeKey={b} size="lg" showName />
-            ))}
-          </div>
-        )}
+        {/* ── Expositor de insignias (5 slots editable by owner) ── */}
+        <BadgeVitrina
+          playerId={player.id}
+          vitrina={player.vitrina}
+          unlocked={player.badges}
+          accentColor={communityColor}
+          editable={isOwnProfile}
+        />
 
         {/* ── Stats: fila horizontal 5 chips ────────── */}
         <div className="-mx-4 px-4 flex gap-2 overflow-x-auto pb-1 snap-x">
@@ -331,26 +327,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           </div>
         </div>
 
-        {/* ── Badges desbloqueadas (grid 5-col) ─────── */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-              Insignias
-            </p>
-            <p className="text-xs font-bold" style={{ color: communityColor }}>
-              {player.badges.length} desbloqueadas
-            </p>
-          </div>
-          {player.badges.length > 0 ? (
-            <BadgeInlineGrid keys={player.badges} cols={5} accentColor={communityColor} />
-          ) : (
-            <p className="text-sm text-center py-3" style={{ color: 'var(--muted)' }}>
-              Sin insignias todavía
-            </p>
-          )}
-        </div>
-
-        {/* Catálogo completo (collapsible) */}
+        {/* Catálogo completo (collapsible) — muestra todas, marcando las desbloqueadas */}
         <BadgeShowcase unlockedKeys={player.badges} accentColor={communityColor} />
 
         {/* ── Historial de partidos ─────────────────── */}

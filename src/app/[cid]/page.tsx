@@ -165,8 +165,21 @@ export default function HomePage({ params }: HomePageProps) {
           </Link>
         )}
 
-        {/* Shortcut: Generador de equipos — rápido desde el menú principal */}
-        {isLoggedIn && players.length >= 2 && (
+        {/* Hero: Próximo partido con CTAs inline */}
+        {!eventsLoading && nextEvent && (
+          <NextMatchHero
+            event={nextEvent}
+            communityId={cid}
+            playerId={isLoggedIn ? session.playerId : null}
+            communityColor={communityColor}
+            onToggleTeams={() => setShowTeams(prev => !prev)}
+            teamsOpen={showTeams}
+          />
+        )}
+
+        {/* Shortcut: Generador de equipos (solo cuando no hay partido próximo,
+            para evitar duplicar el trigger del hero) */}
+        {isLoggedIn && players.length >= 2 && !nextEvent && (
           <button
             type="button"
             onClick={() => setShowTeams(prev => !prev)}
@@ -197,22 +210,10 @@ export default function HomePage({ params }: HomePageProps) {
           </button>
         )}
 
-        {/* Hero: Próximo partido con CTAs inline */}
-        {!eventsLoading && nextEvent && (
-          <NextMatchHero
-            event={nextEvent}
-            communityId={cid}
-            playerId={isLoggedIn ? session.playerId : null}
-            communityColor={communityColor}
-            onToggleTeams={() => setShowTeams(prev => !prev)}
-            teamsOpen={showTeams}
-          />
-        )}
-
-        {/* Team Generator (collapsible, triggered desde hero) */}
+        {/* Team Generator — aparece SIEMPRE justo debajo de su trigger */}
         {showTeams && (
           <div
-            className="rounded-m p-4 relative"
+            className="rounded-m p-4 relative animate-slide-up"
             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
           >
             <button
