@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/stores/session'
 import { useCommunity } from '@/hooks/useCommunity'
@@ -329,6 +330,19 @@ export default function AjustesPage({ params }: AjustesPageProps) {
             )}
           </Card>
         )}
+
+        {/* Ayuda / tutorial */}
+        <Card>
+          <Link
+            href={`/${cid}/ayuda`}
+            className="w-full flex items-center gap-3 py-3 px-1 rounded-m text-sm font-bold transition-all active:scale-[0.98] select-none"
+            style={{ color: 'var(--fg)', minHeight: '48px' }}
+          >
+            <span className="text-lg select-none">{'❓'}</span>
+            <span className="flex-1">Cómo usar Furbito</span>
+            <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+          </Link>
+        </Card>
 
         {/* Exit community */}
         <Card>
