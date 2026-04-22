@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { getLevel } from '@/lib/game/levels'
 import { getPlayerRating } from '@/lib/game/scoring'
-import { initials } from '@/lib/utils'
+import { Avatar } from '@/components/ui/Avatar'
 import type { Player, Vote } from '@/types'
 
 type RankTab = 'xp' | 'goles' | 'asistencias' | 'mvps' | 'partidos' | 'rating'
@@ -128,23 +128,19 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                 </span>
 
                 {/* Avatar */}
-                <div
-                  className="rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    width: isFirst ? 64 : 46,
-                    height: isFirst ? 64 : 46,
-                    fontSize: isFirst ? 18 : 13,
-                    fontWeight: 600,
-                    background: communityColor + '22',
-                    color: communityColor,
-                    border: `2px solid ${meta.labelColor}`,
-                    boxShadow: isFirst
-                      ? `0 0 0 3px ${communityColor}14, 0 8px 24px ${communityColor}40, 0 2px 6px rgba(0,0,0,0.4)`
-                      : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`,
-                  }}
-                >
-                  {player.avatar ?? initials(player.name)}
-                </div>
+                <Avatar
+                  name={player.name}
+                  avatar={player.avatar}
+                  size={isFirst ? 64 : 46}
+                  fontSize={isFirst ? 18 : 13}
+                  fontWeight={600}
+                  communityColor={communityColor}
+                  borderColor={meta.labelColor}
+                  boxShadow={isFirst
+                    ? `0 0 0 3px ${communityColor}14, 0 8px 24px ${communityColor}40, 0 2px 6px rgba(0,0,0,0.4)`
+                    : `0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px ${meta.labelColor}18`
+                  }
+                />
 
                 {/* Name */}
                 <p
@@ -232,17 +228,14 @@ export function RankingTable({ players, votes, communityId, communityColor = '#a
                   </span>
 
                   {/* Avatar */}
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: communityColor + '22',
-                      color: communityColor,
-                      fontWeight: 600,
-                      fontSize: 12,
-                    }}
-                  >
-                    {player.avatar ?? initials(player.name)}
-                  </div>
+                  <Avatar
+                    name={player.name}
+                    avatar={player.avatar}
+                    size={36}
+                    fontSize={12}
+                    fontWeight={600}
+                    communityColor={communityColor}
+                  />
 
                   {/* Name & level */}
                   <div className="flex-1 min-w-0">

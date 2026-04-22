@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { getLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating } from '@/lib/game/scoring'
-import { initials } from '@/lib/utils'
+import { Avatar } from '@/components/ui/Avatar'
 import type { Player, Vote } from '@/types'
 
 const POSITION_BADGE: Record<string, string> = {
@@ -54,16 +54,14 @@ export function PlayerCard({
 
         {/* Avatar + position badge */}
         <div className="relative flex-shrink-0">
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-base select-none"
-            style={{
-              background: communityColor + '22',
-              color: communityColor,
-              border: `2px solid ${isAdmin ? 'var(--gold)' : communityColor + '44'}`,
-            }}
-          >
-            {player.avatar ?? initials(player.name)}
-          </div>
+          <Avatar
+            name={player.name}
+            avatar={player.avatar}
+            size={44}
+            communityColor={communityColor}
+            borderColor={isAdmin ? 'var(--gold)' : communityColor + '44'}
+            fontSize={16}
+          />
           {posBadge && (
             <span
               className="absolute -bottom-1 -right-1.5 text-[9px] font-bold px-1 py-px rounded"
@@ -147,18 +145,13 @@ interface PlayerAvatarProps {
 
 export function PlayerAvatar({ player, size = 40, communityColor = '#a8ff3e' }: PlayerAvatarProps) {
   return (
-    <div
-      className="rounded-full flex items-center justify-center font-bold flex-shrink-0 select-none"
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.35,
-        background: communityColor + '22',
-        color: communityColor,
-        border: `2px solid ${communityColor}44`,
-      }}
-    >
-      {player.avatar ?? initials(player.name)}
-    </div>
+    <Avatar
+      name={player.name}
+      avatar={player.avatar}
+      size={size}
+      communityColor={communityColor}
+      borderColor={communityColor + '44'}
+      fontSize={size * 0.35}
+    />
   )
 }

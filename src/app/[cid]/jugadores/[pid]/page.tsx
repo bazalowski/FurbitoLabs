@@ -15,7 +15,9 @@ import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
-import { initials, openPinModal } from '@/lib/utils'
+import { Avatar, isAvatarUrl } from '@/components/ui/Avatar'
+import { uploadPlayerAvatar, deletePlayerAvatar } from '@/lib/supabase/avatars'
+import { openPinModal } from '@/lib/utils'
 
 interface PlayerProfilePageProps {
   params: { cid: string; pid: string }
@@ -47,6 +49,11 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
   const [newName, setNewName] = useState('')
   const [nameError, setNameError] = useState('')
   const [nameSaving, setNameSaving] = useState(false)
+
+  // Change photo state
+  const [photoModalOpen, setPhotoModalOpen] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+  const [photoSaving, setPhotoSaving] = useState(false)
 
   const myPlayer = session.playerId
   const isOwnProfile = myPlayer === pid
@@ -100,6 +107,36 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
       setNameError('Error de conexión')
     } finally {
       setNameSaving(false)
+    }
+  }
+
+  async function handlePhotoUpload(file: File) {
+    if (!file.type.startsWith('image/')) { setPhotoError('Selecciona una imagen'); return }
+    if (file.size > 10 * 1024 * 1024) { setPhotoError('Imagen demasiado grande (máx 10 MB)'); return }
+
+    setPhotoSaving(true); setPhotoError('')
+    try {
+      await uploadPlayerAvatar(cid, pid, file)
+      showToast('Foto actualizada')
+      setPhotoModalOpen(false)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al subir la foto'
+      setPhotoError(msg)
+    } finally {
+      setPhotoSaving(false)
+    }
+  }
+
+  async function handlePhotoRemove() {
+    setPhotoSaving(true); setPhotoError('')
+    try {
+      await deletePlayerAvatar(cid, pid)
+      showToast('Foto eliminada')
+      setPhotoModalOpen(false)
+    } catch {
+      setPhotoError('No se pudo eliminar la foto')
+    } finally {
+      setPhotoSaving(false)
     }
   }
 
@@ -160,18 +197,32 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         {/* ── Profile header ───────────────────────── */}
         <div className="flex items-center gap-4">
           <div className="relative flex-shrink-0">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl"
-              style={{
-                background: communityColor + '22',
-                color: communityColor,
-                border: `3px solid ${isProfileAdmin ? 'var(--gold, #ffd700)' : communityColor + '44'}`,
-              }}
-            >
-              {player.avatar ?? initials(player.name)}
-            </div>
+            <Avatar
+              name={player.name}
+              avatar={player.avatar}
+              size={80}
+              fontSize={28}
+              communityColor={communityColor}
+              borderColor={isProfileAdmin ? 'var(--gold, #ffd700)' : communityColor + '44'}
+              borderWidth={3}
+            />
+            {isOwnProfile && (
+              <button
+                onClick={() => setPhotoModalOpen(true)}
+                aria-label="Cambiar foto"
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full flex items-center justify-center text-xs active:scale-95 transition-transform"
+                style={{
+                  background: communityColor,
+                  color: '#000',
+                  border: '2px solid var(--bg)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                }}
+              >
+                📷
+              </button>
+            )}
             {isProfileAdmin && (
-              <span className="absolute -top-1 -right-1 text-base" style={{ filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.6))' }}>
+              <span className="absolute -top-1 -right-1 text-base pointer-events-none" style={{ filter: 'drop-shadow(0 0 3px rgba(255,215,0,0.6))' }}>
                 👑
               </span>
             )}
@@ -565,6 +616,84 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
               style={{ color: 'var(--muted)', minHeight: 48 }}
             >
               Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Cambiar foto ───────────────────────── */}
+      {photoModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !photoSaving) {
+              setPhotoModalOpen(false); setPhotoError('')
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="text-lg font-bold text-center">Foto de perfil</h2>
+
+            <div className="flex justify-center">
+              <Avatar
+                name={player.name}
+                avatar={player.avatar}
+                size={96}
+                fontSize={32}
+                communityColor={communityColor}
+                borderColor={communityColor + '44'}
+                borderWidth={3}
+              />
+            </div>
+
+            <label
+              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide text-center cursor-pointer active:scale-95 transition-transform disabled:opacity-40 select-none"
+              style={{
+                background: communityColor,
+                color: '#000',
+                minHeight: 48,
+                pointerEvents: photoSaving ? 'none' : 'auto',
+                opacity: photoSaving ? 0.4 : 1,
+              }}
+            >
+              {photoSaving ? 'Subiendo...' : '📷 Elegir imagen'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={photoSaving}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) handlePhotoUpload(file)
+                }}
+              />
+            </label>
+
+            {isAvatarUrl(player.avatar) && (
+              <button
+                onClick={handlePhotoRemove}
+                disabled={photoSaving}
+                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 select-none"
+                style={{ background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', minHeight: 48 }}
+              >
+                🗑️ Eliminar foto
+              </button>
+            )}
+
+            {photoError && <p className="text-xs text-red-400 font-medium text-center">{photoError}</p>}
+
+            <button
+              onClick={() => { if (!photoSaving) { setPhotoModalOpen(false); setPhotoError('') } }}
+              disabled={photoSaving}
+              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
+              style={{ color: 'var(--muted)', minHeight: 48 }}
+            >
+              Cerrar
             </button>
           </div>
         </div>
