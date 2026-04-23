@@ -41,6 +41,7 @@ export default function RankingPage({ params }: RankingPageProps) {
             communityId={cid}
             communityColor={session.communityColor}
             adminIds={adminIds}
+            currentPlayerId={session.playerId}
           />
         )}
       </div>
