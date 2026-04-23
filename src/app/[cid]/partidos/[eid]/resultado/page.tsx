@@ -12,7 +12,6 @@ import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { calcXP, detectBadges, BADGE_DEFS, type DetectBadgeContext, type HistoryMatch } from '@/lib/game/badges'
 import { calcMatchPoints, getPointsTier, MATCH_POINTS } from '@/lib/game/scoring'
-import { uid } from '@/lib/utils'
 import { notifyMatchFinished, notifyBadgeEarned } from '@/lib/notifications/notification-service'
 import type { MatchPlayerStats, Player } from '@/types'
 
@@ -169,20 +168,28 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
     // El admin NO elige MVP — lo decide el voto popular (finalizeMvpByVotes).
     const mvpVotingClosesAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    await supabase.from('events').update({
-      finalizado: true, goles_a: golesA, goles_b: golesB,
-      equipo_a: equipoA, equipo_b: equipoB, mvp_id: null,
-      mvp_voting_closes_at: mvpVotingClosesAt,
-    }).eq('id', eid)
+    // Acumulamos todo el payload — los writes los hace la Edge Function
+    // finalize-match tras validar coherencia y autoridad.
+    const matchPlayersPayload: Array<{
+      player_id: string; goles: number; asistencias: number
+      porteria_cero: number; parada_penalti: boolean
+      chilena: boolean; olimpico: boolean; tacon: boolean
+      equipo: 'A' | 'B'; xp_ganado: number
+    }> = []
+    const playerUpdatesPayload: Array<{
+      id: string; partidos: number; goles: number; asistencias: number
+      partidos_cero: number; xp: number; badges: string[]
+    }> = []
+    const notifyQueue: Array<{ pid: string; key: string }> = []
 
     for (const pid of allPlayers) {
       const ps = initStats(pid)
-      const equipo = equipoA.includes(pid) ? 'A' : 'B'
+      const equipo: 'A' | 'B' = equipoA.includes(pid) ? 'A' : 'B'
       const player = players.find(p => p.id === pid)
       if (!player) continue
 
       const mpData = {
-        id: uid(), event_id: eid, player_id: pid,
+        event_id: eid, player_id: pid,
         goles: ps.goles, asistencias: ps.asistencias,
         porteria_cero: ps.porteria_cero, parada_penalti: ps.parada_penalti,
         chilena: ps.chilena, olimpico: ps.olimpico, tacon: ps.tacon,
@@ -192,7 +199,6 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       // insignias mvp_*) se aplican cuando la votación se cierra.
       const xpGanado = calcXP(mpData as any, false)
       mpData.xp_ganado = xpGanado
-      await supabase.from('match_players').upsert(mpData)
 
       const updatedPlayer = {
         ...player,
@@ -210,22 +216,79 @@ export default function ResultadoPage({ params }: ResultadoPageProps) {
       }
       const newBadges = detectBadges(updatedPlayer, mpData as any, false, ctx)
       const allBadges = [...player.badges, ...newBadges]
-
-      if (newBadges.length > 0) {
-        const badgeUrl = `/${cid}/partidos/${eid}`
-        newBadges.forEach(key => {
-          const def = BADGE_DEFS[key]
-          if (def) notifyBadgeEarned(pid, def.name, def.icon, badgeUrl)
-        })
-      }
+      newBadges.forEach(k => notifyQueue.push({ pid, key: k }))
       const badgeXP = newBadges.reduce((sum, key) => sum + (BADGE_DEFS[key]?.xp ?? 0), 0)
 
-      await supabase.from('players').update({
-        partidos: updatedPlayer.partidos, goles: updatedPlayer.goles,
+      matchPlayersPayload.push({
+        player_id: pid,
+        goles: mpData.goles, asistencias: mpData.asistencias,
+        porteria_cero: mpData.porteria_cero, parada_penalti: mpData.parada_penalti,
+        chilena: mpData.chilena, olimpico: mpData.olimpico, tacon: mpData.tacon,
+        equipo, xp_ganado: xpGanado,
+      })
+      playerUpdatesPayload.push({
+        id: pid,
+        partidos: updatedPlayer.partidos,
+        goles: updatedPlayer.goles,
         asistencias: updatedPlayer.asistencias,
         partidos_cero: updatedPlayer.partidos_cero,
-        xp: updatedPlayer.xp + badgeXP, badges: allBadges,
-      }).eq('id', pid)
+        xp: updatedPlayer.xp + badgeXP,
+        badges: allBadges,
+      })
+    }
+
+    // Una sola llamada: la Edge Function finalize-match valida coherencia
+    // (auth caller, rangos, jugadores de la comu, etc.) y hace los writes
+    // con service_role. Usamos fetch directo porque con @supabase/ssr el
+    // SDK functions.invoke no siempre propaga el JWT de sesión correctamente.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      showToast('❌ Sesión no disponible, recarga la página')
+      setSaving(false)
+      return
+    }
+
+    const fnRes = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/finalize-match`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          event_id: eid,
+          goles_a: golesA,
+          goles_b: golesB,
+          equipo_a: equipoA,
+          equipo_b: equipoB,
+          match_players: matchPlayersPayload,
+          player_updates: playerUpdatesPayload,
+          mvp_voting_closes_at: mvpVotingClosesAt,
+        }),
+      },
+    )
+
+    const fmData = await fnRes.json().catch(() => null)
+    const fmError = !fnRes.ok
+      ? { status: fnRes.status, body: fmData }
+      : null
+
+    if (fmError || !fmData?.ok) {
+      console.error('[FURBITO] finalize-match rechazado:', fmError, fmData)
+      showToast('❌ No se pudo guardar el resultado')
+      setSaving(false)
+      return
+    }
+
+    // Notificaciones de badges (best-effort, no bloqueantes)
+    if (notifyQueue.length > 0) {
+      const badgeUrl = `/${cid}/partidos/${eid}`
+      notifyQueue.forEach(({ pid, key }) => {
+        const def = BADGE_DEFS[key]
+        if (def) notifyBadgeEarned(pid, def.name, def.icon, badgeUrl)
+      })
     }
 
     showToast('🏁 Resultado guardado')

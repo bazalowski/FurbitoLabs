@@ -292,17 +292,31 @@ Cambios aplicados:
 
 **Lección aprendida** registrada como feedback interno: cada vez que se endurezca una policy de SELECT, auditar todas las subqueries a esa tabla en las `WITH CHECK` / `USING` de otras policies — un cambio aparentemente aislado puede romper flujos dependientes.
 
+#### 3.8 Edge Function `finalize-match` — validación de stats/badges
+
+Último vector crítico (S6): el cliente calculaba y enviaba directamente stats, XP y badges al finalizar partido. Las policies RLS ya impedían abuso cross-community (solo admin de la comu puede escribir), pero un admin legítimo podía inflar goles, regalar XP descomunal o asignar badges aleatorios desde DevTools.
+
+Edge Function [finalize-match](../../supabase/functions/finalize-match/index.ts) (Deno) es el único camino autorizado:
+
+- **Auth**: recibe el JWT en Authorization → llama `auth.getUser(jwt)` contra el Auth server (que sí entiende ES256) → extrae `auth.uid()` → verifica que `public.users.community_id = event.community_id AND role = 'admin'`.
+- **Validación de esquema**: tipos correctos, rangos razonables (`goles ≤ 30/partido`, `xp ≤ 5000/partido`, `badges` keys alfanuméricas, máx 500), ningún jugador en ambos equipos.
+- **Validación de coherencia**: suma de goles individuales del equipo A ≤ `goles_a` (tolerancia a autogoles), mismo para B. Cada `player_id` pertenece a la comunidad del evento.
+- **Idempotencia**: si el evento ya está finalizado → 409 (no re-escribir).
+- **Rate-limit**: 10 req/min/IP (finalizar es operación infrecuente).
+- **Writes con service_role**: una vez todo válido, ejecuta `events.update` + `match_players.upsert` + `players.update` en secuencia.
+
+Cliente refactorizado ([resultado/page.tsx](../../src/app/[cid]/partidos/[eid]/resultado/page.tsx)): la lógica de cálculo (XP, detección de badges vía `src/lib/game/`) sigue en cliente — **esta función es el checkpoint, no el cálculo**. Una única llamada `fetch` al endpoint con el payload agregado reemplaza los ~30 writes individuales anteriores.
+
+**Nota técnica**: deployada con `--no-verify-jwt` porque el runtime de Supabase aún no acepta JWTs ES256 (formato nuevo que emite Auth tras el upgrade de signing keys). La función valida el JWT internamente llamando a `auth.getUser()` — zero pérdida de seguridad.
+
 ### 🔴 Gaps que quedan (no P0, pero anotados)
 
 - **Primer admin = quien crea la comunidad**: `communities_insert` solo pide `auth.uid() IS NOT NULL` (no puede pedir más, porque aún no eres admin de nada). Es aceptable por diseño — quien paga el coste de crear la comu es el dueño legítimo.
 - **Race condition de onboarding en cold-start en incógnito**: detectada durante pruebas. La primera request de `communities.insert` tras un `signInAnonymously()` muy fresco puede devolver `42501` por desfase de cookies. No reproducible fuera de incógnito (sesión persistida). Se considera caso borde aceptable; mitigable añadiendo un pequeño `await` extra o un retry en el cliente si se vuelve común. **P2 pendiente**.
-- **Edge Functions para dominio crítico**: recomendadas como defensa en profundidad (finalizar partido, cambiar PIN, rotar admin). No son bloqueantes porque las policies finas ya cubren el caso, pero concentrarían la lógica auditada en un solo sitio. **P1/P2 pendiente**.
-- **Rate-limit distribuido**: el RL de `community-lookup` es por-instancia del runtime de edge. Un atacante distribuido muy agresivo podría saltárselo. Mitigable con Redis o similar. **P2 pendiente** (hoy basta para frenar scripting trivial).
+- **Cálculo de stats/badges aún en cliente**: `finalize-match` valida cotas e integridad pero no recalcula desde cero. Un admin podría mentir DENTRO de las cotas (ej: marcar una chilena que no fue, asignar 3 goles a alguien con menos). Mitigable portando `src/lib/game/` a la Edge Function. **P2 — acepable para MVP con confianza social**.
+- **Rate-limit distribuido**: el RL de Edge Functions es por-instancia del runtime. Un atacante distribuido muy agresivo podría saltárselo. Mitigable con Redis. **P2 pendiente**.
 
 ### ✨ Propuestas restantes (priorizadas)
-
-- **P1 · Edge Function `finalize-match`** `@rls` 🔒 ⚙️
-  Actualmente la finalización hace `match_players.upsert` + `players.update` (xp/badges) cliente-side con policies que requieren admin. Funciona, pero consolidar en Edge Function permite: validaciones de negocio (N goleadores ≠ N goles), logs unificados, futura idempotencia.
 
 - **P2 · Retry automático en primera escritura post-auth** `@ux` ⚙️
   Wrapper en `src/lib/supabase/client.ts` que, ante `42501` recibido dentro de los primeros X ms tras `signInAnonymously`, haga un solo reintento. Cubre la race condition en cold-start.
@@ -730,7 +744,7 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 | S3 | `signInAnonymously` fire-and-forget → RLS no funciona | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | [AuthBootstrap](../../src/components/AuthBootstrap.tsx) bloquea render hasta `auth.uid()` |
 | S4 | Avatars sobrescribibles por cualquiera | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Mig [010](../../supabase/migrations/010_avatars_rls.sql) — policies owner/admin |
 | S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Edge Function [community-lookup](../../supabase/functions/community-lookup/index.ts) con RL (20 req/min/IP, 5 req/min/PIN) + mig [014](../../supabase/migrations/014_harden_communities_select.sql) cierra `communities_select` al propio community_id |
-| S6 | Stats/badges manipulables desde cliente | 🟠 Alto | 🟡 **Mitigado parcialmente** | Policy `players_update` exige owner o admin; aún falta Edge Function para consolidar dominio |
+| S6 | Stats/badges manipulables desde cliente | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Edge Function [finalize-match](../../supabase/functions/finalize-match/index.ts) valida coherencia (rangos, suma de goles, pertenencia a la comu) + auth del caller antes de escribir con service_role |
 | S7 | Votos falseables (`voter_id` del cliente) | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Policies `votes_insert` y `mvp_votes_insert` fuerzan `voter_id = public.users.player_id` del caller |
 | S8 | CORS `*` en Edge Functions | 🟡 Medio | Pendiente | Whitelist dominios (furbito.app + native custom scheme) |
 | S9 | No hay política de privacidad ni términos | 🟠 Alto (legal) | Pendiente | Publicarlas (§13 P0) |
@@ -738,11 +752,13 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 
 ### Resumen
 
-Cerrado el bloque **S1 + S2 + S3 + S4 + S5 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
+Cerrado el bloque **S1 + S2 + S3 + S4 + S5 + S6 + S7** (2026-04-23). De 7 vectores críticos iniciales, **quedan cero**. El backend es ya un **producto defendible** apto para pruebas con usuarios reales.
 
-1. **Próximo** — S6 (Edge Function `finalize-match`) para consolidar el dominio crítico en un solo sitio auditado.
-2. Después — S10 (re-auth en destructivas).
-3. Legal/compliance — S9 (política de privacidad + términos), requisito para publicar en stores.
+Pendientes no críticos:
+
+1. S10 (re-auth en destructivas como borrar evento / cambiar PIN) — P1, nice-to-have para UX.
+2. S9 (política de privacidad + términos) — legal/compliance, requisito para publicar en stores.
+3. S8 (CORS whitelist en Edge Functions) — ahora es `*`, apretar a dominios concretos cuando haya producción estable.
 
 ---
 
@@ -753,7 +769,7 @@ Ordenadas por ratio "reducción de riesgo / impacto de producto" dividido por es
 | # | Prioridad | Estado | Tag | Mejora | Por qué |
 |---|-----------|--------|-----|--------|---------|
 | 1 | P0 | ✅ **Hecho** 2026-04-23 | @rls 🔒 | Migración RLS fina por `auth.uid()` + helpers | Cierra el agujero principal — hoy cualquiera puede borrarlo todo |
-| 2 | P0 | Pendiente | @edge 🔒 | Edge Function `finalize-match` (+ portar `src/lib/game/` a shared) | Centraliza dominio, blinda stats/badges, habilita nativa |
+| 2 | P0 | ✅ **Hecho** 2026-04-23 | @edge 🔒 | Edge Function `finalize-match` (validación sin mover cálculo aún — portar `src/lib/game/` queda P2) | Centraliza checkpoint de stats/badges. Cliente ya no puede enviar valores fuera de rango |
 | 3 | P0 | ✅ **Hecho** 2026-04-23 | @edge 🔒 | Impedir suplantación de votante (`voter_id`) | Policy `votes_insert` / `mvp_votes_insert` forzando `voter_id = public.users.player_id`. Edge Function opcional para defensa en profundidad |
 | 4 | P0 | ✅ **Hecho** 2026-04-23 | @auth 🔒 | Bloquear login hasta `signInAnonymously` OK | `AuthBootstrap` garantiza `auth.uid()` antes de cualquier render interactivo |
 | 5 | P0 | ✅ **Hecho** 2026-04-23 | @auth 🔒 | Eliminar `NEXT_PUBLIC_ADMIN_PIN` — super-admin vía Supabase Auth email/password | Adiós clave en bundle. Mig 013 + `/admin/login` |
