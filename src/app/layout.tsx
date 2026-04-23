@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister'
+import { AuthBootstrap } from '@/components/AuthBootstrap'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ServiceWorkerRegister />
         <div id="root" style={{ position: 'relative', zIndex: 1 }}>
-          {children}
+          <AuthBootstrap>{children}</AuthBootstrap>
         </div>
       </body>
     </html>

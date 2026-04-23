@@ -47,3 +47,6 @@ Public Key:.md
 .mcp.json
 .agents/
 tsconfig.tsbuildinfo
+
+# Supabase CLI local link cache
+supabase/.temp/

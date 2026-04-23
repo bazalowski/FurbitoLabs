@@ -166,59 +166,135 @@
 
 ## 3. Row Level Security (RLS) y autorización
 
-**Estado actual**: prácticamente **todas las tablas de dominio tienen RLS habilitado con `public_all` (USING true / WITH CHECK true)**. Lo confirman [005_fix_communities_rls.sql](../../supabase/migrations/005_fix_communities_rls.sql) y [006_fix_remaining_rls.sql](../../supabase/migrations/006_fix_remaining_rls.sql), que **revirtieron** las políticas más restrictivas introducidas por [002_users_auth.sql](../../supabase/migrations/002_users_auth.sql) porque rompían flujos en algunos entornos.
+> **Estado**: ✅ **Endurecida** (2026-04-23). Migraciones [009](../../supabase/migrations/009_mvp_votes_rls.sql), [010](../../supabase/migrations/010_avatars_rls.sql), [011a](../../supabase/migrations/011a_players_self_insert.sql), [011b](../../supabase/migrations/011b_drop_public_all.sql), [011c](../../supabase/migrations/011c_players_insert_fix.sql), [012](../../supabase/migrations/012_revoke_anon_privs.sql) aplicadas + gate de auth en cliente ([AuthBootstrap](../../src/components/AuthBootstrap.tsx)).
 
-> Cita literal del header de [005]: *"en algunos entornos dejó la tabla sin policy de INSERT. Resultado: la creación de comunidades fallaba con RLS (42501). (…) restauramos el régimen permisivo equivalente al de las demás tablas del schema base."*
+### Contexto previo a la auditoría
 
-Esto significa que **cualquier cliente con la `anon_key`** puede:
-- Leer y escribir en `communities`, `players`, `pistas`, `events`, `confirmations`, `match_players`, `votes`, `mvp_votes`, `push_subscriptions`.
-- Borrar filas libremente (las políticas permiten DELETE).
-- Leer/escribir avatars (policies también permisivas).
+El audit original (sec. 3 pre-hardening) alertaba de `public_all` (USING true / WITH CHECK true) como régimen de facto en todas las tablas, consecuencia de las migraciones [005](../../supabase/migrations/005_fix_communities_rls.sql) y [006](../../supabase/migrations/006_fix_remaining_rls.sql) que revirtieron a un régimen permisivo para no romper flujos.
 
-Solo `public.users` tiene RLS restrictivo real (por `auth.uid()`).
+**Lo que se descubrió al inspeccionar RLS en prod** (antes de tocar nada): sobre cada tabla crítica ya convivían **dos capas de policies**:
 
-### 🟢 Fortalezas
+- Las `public_all` (ALL, USING true, WITH CHECK true) → el paraguas permisivo.
+- Un juego de policies **finas bien diseñadas** (`*_select`, `*_insert`, `*_update`, `*_delete`) con `auth.uid()`, `get_user_community_id()`, `get_user_role()` y restricciones por `voter_id` / propietario. Preparadas pero **anuladas** por el OR de `public_all`.
 
-- Migraciones 005/006 tienen **headers explícitos** documentando el porqué de la reversión (decisión consciente, no accidente). Buena disciplina.
-- La `anon_key` es pública por diseño — no es una filtración. El riesgo está en las **políticas**, no en la clave.
+Cerrar la brecha, por tanto, no requirió rediseñar políticas: bastó con **retirar `public_all`** y dejar que las policias finas (ya correctas) entrasen en vigor — previa fase de estabilización del login anónimo.
 
-### 🔴 Gaps — críticos
+### Cambios aplicados
 
-1. 🔒 **Cualquier visitante puede borrar toda la comunidad ajena**. Un actor con la `anon_key` (visible en bundle) puede ejecutar `delete from events where community_id = '...'` y nada lo impide.
-2. 🔒 **Un jugador puede inflarse stats** (`update players set goles=999`) sin nada que lo frene.
-3. 🔒 **Un jugador puede votar por otros** (`insert into votes with voter_id=<ajeno>`) — el balanceador colapsa.
-4. **La promoción a admin es puramente cliente**: `admin_ids[]` es un `UPDATE` sin validación.
-5. **Avatars**: cualquiera puede subir/borrar avatars de cualquiera. Vector de trolling claro.
-6. Sin **rate-limit** a nivel PostgREST — bruteforce de PINs (10k combinaciones) por API directa es factible.
+#### 3.1 Gate de sesión anónima en cliente (Fase 1)
 
-### ✨ Propuestas
+**Archivos**: [src/components/AuthBootstrap.tsx](../../src/components/AuthBootstrap.tsx), [src/app/layout.tsx](../../src/app/layout.tsx), [src/stores/session.ts](../../src/stores/session.ts).
 
-Este es el **ámbito crítico del backend**. Sin resolver nada de §14 puede salir a producción con confianza.
+Antes, `signInAnonymously` se disparaba **fire-and-forget** dentro de `session.login()`. Si fallaba, el cliente seguía operando sin `auth.uid()` y todas las escrituras bajo RLS fina habrían cascadeado en `42501`.
 
-- **P0 · Plan de migración a RLS por `auth.uid()` + `public.users`** `@rls` 🔒
-  El stub está hecho (mig 002 creó `public.users` + helpers `get_user_community_id()` / `get_user_role()`). Toca:
-  1. Garantizar que **todo login** crea `auth.user` anónimo y escribe `public.users` (ya lo hace [session.ts#L29-L39](../../src/stores/session.ts) — verificar 100% casos).
-  2. Re-escribir políticas tabla a tabla:
-     - `communities`: `SELECT` público (para landing de PINs / descubrimiento), `INSERT` libre, `UPDATE`/`DELETE` solo si `public.get_user_role() = 'admin' AND id = public.get_user_community_id()`.
-     - `players`: `SELECT` restringido a `community_id = public.get_user_community_id()`. `INSERT` libre solo para la propia identidad (creación al login). `UPDATE` solo sobre el propio `players.id = public.users.player_id` o siendo admin de esa comunidad. `DELETE` solo admin.
-     - `events`, `confirmations`, `match_players`, `mvp_votes`, `votes`, `pistas`, `push_subscriptions`: todas `community_id` derivado vs `get_user_community_id()`.
-  3. **Probar** con un script (2-3 test users anónimos) que las escrituras cruzadas fallan.
-  4. Solo entonces **dropear `public_all`** en orden inverso (votes, match_players, confirmations, events, pistas, players, communities).
+Ahora `<AuthBootstrap>` envuelve la app a nivel root:
+- Al montar, ejecuta `supabase.auth.getUser()`; si no hay sesión, llama a `signInAnonymously()` y **espera**.
+- Mientras carga: spinner "Preparando tu sesión…".
+- Si falla: pantalla con botón "Reintentar" (no silencioso).
+- Solo renderiza los children cuando `auth.uid()` está garantizado.
 
-  ⚠️ **Hacerlo en staging**, con tests, antes de tocar prod. El ciclo 002 → 005/006 demuestra el riesgo de hacerlo a pelo.
+Efecto: todas las escrituras que llegan a Supabase salen con JWT anónimo ya presente → las policies finas pueden confiar en `auth.uid() IS NOT NULL`.
 
-- **P0 · Capa de Edge Functions para escrituras críticas** `@rls` 🔒 ⚙️
-  Alternativa (o complemento) a RLS fina: las operaciones peligrosas (finalizar partido, modificar stats, promover admin, cambiar PIN) **no** se invocan desde cliente directo → pasan por Edge Function con `service_role_key` y la función valida caller. Esto pone el checkpoint en un solo sitio (el código Deno), mucho más fácil de auditar que políticas dispersas.
-  **Recomendación**: combinarlo. RLS básica que bloquee escritura sin auth. Edge Function para operaciones de dominio críticas.
+#### 3.2 Policy fina para `mvp_votes` (mig 009)
 
-- **P1 · Rate-limit a nivel Edge Function** `@rls` 🔒
-  Middleware simple en las funciones que cachee por IP (o por `auth.uid`) y devuelva 429 si pasa `N` reqs/min. Supabase no trae rate-limit de API por defecto.
+`mvp_votes` era la única tabla de dominio con **solo** `public_all` (sin policies finas al lado). Se añadieron, espejando el diseño de `votes`:
+- `SELECT`: miembros de la comunidad del evento (vía JOIN a `events`).
+- `INSERT`: `voter_id = public.users.player_id` del caller, rol ∈ {player, admin}, partido de su comunidad.
+- `UPDATE`/`DELETE`: propio voto o admin de la comunidad.
 
-- **P1 · Revocar `anon` sobre tablas de escritura crítica** `@rls` 🔒 ⚙️
-  Cuando las Edge Functions encapsulen dominio, revocar `INSERT/UPDATE/DELETE` en `anon` sobre `events`, `match_players`, `players.xp`, `players.badges`. Solo `service_role` (desde Functions) puede tocarlas.
+#### 3.3 RLS fina para `storage.objects` bucket `avatars` (mig 010)
+
+Las policies `avatars_public_*` solo validaban `bucket_id`. Cualquier `anon` podía subir, borrar y sobrescribir avatars ajenos (vector de trolling).
+
+Path de avatar: `{community_id}/{player_id}.jpg` (ver [avatars.ts](../../src/lib/supabase/avatars.ts)).
+Nuevas policies:
+- `SELECT`: público (bucket público, URLs aparecen en `players.avatar` sin auth).
+- `INSERT`/`UPDATE`/`DELETE`: `(storage.foldername(name))[1] = get_user_community_id()` **AND** (el filename sin extensión `= public.users.player_id` del caller **OR** el caller es admin de la comunidad).
+
+Se verificó con una query diagnóstica previa que todos los objetos existentes en el bucket siguen el patrón esperado.
+
+#### 3.4 Self-onboarding seguro de `players_insert` (mig 011a + 011c)
+
+Las policies finas pre-existentes hacían que `players_insert` exigiera ser admin de una comunidad que `get_user_community_id()` ya devolviese. **Eso rompía dos flujos** al retirar `public_all`:
+1. **Crear comunidad nueva**: el mismo user crea comu + primer jugador admin antes de enlazarse en `public.users`.
+2. **Unirse a una comunidad existente** como nuevo jugador (page.tsx:563): el user es `guest` recién llegado, nunca admin.
+
+Solución: `players_insert` ahora permite **self-onboarding de un solo jugador** cuando el caller no tiene aún `player_id` en `public.users` (cubre tanto filas inexistentes como con `player_id IS NULL`, fix 011c). Una vez asignado, no puede volver a insertar otro player para sí mismo. Admins mantienen su ruta completa.
+
+```sql
+-- Policy final
+auth.uid() IS NOT NULL
+AND (
+  -- Caso 1: admin de la comunidad
+  ( community_id = public.get_user_community_id()
+    AND public.get_user_role() = 'admin' )
+  OR
+  -- Caso 2: primer jugador del propio caller
+  ( NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND player_id IS NOT NULL )
+    AND EXISTS (SELECT 1 FROM communities WHERE id = community_id) )
+)
+```
+
+#### 3.5 DROP `public_all` en todas las tablas (mig 011b)
+
+Con el onboarding ya blindado, se retiró `public_all` de: `communities`, `players`, `events`, `confirmations`, `match_players`, `votes`, `mvp_votes`. `pistas` y `push_subscriptions` ya no lo tenían; `users` estaba estricto desde la 002.
+
+Rollback de emergencia documentado en el header de la migración (un `CREATE POLICY public_all ... USING (true) WITH CHECK (true)` por tabla).
+
+#### 3.6 Revocar privilegios peligrosos a `anon` / `authenticated` (mig 012)
+
+Los defaults de Supabase conceden a `anon` y `authenticated` los 7 privilegios sobre cada tabla pública: `SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`. Los tres últimos son **inmunes a RLS** (son a nivel de tabla, no de fila):
+- `TRUNCATE` → vaciar tabla entera sin pasar por policies.
+- `REFERENCES` → crear FKs que enumeran filas ajenas por lado implícito.
+- `TRIGGER` → adjuntar triggers que se disparan en cada escritura.
+
+Revocados en schema `public`. Se mantienen `SELECT/INSERT/UPDATE/DELETE` — esos sí los gobierna RLS.
+
+### Estado resultante
+
+| Tabla | RLS | Vector cerrado |
+|---|---|---|
+| `communities` | Policies finas (admin de la comu para mutación) | Borrado ajeno, hijack de `admin_ids[]`, cambio de PIN |
+| `players` | Self-onboarding + owner/admin para mutación | Inflado de stats, borrado de jugadores ajenos |
+| `events` | Admin de la comunidad para mutación | Borrado de partidos ajenos |
+| `confirmations` | Propio o admin | Suplantación en asistencia |
+| `match_players` | Solo admin | Manipulación de resultados |
+| `votes` | `voter_id` = propio player | Voto con `voter_id` ajeno |
+| `mvp_votes` | Igual que `votes` | Voto MVP fraudulento |
+| `pistas` | Admin de la comunidad | Creación/borrado de pistas ajenas |
+| `push_subscriptions` | Suscripción propia | Robo de endpoints de terceros |
+| `storage.objects/avatars` | Owner o admin (path = `{cid}/{pid}.jpg`) | Subida/borrado de avatars ajenos |
+| Privilegios `anon`/`authenticated` | Sin `TRUNCATE, REFERENCES, TRIGGER` | Vaciado de tablas sin RLS |
+
+### 🟢 Fortalezas (post-hardening)
+
+- Las policies finas que ya existían antes eran **bien diseñadas**; el trabajo fue retirar el paraguas que las anulaba. Baja deuda técnica resultante.
+- `AuthBootstrap` como gate único — un solo sitio donde garantizar `auth.uid()`. Reemplazable por Supabase Auth real (email/OAuth) sin tocar nada de RLS.
+- Rollback trivial y documentado por si una policy fina resulta demasiado estricta en algún entorno.
+- Migraciones numeradas en orden de dependencia con headers explicando **por qué**, no solo qué.
+
+### 🔴 Gaps que quedan (no P0, pero anotados)
+
+- **Rate-limit**: sigue sin existir en PostgREST. Bruteforce de PINs (4 chars uppercase = ~36^4 ≈ 1.7M combinaciones, pero típicamente son nombres/palabras cortas → mucho menos) sigue siendo viable vía `GET communities?pin=eq.XXXX`. Mitigable con Edge Function que encapsule el `login-by-pin`. **P1 pendiente**.
+- **Primer admin = quien crea la comunidad**: `communities_insert` solo pide `auth.uid() IS NOT NULL` (no puede pedir más, porque aún no eres admin de nada). Es aceptable por diseño — quien paga el coste de crear la comu es el dueño legítimo.
+- **Race condition de onboarding en cold-start en incógnito**: detectada durante pruebas. La primera request de `communities.insert` tras un `signInAnonymously()` muy fresco puede devolver `42501` por desfase de cookies. No reproducible fuera de incógnito (sesión persistida). Se considera caso borde aceptable; mitigable añadiendo un pequeño `await` extra o un retry en el cliente si se vuelve común. **P2 pendiente**.
+- **Edge Functions para dominio crítico**: recomendadas como defensa en profundidad (finalizar partido, cambiar PIN, rotar admin). No son bloqueantes porque las policies finas ya cubren el caso, pero concentrarían la lógica auditada en un solo sitio. **P1/P2 pendiente**.
+
+### ✨ Propuestas restantes (priorizadas)
+
+- **P1 · Edge Function `login-by-pin` con rate-limit** `@rls` 🔒
+  Mover la búsqueda por PIN de `GET communities?pin=eq.X` a una Edge Function que cache por IP, devuelva 429 tras N intentos y haga log auditables. Elimina el único vector de bruteforce que queda.
+
+- **P1 · Edge Function `finalize-match`** `@rls` 🔒 ⚙️
+  Actualmente la finalización hace `match_players.upsert` + `players.update` (xp/badges) cliente-side con policies que requieren admin. Funciona, pero consolidar en Edge Function permite: validaciones de negocio (N goleadores ≠ N goles), logs unificados, futura idempotencia.
+
+- **P2 · Retry automático en primera escritura post-auth** `@ux` ⚙️
+  Wrapper en `src/lib/supabase/client.ts` que, ante `42501` recibido dentro de los primeros X ms tras `signInAnonymously`, haga un solo reintento. Cubre la race condition en cold-start.
 
 - **P2 · Helpers adicionales en SQL** `@rls` ⚙️
-  `is_admin_of(community_id)` reutilizable en políticas. Evita repetir `EXISTS (SELECT 1 FROM communities WHERE id = ... AND auth.uid() = ANY(admin_ids))` en cada policy.
+  `is_admin_of(community_id TEXT) → BOOLEAN` reutilizable en policies. Evitaría repetir `auth.uid() IS NOT NULL AND community_id = get_user_community_id() AND get_user_role() = 'admin'` en todas las tablas.
 
 ---
 
@@ -635,29 +711,27 @@ supabase.channel(`events:${communityId}`)
 
 Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 
-| # | Riesgo | Severidad | Mitigación |
-|---|--------|-----------|------------|
-| S1 | Cualquier cliente con anon_key puede borrar cualquier tabla de dominio | 🔴 Crítico | RLS fina (§3 P0) + Edge Functions (§5 P0) |
-| S2 | `NEXT_PUBLIC_ADMIN_PIN` en bundle | 🔴 Crítico | Mover a `admin_pin_hash` por comunidad (§4 P0) |
-| S3 | `signInAnonymously` fire-and-forget → RLS no funciona | 🔴 Crítico | `await` + error bloquante (§4 P0) |
-| S4 | Avatars sobrescribibles por cualquiera | 🟠 Alto | Policy owner-only (§7 P0) |
-| S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | Rate-limit en Edge Function (§3 P1) |
-| S6 | Stats/badges manipulables desde cliente | 🟠 Alto | `finalize-match` Edge Function (§5 P0) |
-| S7 | Votos falseables (`voter_id` del cliente) | 🟠 Alto | `submit-vote` Edge Function (§5 P0) |
-| S8 | CORS `*` en Edge Functions | 🟡 Medio | Whitelist dominios (furbito.app + native custom scheme) |
-| S9 | No hay política de privacidad ni términos | 🟠 Alto (legal) | Publicarlas (§13 P0) |
-| S10 | Sin MFA ni re-auth en acciones destructivas | 🟡 Medio | Re-prompt PIN (§4 P1) |
+| # | Riesgo | Severidad | Estado | Mitigación |
+|---|--------|-----------|--------|------------|
+| S1 | Cualquier cliente con anon_key puede borrar cualquier tabla de dominio | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | Migs [011b](../../supabase/migrations/011b_drop_public_all.sql) + [012](../../supabase/migrations/012_revoke_anon_privs.sql) |
+| S2 | `NEXT_PUBLIC_ADMIN_PIN` en bundle | 🔴 Crítico | Pendiente | Mover a `admin_pin_hash` por comunidad (§4 P0) |
+| S3 | `signInAnonymously` fire-and-forget → RLS no funciona | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | [AuthBootstrap](../../src/components/AuthBootstrap.tsx) bloquea render hasta `auth.uid()` |
+| S4 | Avatars sobrescribibles por cualquiera | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Mig [010](../../supabase/migrations/010_avatars_rls.sql) — policies owner/admin |
+| S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | Pendiente | Edge Function `login-by-pin` con rate-limit (§3 P1) |
+| S6 | Stats/badges manipulables desde cliente | 🟠 Alto | 🟡 **Mitigado parcialmente** | Policy `players_update` exige owner o admin; aún falta Edge Function para consolidar dominio |
+| S7 | Votos falseables (`voter_id` del cliente) | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Policies `votes_insert` y `mvp_votes_insert` fuerzan `voter_id = public.users.player_id` del caller |
+| S8 | CORS `*` en Edge Functions | 🟡 Medio | Pendiente | Whitelist dominios (furbito.app + native custom scheme) |
+| S9 | No hay política de privacidad ni términos | 🟠 Alto (legal) | Pendiente | Publicarlas (§13 P0) |
+| S10 | Sin MFA ni re-auth en acciones destructivas | 🟡 Medio | Pendiente | Re-prompt PIN (§4 P1) |
 
 ### Resumen
 
-Prioridad **S1 + S2 + S3 + S6 + S7** forman un bloque único: no tiene sentido hacer uno sin los otros, porque todos comparten "o mueves la autoridad al servidor, o cualquiera puede todo". Ataque frontal:
+Cerrado el bloque **S1 + S3 + S4 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
 
-1. **Semana 1** — §4 P0 (bloquear login hasta auth) + §4 P0 (admin PIN a DB).
-2. **Semana 2** — §5 P0 (Edge Functions `finalize-match`, `submit-vote`).
-3. **Semana 3** — §3 P0 (migración RLS por tabla, con tests).
-4. **Semana 4** — §7 P0 (avatars owner-only) + §3 P1 (rate-limit).
-
-Con eso el backend pasa de **juguete funcional** a **producto defendible**.
+1. **Próximo** — S2 (`admin_pin_hash` por comunidad) para eliminar la escalada a admin vía PIN del bundle.
+2. Después — S6 (Edge Function `finalize-match`) para consolidar el dominio crítico en un solo sitio auditado.
+3. Luego — S5 (rate-limit en `login-by-pin`) y S10 (re-auth en destructivas).
+4. Legal/compliance — S9 (política de privacidad + términos), requisito para publicar en stores.
 
 ---
 
@@ -665,23 +739,23 @@ Con eso el backend pasa de **juguete funcional** a **producto defendible**.
 
 Ordenadas por ratio "reducción de riesgo / impacto de producto" dividido por esfuerzo.
 
-| # | Prioridad | Tag | Mejora | Por qué |
-|---|-----------|-----|--------|---------|
-| 1 | P0 | @rls 🔒 | Migración RLS fina por `auth.uid()` + helpers | Cierra el agujero principal — hoy cualquiera puede borrarlo todo |
-| 2 | P0 | @edge 🔒 | Edge Function `finalize-match` (+ portar `src/lib/game/` a shared) | Centraliza dominio, blinda stats/badges, habilita nativa |
-| 3 | P0 | @edge 🔒 | Edge Function `submit-vote` | Impide suplantación de votante (afecta al balanceador) |
-| 4 | P0 | @auth 🔒 | Bloquear login hasta `signInAnonymously` OK | Sin esto, RLS del resto del plan falla silenciosamente |
-| 5 | P0 | @auth 🔒 | `admin_pin_hash` por comunidad (elimina `NEXT_PUBLIC_ADMIN_PIN`) | Elimina escalada trivial a admin |
-| 6 | P0 | @storage 🔒 | Policies de avatars owner-only | Trolling trivial hoy |
-| 7 | P0 | @db ⚙️ | Vista/trigger `players_stats_computed` | Elimina deuda de denormalización sin cambiar API |
-| 8 | P0 | @db ⚙️ | `updated_at` + `updated_by` en tablas mutables | Base del audit log, coste bajísimo |
-| 9 | P0 | @migrations ⚙️ | Adoptar Supabase CLI + CI de migraciones | Sin esto, el próximo 002→005 es inevitable |
-| 10 | P0 | @obs | Sentry + Plausible | Deshace la ceguera total en prod |
-| 11 | P0 | @gdpr 🔒 | Política de privacidad + términos publicados | Bloqueo de stores si no, requisito legal |
-| 12 | P1 | @realtime ⚙️ | Delta-apply en hooks críticos | Baja egress Realtime ~70%, base para escalado |
-| 13 | P1 | @edge | `send-weekly-digest` + `recompute-player-stats` crons | Retención + reconciliación automática |
-| 14 | P1 | @client ⚙️ | `supabase gen types typescript` + react-query | Reduce bugs y duplica velocidad de desarrollo |
-| 15 | P1 | @gdpr | Descargar/borrar mis datos | Cumplimiento + diferenciador + lista para stores |
+| # | Prioridad | Estado | Tag | Mejora | Por qué |
+|---|-----------|--------|-----|--------|---------|
+| 1 | P0 | ✅ **Hecho** 2026-04-23 | @rls 🔒 | Migración RLS fina por `auth.uid()` + helpers | Cierra el agujero principal — hoy cualquiera puede borrarlo todo |
+| 2 | P0 | Pendiente | @edge 🔒 | Edge Function `finalize-match` (+ portar `src/lib/game/` a shared) | Centraliza dominio, blinda stats/badges, habilita nativa |
+| 3 | P0 | ✅ **Hecho** 2026-04-23 | @edge 🔒 | Impedir suplantación de votante (`voter_id`) | Policy `votes_insert` / `mvp_votes_insert` forzando `voter_id = public.users.player_id`. Edge Function opcional para defensa en profundidad |
+| 4 | P0 | ✅ **Hecho** 2026-04-23 | @auth 🔒 | Bloquear login hasta `signInAnonymously` OK | `AuthBootstrap` garantiza `auth.uid()` antes de cualquier render interactivo |
+| 5 | P0 | Pendiente | @auth 🔒 | `admin_pin_hash` por comunidad (elimina `NEXT_PUBLIC_ADMIN_PIN`) | Elimina escalada trivial a admin |
+| 6 | P0 | ✅ **Hecho** 2026-04-23 | @storage 🔒 | Policies de avatars owner-only | Mig 010: path `{cid}/{pid}.jpg` comparado con `get_user_community_id()` + `public.users.player_id` |
+| 7 | P0 | Pendiente | @db ⚙️ | Vista/trigger `players_stats_computed` | Elimina deuda de denormalización sin cambiar API |
+| 8 | P0 | Pendiente | @db ⚙️ | `updated_at` + `updated_by` en tablas mutables | Base del audit log, coste bajísimo |
+| 9 | P0 | Pendiente | @migrations ⚙️ | Adoptar Supabase CLI + CI de migraciones | Sin esto, el próximo 002→005 es inevitable |
+| 10 | P0 | Pendiente | @obs | Sentry + Plausible | Deshace la ceguera total en prod |
+| 11 | P0 | Pendiente | @gdpr 🔒 | Política de privacidad + términos publicados | Bloqueo de stores si no, requisito legal |
+| 12 | P1 | Pendiente | @realtime ⚙️ | Delta-apply en hooks críticos | Baja egress Realtime ~70%, base para escalado |
+| 13 | P1 | Pendiente | @edge | `send-weekly-digest` + `recompute-player-stats` crons | Retención + reconciliación automática |
+| 14 | P1 | Pendiente | @client ⚙️ | `supabase gen types typescript` + react-query | Reduce bugs y duplica velocidad de desarrollo |
+| 15 | P1 | Pendiente | @gdpr | Descargar/borrar mis datos | Cumplimiento + diferenciador + lista para stores |
 
 ---
 

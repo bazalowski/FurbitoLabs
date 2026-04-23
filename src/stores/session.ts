@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { signInAnonymously, upsertUserRecord, signOut } from '@/lib/supabase/auth'
+import { getCurrentUser, upsertUserRecord, signOut } from '@/lib/supabase/auth'
 import type { Role } from '@/types'
 
 interface SessionState {
@@ -12,9 +12,9 @@ interface SessionState {
   role: Role
   authUserId: string | null
   // Actions
-  login: (communityId: string, color: string, role: Role, playerId?: string) => void
+  login: (communityId: string, color: string, role: Role, playerId?: string) => Promise<void>
   logout: () => void
-  setRole: (role: Role) => void
+  setRole: (role: Role) => Promise<void>
 }
 
 export const useSession = create<SessionState>()(
@@ -26,18 +26,22 @@ export const useSession = create<SessionState>()(
       role: 'guest',
       authUserId: null,
 
-      login: (communityId, color, role, playerId) => {
-        set({ communityId, communityColor: color, role, playerId: playerId ?? null })
+      login: async (communityId, color, role, playerId) => {
+        // AuthBootstrap garantiza que existe sesión anónima antes de montar la app.
+        const user = await getCurrentUser()
+        const authUserId = user?.id ?? null
 
-        // Supabase Auth: crear usuario anónimo por detrás (fire-and-forget)
-        signInAnonymously().then(user => {
-          if (user) {
-            set({ authUserId: user.id })
-            upsertUserRecord(communityId, playerId ?? null, role)
-          }
-        }).catch(() => {
-          // Auth falla silenciosamente — la app sigue funcionando con Zustand
+        set({
+          communityId,
+          communityColor: color,
+          role,
+          playerId: playerId ?? null,
+          authUserId,
         })
+
+        if (authUserId) {
+          await upsertUserRecord(communityId, playerId ?? null, role)
+        }
       },
 
       logout: () => {
@@ -45,12 +49,11 @@ export const useSession = create<SessionState>()(
         set({ communityId: null, communityColor: '#a8ff3e', playerId: null, role: 'guest', authUserId: null })
       },
 
-      setRole: (role) => {
+      setRole: async (role) => {
         set({ role })
-        // Sincronizar con Supabase Auth si hay usuario
         const state = get()
         if (state.authUserId && state.communityId) {
-          upsertUserRecord(state.communityId, state.playerId, role).catch(() => {})
+          await upsertUserRecord(state.communityId, state.playerId, role)
         }
       },
     }),
