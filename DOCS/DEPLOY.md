@@ -131,7 +131,9 @@ Falta configurar variables en Vercel:
 2. Asegurate de tener:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_ADMIN_PIN`
+
+> El super-admin (panel `/admin`) ya no usa env var: se gestiona desde
+> Supabase Auth con email/password. Ver `supabase/migrations/013_super_admin.sql`.
 
 ### El deploy se ve bien pero la app no funciona
 - Verifica que las env vars en Vercel son correctas
@@ -153,7 +155,6 @@ Para produccion, debes configurarlas en Vercel:
 |----------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://gkmcvvtiwifxltivhkla.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Tu anon key de Supabase |
-| `NEXT_PUBLIC_ADMIN_PIN` | Tu PIN de admin |
 
 4. Click "Save"
 5. Ve a Deployments → click "Redeploy" en el ultimo deploy

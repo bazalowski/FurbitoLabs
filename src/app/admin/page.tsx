@@ -23,12 +23,20 @@ export default function AdminPage() {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    if (session.role !== 'admin') {
-      router.replace('/')
-      return
-    }
-    loadCommunities()
-  }, [session.role, router])
+    // Verifica con el JWT real que el caller es el super-admin.
+    // No basta con session.role='admin' (eso solo refleja estado cliente).
+    ;(async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      const SUPER_ADMIN_UUID = '1a1c6670-552c-4114-abb2-98a1483fa7fa'
+
+      if (!user || user.id !== SUPER_ADMIN_UUID) {
+        router.replace('/admin/login')
+        return
+      }
+      loadCommunities()
+    })()
+  }, [router])
 
   async function loadCommunities() {
     setLoading(true)
@@ -86,7 +94,13 @@ export default function AdminPage() {
       <Header
         title="Panel Admin"
         right={
-          <Button size="sm" variant="ghost" onClick={() => { session.logout(); router.replace('/') }}>
+          <Button size="sm" variant="ghost" onClick={async () => {
+            const supabase = createClient()
+            await supabase.auth.signOut()
+            await supabase.auth.signInAnonymously()
+            session.logout()
+            router.replace('/')
+          }}>
             Salir
           </Button>
         }

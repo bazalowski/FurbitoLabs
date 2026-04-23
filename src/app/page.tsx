@@ -65,13 +65,6 @@ export default function LoginPage() {
 
     const supabase = createClient()
 
-    // Check admin PIN
-    if (pin.toUpperCase() === (process.env.NEXT_PUBLIC_ADMIN_PIN ?? 'FURBITO2024')) {
-      login('admin', '#ffd700', 'admin')
-      router.push('/admin')
-      return
-    }
-
     // Find community by PIN
     const { data: community, error } = await supabase
       .from('communities')

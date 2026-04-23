@@ -300,35 +300,33 @@ Revocados en schema `public`. Se mantienen `SELECT/INSERT/UPDATE/DELETE` — eso
 
 ## 4. Autenticación (PIN + Supabase Auth anónima)
 
-**Archivos**: [src/lib/supabase/auth.ts](../../src/lib/supabase/auth.ts), [src/stores/session.ts](../../src/stores/session.ts), [src/app/page.tsx](../../src/app/page.tsx), mig [002_users_auth.sql](../../supabase/migrations/002_users_auth.sql).
+**Archivos**: [src/lib/supabase/auth.ts](../../src/lib/supabase/auth.ts), [src/stores/session.ts](../../src/stores/session.ts), [src/components/AuthBootstrap.tsx](../../src/components/AuthBootstrap.tsx), [src/app/page.tsx](../../src/app/page.tsx), [src/app/admin/login/page.tsx](../../src/app/admin/login/page.tsx), migs [002_users_auth.sql](../../supabase/migrations/002_users_auth.sql), [013_super_admin.sql](../../supabase/migrations/013_super_admin.sql).
 
-**Flujo actual**:
+**Flujo actual** (post 2026-04-23):
 
-1. Usuario escribe PIN de comunidad (o crea comunidad con PIN) → `login()` en zustand.
-2. `login()` dispara `signInAnonymously()` (fire-and-forget) → crea `auth.users` anónimo + `public.users` bridge.
-3. `session` persiste en `localStorage` con clave `furbito-session`.
-4. Admin PIN global (`NEXT_PUBLIC_ADMIN_PIN`) permite escalada a `role='admin'`.
+1. **`AuthBootstrap`** se monta en el root layout y garantiza una sesión anónima (`signInAnonymously`) **antes** de renderizar la app. Spinner mientras carga; error + retry si falla.
+2. Usuario escribe PIN de comunidad (o crea comunidad con PIN) → `session.login()` → `upsertUserRecord` enlaza `auth.uid()` ↔ `public.users` con `community_id` + `player_id` + `role`.
+3. `session` persiste en `localStorage` con clave `furbito-session` para estado cliente; el JWT de Supabase vive en cookies gestionadas por `@supabase/ssr`.
+4. **Super-admin global** (`/admin`): login por email/password vía Supabase Auth (no PIN). UUID fijo (`1a1c6670-552c-4114-abb2-98a1483fa7fa`) reconocido por helper SQL `public.is_super_admin()`.
 
 ### 🟢 Fortalezas
 
-- Flujo cero-fricción: el usuario no conoce Supabase Auth — para él solo hay PINs.
-- `signInAnonymously` **sí** se está usando (contra lo que uno esperaría): detrás de los PINs hay un `auth.user` real. Base limpia para RLS fina.
+- Flujo cero-fricción para usuarios finales: solo PINs de comunidad y de jugador. La infraestructura de `auth.users` es invisible.
+- `AuthBootstrap` hace de gate único: un solo punto donde garantizar `auth.uid()`. Reemplazable por Supabase Auth real (email/OAuth) sin tocar RLS.
+- Super-admin por email/password: contraseña bcrypt en Auth, rate-limit nativo, MFA opcional. Nada sensible en el bundle.
 
-### 🔴 Gaps
+### 🔴 Gaps resueltos (2026-04-23)
 
-1. 🔒 **El anon auth se hace fire-and-forget** ([session.ts#L32-L40](../../src/stores/session.ts)) — si falla, la app sigue funcionando sin `auth.user`. Significa que las políticas RLS estrictas basadas en `auth.uid()` también fallarán silenciosamente.
-2. 🔒 **`NEXT_PUBLIC_ADMIN_PIN` viaja al bundle**. Cualquier inspección del JS lo revela. Cualquiera puede hacerse admin de cualquier comunidad si adivina el PIN concreto.
-3. 🔒 **No hay `reauthentication`** para acciones destructivas (borrar evento, cambiar admin). Un móvil abierto robado = comunidad comprometida.
-4. 🔒 **Tokens de `auth.users` anónimos** no caducan fácilmente — si alguien se apodera del `localStorage`, tiene la sesión hasta que el JWT expire (default ~1h, pero con refresh que rueda).
-5. **Ausencia de `password` / `email`** elimina la posibilidad de recuperar acceso. Ya capturado como P0 en [FEATURE_AUDIT.md §1](FEATURE_AUDIT.md#1-autenticación-y-acceso) — aquí repito solo el componente backend: se necesita una columna `recovery_key_hash` en `players` y un endpoint que intercambie `recovery_key → player_id + auth anónimo nuevo`.
+1. ✅ ~~**Anon auth fire-and-forget**~~ → resuelto con `AuthBootstrap`. `session.login()` es async y opera sobre sesión ya garantizada.
+2. ✅ ~~**`NEXT_PUBLIC_ADMIN_PIN` en el bundle**~~ → eliminado. Super-admin ahora requiere email + password en `/admin/login`. Código de verificación en cliente (`getUser().id === UUID`) + policy SQL `is_super_admin()` como defensa doble.
 
-### ✨ Propuestas
+### 🔴 Gaps pendientes
 
-- **P0 · Bloquear login hasta que `signInAnonymously` complete** `@auth` 🔒
-  Convertir el fire-and-forget en `await` con timeout de 5s. Si falla, mostrar error, no loguear. Sin esto la RLS no funciona.
+3. 🔒 **No hay re-auth** para acciones destructivas (borrar evento, cambiar admin). Un móvil abierto = comunidad comprometida.
+4. 🔒 **Tokens anónimos** no caducan agresivamente — si alguien se apodera del `localStorage` + cookies, tiene la sesión hasta que el refresh-token expire (30 días por defecto).
+5. **Ausencia de `password`/`email`** para usuarios normales elimina la posibilidad de recuperar acceso (si borras el navegador, pierdes el vínculo a tu player). Capturado en [FEATURE_AUDIT.md §1](FEATURE_AUDIT.md#1-autenticación-y-acceso). Fix backend: columna `recovery_key_hash` en `players` + endpoint que intercambie `recovery_key → player_id + auth anónimo nuevo`.
 
-- **P0 · Mover admin PIN a columna `communities.admin_pin_hash`** `@auth` 🔒
-  `bcrypt`-hash server-side (trigger + función que solo acepta set vía admin ya autenticado). El cliente envía el PIN plano → Edge Function `promote-admin` lo compara. Rotación permitida. Elimina el `NEXT_PUBLIC_*`.
+### ✨ Propuestas restantes
 
 - **P1 · Recovery key** `@auth`
   Columna `recovery_key_hash` en `players`. Pantalla de recovery → Edge Function verifica y devuelve un magic-link interno (o crea un nuevo `auth.user` anónimo y lo mappea al `player_id`).
@@ -714,7 +712,7 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 | # | Riesgo | Severidad | Estado | Mitigación |
 |---|--------|-----------|--------|------------|
 | S1 | Cualquier cliente con anon_key puede borrar cualquier tabla de dominio | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | Migs [011b](../../supabase/migrations/011b_drop_public_all.sql) + [012](../../supabase/migrations/012_revoke_anon_privs.sql) |
-| S2 | `NEXT_PUBLIC_ADMIN_PIN` en bundle | 🔴 Crítico | Pendiente | Mover a `admin_pin_hash` por comunidad (§4 P0) |
+| S2 | `NEXT_PUBLIC_ADMIN_PIN` en bundle | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | Eliminado. Super-admin vía Supabase Auth (email/password). Mig [013](../../supabase/migrations/013_super_admin.sql) + [admin/login](../../src/app/admin/login/page.tsx) |
 | S3 | `signInAnonymously` fire-and-forget → RLS no funciona | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | [AuthBootstrap](../../src/components/AuthBootstrap.tsx) bloquea render hasta `auth.uid()` |
 | S4 | Avatars sobrescribibles por cualquiera | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Mig [010](../../supabase/migrations/010_avatars_rls.sql) — policies owner/admin |
 | S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | Pendiente | Edge Function `login-by-pin` con rate-limit (§3 P1) |
@@ -726,12 +724,11 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 
 ### Resumen
 
-Cerrado el bloque **S1 + S3 + S4 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
+Cerrado el bloque **S1 + S2 + S3 + S4 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
 
-1. **Próximo** — S2 (`admin_pin_hash` por comunidad) para eliminar la escalada a admin vía PIN del bundle.
-2. Después — S6 (Edge Function `finalize-match`) para consolidar el dominio crítico en un solo sitio auditado.
-3. Luego — S5 (rate-limit en `login-by-pin`) y S10 (re-auth en destructivas).
-4. Legal/compliance — S9 (política de privacidad + términos), requisito para publicar en stores.
+1. **Próximo** — S6 (Edge Function `finalize-match`) para consolidar el dominio crítico en un solo sitio auditado.
+2. Después — S5 (rate-limit en `login-by-pin`) y S10 (re-auth en destructivas).
+3. Legal/compliance — S9 (política de privacidad + términos), requisito para publicar en stores.
 
 ---
 
@@ -745,7 +742,7 @@ Ordenadas por ratio "reducción de riesgo / impacto de producto" dividido por es
 | 2 | P0 | Pendiente | @edge 🔒 | Edge Function `finalize-match` (+ portar `src/lib/game/` a shared) | Centraliza dominio, blinda stats/badges, habilita nativa |
 | 3 | P0 | ✅ **Hecho** 2026-04-23 | @edge 🔒 | Impedir suplantación de votante (`voter_id`) | Policy `votes_insert` / `mvp_votes_insert` forzando `voter_id = public.users.player_id`. Edge Function opcional para defensa en profundidad |
 | 4 | P0 | ✅ **Hecho** 2026-04-23 | @auth 🔒 | Bloquear login hasta `signInAnonymously` OK | `AuthBootstrap` garantiza `auth.uid()` antes de cualquier render interactivo |
-| 5 | P0 | Pendiente | @auth 🔒 | `admin_pin_hash` por comunidad (elimina `NEXT_PUBLIC_ADMIN_PIN`) | Elimina escalada trivial a admin |
+| 5 | P0 | ✅ **Hecho** 2026-04-23 | @auth 🔒 | Eliminar `NEXT_PUBLIC_ADMIN_PIN` — super-admin vía Supabase Auth email/password | Adiós clave en bundle. Mig 013 + `/admin/login` |
 | 6 | P0 | ✅ **Hecho** 2026-04-23 | @storage 🔒 | Policies de avatars owner-only | Mig 010: path `{cid}/{pid}.jpg` comparado con `get_user_community_id()` + `public.users.player_id` |
 | 7 | P0 | Pendiente | @db ⚙️ | Vista/trigger `players_stats_computed` | Elimina deuda de denormalización sin cambiar API |
 | 8 | P0 | Pendiente | @db ⚙️ | `updated_at` + `updated_by` en tablas mutables | Base del audit log, coste bajísimo |

@@ -180,7 +180,8 @@ Usuario abre la app
 El rol se almacena en el Zustand store y se determina al login:
 - PIN correcto → `guest` o `player` (si proporciona código de jugador)
 - Código de jugador = `comm_admin_id` de la comunidad → `admin`
-- PIN maestro (env `ADMIN_PIN`) → `admin` global
+- Super-admin global (panel `/admin`) → login email/password vía Supabase Auth,
+  UUID fijo reconocido por `public.is_super_admin()` (ver mig 013)
 
 ---
 

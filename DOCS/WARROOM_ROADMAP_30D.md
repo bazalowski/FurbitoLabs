@@ -10,7 +10,7 @@
 ### Día 1–2: Infraestructura y deploy
 - [ ] Resolver error `next.config.ts` → migrar a `next.config.mjs`
 - [ ] Verificar build en Vercel sin errores
-- [ ] Confirmar variables de entorno en Vercel (URL, anon key, ADMIN_PIN)
+- [ ] Confirmar variables de entorno en Vercel (URL, anon key)
 - [ ] Activar Realtime en Supabase (tablas: `events`, `confirmations`, `match_players`)
 
 ### Día 3–4: Iconos PWA y manifest

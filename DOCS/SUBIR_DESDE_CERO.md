@@ -88,10 +88,12 @@ Edita `.env.local` con tus credenciales de Supabase:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://TU_PROYECTO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci_TU_ANON_KEY_AQUI
-ADMIN_PIN=FURBITO2024
 ```
 
-> **IMPORTANTE**: Cambia `ADMIN_PIN` a algo que solo tú sepas. Este PIN da acceso al panel de administración global.
+> **Super-admin del panel `/admin`**: no se configura con PIN en env.
+> Se crea como user en Supabase Auth (Dashboard → Authentication → Users)
+> y su UUID se fija en `supabase/migrations/013_super_admin.sql`. El acceso
+> es por email + password.
 
 ### 3.4 Instalar dependencias y probar
 ```bash
@@ -145,7 +147,6 @@ Antes de hacer deploy, configura las variables de entorno:
 |----------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://tu-proyecto.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Tu anon key (la larga) |
-| `ADMIN_PIN` | Tu PIN de admin (ej: `FURBITO2024`) |
 
 ### 5.3 Deploy
 1. Click **Deploy**
@@ -182,8 +183,10 @@ Cada PR generará un **Preview Deploy** con URL temporal.
 3. Los jugadores confirman asistencia con ✅/🤔/❌
 
 ### 6.4 Acceder al panel admin
-1. En la pantalla de login, usa tu `ADMIN_PIN` como PIN
-2. Accederás al panel donde puedes gestionar todas las comunidades
+1. Ve directamente a `/admin/login` en tu URL de producción
+2. Introduce el email + password del user super-admin (creado en
+   Supabase Dashboard → Authentication → Users)
+3. Accederás al panel donde puedes gestionar todas las comunidades
 
 ---
 
