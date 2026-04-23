@@ -10,8 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         bg: {
-          DEFAULT: '#050d05',
-          2: '#0a180a',
+          DEFAULT: '#040807',
+          2: '#0a1210',
+          3: '#131a17',
         },
         accent: {
           DEFAULT: '#a8ff3e',
@@ -32,11 +33,12 @@ const config: Config = {
       fontFamily: {
         bebas: ['"Bebas Neue"', 'cursive'],
         barlow: ['"Barlow"', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         s: '10px',
         m: '14px',
-        l: '20px',
+        l: '16px',
       },
       maxWidth: {
         app: '500px',

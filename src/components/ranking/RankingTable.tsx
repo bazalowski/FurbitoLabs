@@ -205,47 +205,10 @@ export function RankingTable({
         })}
       </div>
 
-      {/* ── Tabs métrica: Puntos hero + resto glass ────── */}
+      {/* ── Tabs métrica: todas en el mismo registro calm ────── */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x scrollbar-none">
         {TABS.map(t => {
           const active = tab === t.key
-          const isHero = t.key === 'puntos'
-
-          if (isHero) {
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`relative flex-shrink-0 snap-start rounded-full min-h-[36px] active:scale-95 ${active ? 'legend-rainbow' : ''}`}
-                style={{
-                  padding: '1.5px',
-                  boxShadow: active ? `0 0 18px ${communityColor}55` : 'none',
-                }}
-              >
-                <span
-                  className="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] uppercase"
-                  style={{
-                    background: active ? 'rgba(5,13,5,0.92)' : 'var(--card)',
-                    color: active ? '#fff' : 'var(--muted)',
-                    border: active ? '0.5px solid rgba(255,255,255,0.12)' : '1px solid var(--border)',
-                    fontWeight: 800,
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={active ? 'animate-pulse' : ''}
-                    style={{ filter: active ? `drop-shadow(0 0 4px ${communityColor})` : 'none' }}
-                  >
-                    {t.icon}
-                  </span>
-                  <span className={active ? 'legend-rainbow font-bebas text-[13px] tracking-wider' : 'font-bold'}>
-                    {t.label}
-                  </span>
-                </span>
-              </button>
-            )
-          }
 
           return (
             <button
@@ -256,7 +219,7 @@ export function RankingTable({
                 active
                   ? {
                       background: communityColor,
-                      color: '#050d05',
+                      color: '#040807',
                       fontWeight: 700,
                       letterSpacing: '0.08em',
                       boxShadow: 'var(--shadow-depth-1)',

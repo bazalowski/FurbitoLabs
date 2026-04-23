@@ -1,25 +1,29 @@
-# FURBITO — Design System canónico
+# FURBITO — Design System canónico v2 (Athletic-Luxury)
 
 > **Propósito**: fuente única de verdad del sistema de diseño de FURBITO.
 > Todo cambio en UI debe respetar este documento. Si algo en el código se separa de aquí, **el código está mal** (o el documento está desactualizado — ajustar).
 >
 > **Audiencia**: desarrollador humano + agente (Claude, Cursor, etc.) trabajando en el repo.
-> **Fecha**: 2026-04-23 · **Versión**: 1.0
+> **Fecha**: 2026-04-23 · **Versión**: 2.0 — Athletic-Luxury
 > **Stack**: Next.js 14 + Tailwind + CSS custom properties (`src/app/globals.css`).
 
 ---
 
-## 0. Principios rectores
+## 0. Principios rectores (v2)
 
-El sistema no es "un tema dark más". Tiene carácter. Para preservarlo, respetar siempre estos 7 principios:
+El sistema no es "un tema dark más". Tiene carácter. Para preservarlo, respetar siempre estos 8 principios:
 
-1. **Oscuro por defecto, light como alternativa**. El dark es la identidad; el light debe sobrevivir pero no liderar decisiones.
-2. **Color de comunidad (`--comm-color`) como tinte, no como fondo**. El acento sale del comunitity color a través de sombras, bordes y halos; los fondos siguen siendo `--bg`/`--card`.
-3. **Glass > Flat**. Las superficies son vidrio tintado con hairline, no rectángulos planos. El `.card` con `hairline-top` es la base.
-4. **Jerarquía tipográfica por contraste Bebas ↔ Barlow**. Bebas para *displays* (números grandes, scores, títulos impactantes). Barlow para lectura.
-5. **Tabular nums obligatorios en estadísticas**. Nunca perder columnas al cambiar un número.
-6. **Polish es opt-in, no default**. Las utilidades `hairline-top`, `gloss-overlay`, `shine-sweep`, `aura-halo`, `legend-rainbow` se aplican conscientemente a los elementos que lo merecen. No se ponen en todo.
-7. **Respect `prefers-reduced-motion`**. Todas las animaciones se neutralizan. Nunca depender exclusivamente de animación para comunicar información.
+1. **Dualidad `calm` vs `arena`** (nuevo en v2 — el más importante). El sistema distingue dos registros de superficie:
+   - **`calm`** (navegación, listas, perfil base, forms, filtros, ajustes): restraint absoluto. Monocromo + acento puntual. Cero glows. Motion 180ms.
+   - **`arena`** (post-match, podio, historial con rachas, badges, detalle partido finalizado, TeamGenerator resultado): intensidad máxima. Tiers a saturación, gradientes, rainbow (leyenda), halos de reveal, motion de celebración.
+   El contraste entre ambos es lo que hace premium. Si todo grita, nada grita.
+2. **Dark fotográfico por defecto, light como alternativa funcional**. El dark es la identidad; el light sobrevive pero no lidera decisiones.
+3. **Color de comunidad (`--comm-color`) como tinta, no como fondo**. Modula sombras, bordes, halos y números protagonistas. Nunca rellena fondos grandes.
+4. **Jerarquía tipográfica a 3 familias**: Bebas (display hero), Barlow (cuerpo/labels), IBM Plex Mono (datos técnicos: deltas, fechas, contadores, índices). El font-mono es el hack premium clave v2.
+5. **Números son ciudadanos de primera**. Bebas + tabular-nums + `letter-spacing: -0.02em` en los grandes. Nunca perder columnas al cambiar un número.
+6. **Polish es opt-in y condicional**. Máx 1 utility en calm, máx 2 en arena. Las animaciones entran al aparecer, no viven eternamente (excepto idle animations intencionales en arena como `chip-pulse` de elementos "en vivo").
+7. **Hairlines para estructura, glows para reward**. Ver un glow = algo pasó. Ver muchos glows = nada pasó.
+8. **Respect `prefers-reduced-motion`**. Todas las animaciones se neutralizan. Nunca depender exclusivamente de animación para comunicar información.
 
 ---
 
@@ -33,23 +37,40 @@ El sistema no es "un tema dark más". Tiene carácter. Para preservarlo, respeta
 
 | Variable | Valor | Uso |
 |----------|-------|-----|
-| `--bg` | `#050d05` | Fondo de la página |
-| `--bg2` | `#0a180a` | Superficies secundarias (nav, modal bg) |
+| `--bg` | `#040807` | Fondo de la página (más profundo que v1) |
+| `--bg2` | `#0a1210` | Superficies secundarias (nav, modal bg, cards calm) |
+| `--bg3` | `#131a17` | Elevated / panels |
 | `--card` | `rgba(255,255,255,0.045)` | Fondo de cards (glass) |
 | `--card2` | `rgba(255,255,255,0.07)` | Card hover / elevada |
 | `--border` | `rgba(255,255,255,0.08)` | Borde estándar de card |
 | `--border-a` | `rgba(168,255,62,0.22)` | Borde tintado acento |
-| `--accent` | `#a8ff3e` | Acento principal (verde neón) |
+| `--accent` | `#a8ff3e` | Acento principal (electric turf, default sin comunidad) |
 | `--accent-d` | `rgba(168,255,62,0.12)` | Accent "dim" para fondos sutiles |
 | `--accent-g` | `rgba(168,255,62,0.35)` | Accent "glow" para halos |
 | `--text` | `#f0f0f0` | Texto principal |
 | `--muted` | `rgba(240,240,240,0.55)` | Texto secundario / placeholder |
-| `--red` | `#ff5c5c` | Error / destructivo |
-| `--orange` | `#ff9030` | Warning / "regular" |
+| `--red` | `#ff4d4d` | Error / destructivo (subido desde `#ff5c5c` en v2) |
+| `--orange` | `#ff8a1f` | Warning / "regular" (subido desde `#ff9030` en v2) |
 | `--gold` | `#ffd700` | Oro / logros / admin |
-| `--comm-color` | `#a8ff3e` (default) | **Color dinámico de la comunidad** |
+| `--comm-color` | dinámico (default `#a8ff3e`) | **Color dinámico de la comunidad** |
+
+#### Tiers Puntos Furbito (intocables)
+
+Los 5 tiers de puntuación Comunio son parte del contrato de gamificación — no se modifican sin plan explícito:
+
+| Tier | Color base | Rango pts | Tratamiento arena |
+|------|-----------|-----------|-------------------|
+| `mal` | `#ef4444` | <5 | Chip sólido rojo, sin reward |
+| `regular` | `#f97316` | 5–7 | Chip sólido naranja, sin reward |
+| `bueno` | `#22c55e` | 8–10 | Chip sólido verde, sin reward |
+| `excelente` | `#06b6d4` | 11–19 | Gradient verde→cyan, hairline-top |
+| `leyenda` | rainbow | ≥20 | `legend-rainbow` + `legend-halo` — el **único** contexto legítimo para rainbow en la app |
+
+Codificados en `.chip-tier[data-tier="..."]` (ver §3).
 
 #### Light (sobrescritas con `:root[data-theme="light"]`)
+
+El light theme es **funcional, no identitario**. Optimizado para lectura diurna; las decisiones de diseño se toman sobre dark.
 
 | Variable | Valor |
 |----------|-------|
@@ -78,7 +99,7 @@ El sistema no es "un tema dark más". Tiene carácter. Para preservarlo, respeta
 |-------|-------|-----|
 | `--radius-s` | `10px` | Inputs, chips, botones pequeños |
 | `--radius-m` | `14px` | **Default de cards y botones** |
-| `--radius-l` | `20px` | Cards hero, modals |
+| `--radius-l` | `16px` | Cards hero, modals (BAJADO desde `20px` en v2 para feel editorial) |
 
 Tailwind equivalente: `rounded-s` · `rounded-m` · `rounded-l`.
 
@@ -91,35 +112,40 @@ No hay tokens custom — Tailwind default. Convenciones:
 - **Padding de botón**: `px-4 py-3` (md) · `px-3 py-3` (sm) · `px-5 py-3.5` (lg).
 - **Safe area bottom**: utility `.pb-nav` (ya contempla `--nav-h` + `--safe-bottom` + 20px).
 
-### 1.4 Tipografía
+### 1.4 Tipografía (v2 — tres familias)
 
 #### Familias
 
 | Familia | Font | Uso |
 |---------|------|-----|
-| **Bebas Neue** (`font-bebas`) | Display, cursive | Números grandes (scores, stats, XP), títulos impactantes, tabs hero |
+| **Bebas Neue** (`font-bebas`) | Display, cursive | Números grandes (scores, stats, XP), títulos impactantes, nombres de equipo, podio |
 | **Barlow** (`font-barlow`) | 300/400/500/600/700/900 | Cuerpo, UI, labels, párrafos |
+| **IBM Plex Mono** (`font-mono`) — **NUEVO v2** | 400/500/700 mono | Datos técnicos: deltas (`↑+3`, `↓−1`), fechas, contadores (`14h 23m`), timestamps, índices (`#4`, `#5`), rachas (`×3`) |
+
+El **font-mono es el hack premium clave v2**. Apps atléticas serias (Whoop, Strava rediseñado, Oura) lo usan para separar visualmente "dato calculado" de "texto narrativo". Sin él, la app se siente web-consumer; con él, instrumento deportivo.
 
 #### Jerarquía canónica
 
 | Rol | Familia | Size | Weight | Notas |
 |-----|---------|------|--------|-------|
-| H1 display | Bebas | `text-4xl`-`text-6xl` | 400 | tracking-display (letter-spacing −0.01em). `text-wrap: balance` por defecto. |
-| H2 section | Bebas | `text-3xl` | 400 | |
-| H3 card title | Barlow | `text-base` / `text-lg` | 700 | Uppercase opcional |
-| Body | Barlow | `text-sm` (14px) | 400 | Base de la app |
-| Caption / muted | Barlow | `text-xs` (12px) | 500 | color `--muted` |
-| Stat number (grande) | Bebas | `text-3xl`+ | 400 | **Siempre `tabular-nums`** |
-| Chip / label | Barlow | `text-xs` | 600-700 | uppercase + tracking-wider |
+| Display hero | Bebas | 48–96px | 400 | `letter-spacing: -0.02em` en ≥40px. `tabular-nums`. Solo UNO por pantalla. |
+| Subdisplay | Bebas | 22–32px | 400 | Equipos, tier label grande, stat secundaria. |
+| Number chip | Bebas | 18–22px | 400 | Chip de puntos, filas de ranking. |
+| Section title | Barlow | 11–13px | 700 uppercase `tracking-widest` | Headers de sección |
+| Body | Barlow | 14px | 400 | Base de la app |
+| Caption / muted | Barlow | 12px | 500 | color `--muted` |
+| Tech data | IBM Plex Mono | 10–12px | 500 | **Deltas, fechas, contadores, índices, rachas** |
 
 #### Utilidades clave en `globals.css`
 
 ```css
-.font-bebas { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1, 'lnum' 1; }
+.font-bebas { font-family: 'Bebas Neue', cursive; font-variant-numeric: tabular-nums; }
+.font-barlow { font-family: 'Barlow', sans-serif; }
+.font-mono  { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .tabular-nums, .stat-num, .score, .xp { font-variant-numeric: tabular-nums; }
 .fw-medium { font-weight: 500; }
 .fw-semi   { font-weight: 600; }
-.tracking-display { letter-spacing: -0.01em; }
+.tracking-display { letter-spacing: -0.02em; }
 ```
 
 ### 1.5 Z-index
@@ -160,9 +186,58 @@ Y los `data-role` del CSS:
 
 ---
 
-## 2. Componentes núcleo
+## 2. Superficies: `calm` vs `arena` (regla rectora v2)
 
-### 2.1 Button
+Toda zona de UI se clasifica en uno de los dos registros. Esta clasificación se hace **antes** de elegir componentes y utilities.
+
+### 2.1 · Tabla de decisión rápida
+
+| Pantalla/sección | Registro | Por qué |
+|-----|-----|-----|
+| Home (player card, stats, ActivityFeed, shortcuts) | **calm** + beats arena puntuales | Navegación. Solo NextMatchHero tiende a arena cuando hay partido próximo. |
+| Layout global (Header, BottomNav, navegación) | **calm** | Chrome de navegación. |
+| Perfil jugador — skill bars, stats chips | **calm** | Datos de referencia. |
+| Perfil jugador — PointsEvolutionChart, BadgeVitrina, timeline con rachas | **arena** | Gamificación. |
+| Detalle partido **no finalizado** (convocados, equipos generados) | **calm** | Preparación. |
+| Detalle partido **finalizado** (renderResultado) | **arena** | El clímax de la app. |
+| Resultado stepper — Paso 1/2 (marcador, stats) | **calm** | Formulario de entrada. |
+| Resultado stepper — Paso 3 (resumen con puntos Comunio) | **arena** | Reveal de puntuación. |
+| Ranking — selector temporal, tabs, filtro de rol, lista 4+ | **calm** | Filtros/lista. |
+| Ranking — podio top 3, sticky "tú + delta" | **arena** | Celebración. |
+| TeamGenerator — Paso 1 (selección de jugadores) | **calm** | Formulario. |
+| TeamGenerator — Paso 2 (resultado equilibrado) | **arena** | Reveal teatral. |
+| Ayuda/tutorial, ajustes, perfil de admin, forms | **calm** | Utilitario. |
+| Modals de confirmación | **calm** | Acción puntual. |
+| Modal de badge unlocked, MVP reveal | **arena** | Celebración. |
+
+### 2.2 · Reglas por registro
+
+| Dimensión | `calm` | `arena` |
+|-----------|-----|-----|
+| Fondo card | `.surface-calm` (`--bg2` sólido, border plano, shadow-depth-1) | `.surface-arena` (card glass + tinte community, shadow-depth-2, hairline-top) |
+| Polish utilities | Máx **1** por elemento. Solo `hairline-top` en CTA primary. | Máx **2** por elemento. `hairline-top` + 1 de: `aura-halo` (reveal), `plinth-reflect`, `card-glow`, `micro-float`. |
+| Color protagonista | Monocromo + acento puntual community (borde focus, underline activo, tinta número). | Tiers a saturación, gradientes, rainbow (leyenda real), community-color como tinta protagonista. |
+| Motion | 180ms enter max. **Cero idle animation.** | Reveals 600–1200ms al entrar viewport. Idle permitido **solo** en elementos reward (`chip-pulse` de live, `aura-halo` post-reveal opcional). |
+| Tipografía | Barlow prevalece. Máx **1** Bebas protagonista por pantalla. | Bebas protagonista + múltiples subdisplay Bebas permitidos. `font-mono` obligatorio para deltas/fechas/contadores. |
+| Emojis | Solo en contenido (nombres de stats, resultado partido). Chrome usa iconos monocromos. | Emojis temáticos (🏆 🥇 🥈 🥉 🧤 ⚽ 🎯 🎖️ ⭐) permitidos en hero moments. |
+
+**Regla práctica**: si dudas si algo es calm o arena → es calm. Arena se gana.
+
+### 2.3 · Un "reward" por sección
+
+En superficies arena, solo **uno** de los siguientes elementos puede ser protagonista de reward visual por scroll/sección:
+- MVP reveal con aura + confetti SVG
+- Score slab con comm-color tinta gigante
+- Podio 1º con aura breathing post-reveal
+- Tier Leyenda rainbow
+
+Si dos compiten en viewport → uno se degrada a secundario. El usuario aprende dónde mirar.
+
+---
+
+## 3. Componentes núcleo
+
+### 3.1 Button
 
 **Archivo**: `src/components/ui/Button.tsx`.
 
@@ -194,35 +269,41 @@ Y los `data-role` del CSS:
 - ❌ `primary` con texto no-imperativo ("Información" — ese es ghost/secondary).
 - ❌ Añadir clases ad-hoc como `bg-red-500` en vez de usar `danger`.
 
-### 2.2 Card
+### 3.2 Card
 
 **Archivo**: `src/components/ui/Card.tsx`.
 
-#### Anatomía
+#### Anatomía (v2 — dos variantes por superficie)
 
 ```tsx
-<div className="card hairline-top p-4 min-w-0 relative">
+// CALM (default para listas, forms, navegación)
+<div className="surface-calm p-4">
+  {/* contenido */}
+</div>
+
+// ARENA (post-match, podio, hero del partido finalizado)
+<div className="surface-arena p-4">
   {/* contenido */}
 </div>
 ```
 
-- `.card` → glass background + border + shadow + inner hairline (via `::before`).
-- `.hairline-top` → filo luminoso arriba (via `::after`).
-- Con `onClick` → añade `.card-glow` + `cursor-pointer` + `active:scale-[0.98]`.
+- `.surface-calm` → `var(--bg2)` sólido + border plano + `--shadow-depth-1`. Sin hairline por defecto.
+- `.surface-arena` → card glass + border tintado community + `--shadow-depth-2` + `hairline-top` incluido.
+- `.card` (legacy — equivale aproximadamente a `.surface-arena` sin tintado community). Mantener para compatibilidad; preferir `.surface-calm`/`.surface-arena` en código nuevo.
+- Con `onClick` en arena → añade `.card-glow` + `cursor-pointer` + `active:scale-[0.98]`.
 - `highlighted` → overrides con `border-color: var(--border-a)` y `shadow-tint-strong`.
 
 #### Variantes de layout
-
-Además del `Card` estándar, se usa:
 
 - **`.card-hero`** (CSS): versión con `--radius-l` + `--shadow-depth-2`. Usar solo en 1 card por pantalla (la "protagonista").
 
 #### Antipatrón
 
-- ❌ `<div className="bg-white/5 rounded-xl border p-4">` — reinventa la rueda. Usa `.card`.
+- ❌ `<div className="bg-white/5 rounded-xl border p-4">` — reinventa la rueda. Usa `.surface-calm`/`.surface-arena`.
+- ❌ Usar `.surface-arena` en una sección calm → rompe la dualidad.
 - ❌ Card dentro de card (anidamiento innecesario). Si necesitas jerarquía interna, usa secciones con divider.
 
-### 2.3 Input
+### 3.3 Input
 
 **Archivo**: `src/components/ui/Input.tsx`.
 
@@ -230,7 +311,7 @@ Además del `Card` estándar, se usa:
 - Focus con `outline: 2px solid var(--comm-color)` + `outline-offset: 2px`.
 - Placeholder con `color: var(--muted)`.
 
-### 2.4 Modal
+### 3.4 Modal
 
 **Archivo**: `src/components/ui/Modal.tsx`.
 
@@ -241,7 +322,7 @@ Además del `Card` estándar, se usa:
 
 **Regla**: si el modal contiene un formulario editable → `variant="window"`. Si contiene una confirmación corta → bottom-sheet.
 
-### 2.5 Badge, Avatar, Icon, Toast, Skeleton, ThemeToggle
+### 3.5 Badge, Avatar, Icon, Toast, Skeleton, ThemeToggle
 
 Ver `src/components/ui/*` para implementación. Reglas transversales:
 
@@ -253,36 +334,84 @@ Ver `src/components/ui/*` para implementación. Reglas transversales:
 
 ---
 
-## 3. Utilidades CSS "polish layer"
+## 4. Primitivas v2 (`globals.css`)
 
-Estas son las utilidades que dan a FURBITO su carácter premium. **Son opt-in**: se aplican conscientemente.
+Las primitivas son clases de bajo nivel que resuelven patrones repetidos. Todo código nuevo debe componer primitivas antes de crear clases o estilos inline.
 
-| Clase | Efecto | Dónde tiene sentido |
-|-------|--------|---------------------|
-| `.hairline-top` | Filo metálico superior 1px (via `::after`) | Buttons primary/danger, cards heroicas, chips premium |
-| `.gloss-overlay` | Gloss interior tipo vidrio | Buttons primary/danger |
-| `.shine-sweep` | Barrido diagonal en hover (hover-only) | Buttons primary/danger, cards destacadas |
-| `.aura-halo` | Halo radial breathing tintado | Podio 1º puesto, badges legendarios |
-| `.micro-float` | Flotación 3.2s (−4px) | Medallas del podio, elementos featured |
-| `.card-glow` | Border + shadow tintado en hover | Cards interactivas (`onClick`) |
-| `.btn-tone[data-tone="accent\|danger\|glass"]` | Sombra tintada por variante | Botones (ya aplicado en `<Button>`) |
-| `.nav-icon-wrap[data-active="true"]` | Halo detrás del icono activo | BottomNav |
-| `.header-underline` | Gradient underline tintado | Header |
-| `.chip-pulse` | Pulse suave | Chips "en vivo" (confirmados, MVPs pendientes) |
-| `.plinth-reflect` | Reflejo tipo mirror overlay | Plinth del podio |
-| `.stat-tile` | Preset stat tile con halo radial | Tarjetas stats del home |
-| `.legend-rainbow` | Gradient arcoíris animado | Valor del 1º cuando tier = Leyenda |
-| `.legend-halo` | Halo arcoíris respirante | Chip o texto con valor ≥20 puntos |
+### 4.1 · Superficies
 
-### Antipatrón
+| Clase | Qué hace | Dónde |
+|-------|----------|-------|
+| `.surface-calm` | `bg2` sólido + border plano + shadow-depth-1 + radius-m | Cards calm: listas, forms, stats home, filtros |
+| `.surface-arena` | card glass + border tintado `--comm-color` + shadow-depth-2 + `hairline-top` incluido | Cards arena: MVP reveal, equipos del partido, filas del historial con rachas |
 
-- ❌ **Apilar todas** en un mismo elemento. `.hairline-top .gloss-overlay .shine-sweep .aura-halo .micro-float .card-glow` = mareo.
-- ❌ Usar `.legend-rainbow` fuera del contexto de tier "Leyenda" (rompe el significado semántico).
-- ❌ Copiar el CSS de una clase en otra nueva. Si algo se repite 3 veces → creamos una nueva utility.
+### 4.2 · Métricas (patrón stack número + label)
+
+| Clase | Qué hace | Dónde |
+|-------|----------|-------|
+| `.metric-major` | Stack: número Bebas 48–72px + label Barlow 10px `tracking-widest` | LA cifra protagonista de la pantalla (score del partido, total puntos jugador) |
+| `.metric-minor` | Stack compacto: número Bebas 22px + label 10px | Stats secundarias del home, tiles numéricos |
+
+### 4.3 · Datos gamificados
+
+| Clase | Qué hace | Dónde |
+|-------|----------|-------|
+| `.chip-tier[data-tier="mal\|regular\|bueno\|excelente\|leyenda"]` | Chip centralizado para valor de puntos Furbito, con tier codificado por data-attr | Chip del ranking, fila del historial, panel de equipo post-match. **Sustituye** los 4 estilos inline distintos de `tier.gradient/color/glow` que existían v1. |
+| `.score-slab` | Contenedor del score gigante del partido: Bebas 72–96px + separador "—" + grain interno sutil + comm-color como tinta | Marcador del partido finalizado, hero del resumen post-match |
+| `.delta-chip[data-direction="up\|down\|flat"]` | Chip mono (IBM Plex Mono) con delta: `↑+3` verde, `↓−1` rojo, `=` muted | Ranking con delta vs ventana anterior, histórico de posiciones |
+| `.inkbar[data-tone="community\|tier-mal\|..."]` | Barra vertical 2–3px tintada a la izquierda de una card/fila | Fila del historial (indica resultado/tier), card del equipo ganador. **Sustituye** los 4 `border-left: 3px solid X` improvisados. |
+
+### 4.4 · Typography helpers
+
+| Clase | Qué hace | Dónde |
+|-------|----------|-------|
+| `.font-mono` | IBM Plex Mono tabular + `letter-spacing: -0.02em` | Deltas, fechas, contadores de tiempo, índices, rachas |
+| `.divider-dot` | Punto separador " · " tintado `--muted`, con espaciado calibrado | Entre metadatos pequeños (fecha · pista · duración). Sustituye el " · " textual repetido 40+ veces en el código. |
+
+### 4.5 · Motion triggers
+
+| Clase | Qué hace | Dónde |
+|-------|----------|-------|
+| `.is-reveal` | Una vez visible en viewport, dispara reveal 600–1200ms (via IntersectionObserver) y la quita. | Beats del post-match (score slab, MVP reveal, podio del partido) |
+| `.is-reveal-pop` | Igual pero con `springIn` en vez de fade | Badges unlocked, número del podio 1º |
+
+**Implementación**: un hook `useReveal` (a crear en `src/hooks/useReveal.ts`) añade `.is-revealed` cuando el elemento entra en viewport por primera vez, cancelando después cualquier animación idle.
 
 ---
 
-## 4. Patrones de surface
+## 5. Polish layer (v1 ampliada, reglas de uso condicional)
+
+Estas utilidades siguen vivas. **La diferencia v2 es que su uso está condicionado por el registro `calm`/`arena`** y por el momento (idle vs reveal).
+
+| Clase | Efecto | Uso permitido (v2) |
+|-------|--------|---------------------|
+| `.hairline-top` | Filo metálico superior 1px | CALM: solo CTA primary. ARENA: cards hero, filas reward. |
+| `.gloss-overlay` | Gloss interior tipo vidrio | Solo buttons primary/danger (ya aplicado por `<Button>`). |
+| `.shine-sweep` | Barrido diagonal en hover | **Solo CTA de cierre/finalizar** (p.ej. botón "Finalizar partido"). NO en todos los primary. |
+| `.aura-halo` | Halo radial breathing tintado | ARENA ONLY. Reveal 3s al entrar, luego estático. NO idle permanente salvo en "#1 invicto ≥3 ventanas". |
+| `.micro-float` | Flotación 3.2s (−4px) | Solo medalla 1º del podio **si** es nuevo líder esta ventana. |
+| `.card-glow` | Border+shadow tintado en hover | Cards interactivas arena (`onClick`). |
+| `.btn-tone[data-tone="accent\|danger\|glass"]` | Sombra tintada por variante | Botones (ya aplicado en `<Button>`). |
+| `.nav-icon-wrap[data-active="true"]` | Halo detrás del icono activo | BottomNav (chrome de navegación calm). |
+| `.header-underline` | Gradient underline tintado | Header (único sitio). |
+| `.chip-pulse` | Pulse suave | Chips "en vivo" (confirmados en tiempo real, MVP pendiente de votación). |
+| `.plinth-reflect` | Reflejo tipo mirror overlay | Plinth del podio arena. |
+| `.stat-tile` | Preset stat tile con halo radial superior | Tarjetas stats del home (puede ser calm con este único polish). |
+| `.legend-rainbow` | Gradient arcoíris animado | **Solo** chip de valor con tier=leyenda real (≥20 pts). **NO** como decoración de chrome (tabs, borders). |
+| `.legend-halo` | Halo arcoíris respirante | Solo chip o fila con tier=leyenda real. |
+
+### Antipatrones
+
+- ❌ **Apilar >2 utilities polish** en un elemento. Ni siquiera en arena.
+- ❌ `.legend-rainbow` en un tab, border, chrome → solo en chip-tier[data-tier=leyenda].
+- ❌ `.aura-halo` idle permanente en avatar sin motivo (top 1 no-invicto, badge cualquiera, etc.) → wallpaper.
+- ❌ `.shine-sweep` en botones secundarios/confirmar → casino vibe.
+- ❌ Usar wow visual (shine, aura, rainbow) en superficie calm → rompe la dualidad.
+- ❌ Copiar el CSS de una clase en otra nueva. Si algo se repite 3 veces → extraer primitiva.
+
+---
+
+## 6. Patrones de surface
 
 ### 4.1 Superficie primaria (Home, Perfil, Ranking)
 
@@ -334,7 +463,7 @@ Siempre al menos un CTA. Nunca solo texto.
 
 ---
 
-## 5. Iconografía
+## 7. Iconografía
 
 - **Emojis nativos** del sistema: ok para iconos con carga emocional (⚽ 🎖️ 🏆 🔥 🎯 🥅).
 - **Iconos SVG** (wrapper `<Icon>`): ok para UI neutra (flechas, menú, ajustes). Un solo set consistente.
@@ -348,7 +477,7 @@ Siempre al menos un CTA. Nunca solo texto.
 
 ---
 
-## 6. Accesibilidad (a11y)
+## 8. Accesibilidad (a11y)
 
 ### Requisitos no negociables
 
@@ -368,7 +497,7 @@ Siempre al menos un CTA. Nunca solo texto.
 
 ---
 
-## 7. Light theme — reglas especiales
+## 9. Light theme — reglas especiales
 
 Cuando `data-theme="light"`:
 
@@ -381,7 +510,7 @@ Cuando `data-theme="light"`:
 
 ---
 
-## 8. Responsive & PWA
+## 10. Responsive & PWA
 
 ### Breakpoints
 
@@ -404,7 +533,7 @@ Tailwind default. FURBITO es **mobile-first**. Regla:
 
 ---
 
-## 9. Performance
+## 11. Performance
 
 ### Reglas
 
@@ -421,7 +550,7 @@ Tailwind default. FURBITO es **mobile-first**. Regla:
 
 ---
 
-## 10. Cómo añadir algo nuevo al design system
+## 12. Cómo añadir algo nuevo al design system
 
 Paso a paso cuando necesites un patrón nuevo:
 
@@ -434,7 +563,7 @@ Paso a paso cuando necesites un patrón nuevo:
 
 ---
 
-## 11. Anti-patrones globales (lo que NO hacer)
+## 13. Anti-patrones globales (lo que NO hacer)
 
 1. ❌ Colores custom fuera de tokens (`bg-blue-500`, `text-[#ff6666]`). Si no está en §1.1, no se usa.
 2. ❌ Box-shadows inventados ad-hoc. Usa las 4 escalas.
@@ -451,7 +580,7 @@ Paso a paso cuando necesites un patrón nuevo:
 
 ---
 
-## 12. Checklist para code review UI
+## 14. Checklist para code review UI
 
 Antes de mergear un PR que toque UI:
 
@@ -472,7 +601,7 @@ Antes de mergear un PR que toque UI:
 
 ---
 
-## 13. Migración a React Native — qué se preserva
+## 15. Migración a React Native — qué se preserva
 
 Preview rápido (detalle en `GUIA_MIGRACION_APP_NATIVA.md` y `UI_AUDIT_PANTALLAS.md` §16):
 
@@ -487,7 +616,7 @@ El objetivo es que el **feeling** sea el mismo. No la fidelidad pixel-perfect de
 
 ---
 
-## 14. Archivos clave
+## 16. Archivos clave
 
 | Archivo | Rol |
 |---------|-----|
