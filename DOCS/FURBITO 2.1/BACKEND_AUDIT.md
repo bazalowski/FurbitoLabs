@@ -275,17 +275,31 @@ Revocados en schema `public`. Se mantienen `SELECT/INSERT/UPDATE/DELETE` — eso
 - Rollback trivial y documentado por si una policy fina resulta demasiado estricta en algún entorno.
 - Migraciones numeradas en orden de dependencia con headers explicando **por qué**, no solo qué.
 
+#### 3.7 Edge Function `community-lookup` + `communities_select` endurecida (migs 014 + 015)
+
+Último vector de §3: el bruteforce de PINs. Antes, el cliente hacía `GET /rest/v1/communities?pin=eq.XXXX` sin rate-limit → un script podía enumerar PINs cortos en minutos. Con policy `communities_select: USING (true)` nada impedía la query.
+
+Cambios aplicados:
+
+- Mig **014** cierra `communities_select` a `is_super_admin() OR id = get_user_community_id()`. Un user logueado solo ve **su propia** comunidad. El bruteforce vía REST pasa a devolver siempre cero filas.
+- Nueva Edge Function [community-lookup](../../supabase/functions/community-lookup/index.ts) (Deno) es el único camino legítimo para "buscar comu por PIN":
+  - Rate-limit en memoria del runtime: **20 req/min/IP** + **5 req/min/PIN** (anti-enum).
+  - Validación de PIN (alfanumérico, 3-32 chars).
+  - Dos operaciones: `lookup` (devuelve `{id, color}` o 404) y `check_pin` (devuelve `{available: bool}` para validar al crear comu).
+  - Usa `service_role_key` internamente para bypassear RLS, pero solo expone campos seguros (nunca `pin` ni `admin_ids[]`).
+- Refactor de [src/app/page.tsx](../../src/app/page.tsx) + helper [community-lookup.ts](../../src/lib/supabase/community-lookup.ts) para llamar la Edge Function en los 3 call sites (`handleJoin`, `handleCreate`, `handleCreatePlayer`).
+- Mig **015** fix necesario tras 014: la policy `players_insert` caso 2 (self-onboarding) hacía `EXISTS (SELECT 1 FROM communities WHERE id = community_id)`; tras endurecer `communities_select` esa subquery dejó de ver la comu recién creada por el propio user. Resuelto con función `public.community_exists(text) SECURITY DEFINER` que bypassea el RLS para el check de existencia.
+
+**Lección aprendida** registrada como feedback interno: cada vez que se endurezca una policy de SELECT, auditar todas las subqueries a esa tabla en las `WITH CHECK` / `USING` de otras policies — un cambio aparentemente aislado puede romper flujos dependientes.
+
 ### 🔴 Gaps que quedan (no P0, pero anotados)
 
-- **Rate-limit**: sigue sin existir en PostgREST. Bruteforce de PINs (4 chars uppercase = ~36^4 ≈ 1.7M combinaciones, pero típicamente son nombres/palabras cortas → mucho menos) sigue siendo viable vía `GET communities?pin=eq.XXXX`. Mitigable con Edge Function que encapsule el `login-by-pin`. **P1 pendiente**.
 - **Primer admin = quien crea la comunidad**: `communities_insert` solo pide `auth.uid() IS NOT NULL` (no puede pedir más, porque aún no eres admin de nada). Es aceptable por diseño — quien paga el coste de crear la comu es el dueño legítimo.
 - **Race condition de onboarding en cold-start en incógnito**: detectada durante pruebas. La primera request de `communities.insert` tras un `signInAnonymously()` muy fresco puede devolver `42501` por desfase de cookies. No reproducible fuera de incógnito (sesión persistida). Se considera caso borde aceptable; mitigable añadiendo un pequeño `await` extra o un retry en el cliente si se vuelve común. **P2 pendiente**.
 - **Edge Functions para dominio crítico**: recomendadas como defensa en profundidad (finalizar partido, cambiar PIN, rotar admin). No son bloqueantes porque las policies finas ya cubren el caso, pero concentrarían la lógica auditada en un solo sitio. **P1/P2 pendiente**.
+- **Rate-limit distribuido**: el RL de `community-lookup` es por-instancia del runtime de edge. Un atacante distribuido muy agresivo podría saltárselo. Mitigable con Redis o similar. **P2 pendiente** (hoy basta para frenar scripting trivial).
 
 ### ✨ Propuestas restantes (priorizadas)
-
-- **P1 · Edge Function `login-by-pin` con rate-limit** `@rls` 🔒
-  Mover la búsqueda por PIN de `GET communities?pin=eq.X` a una Edge Function que cache por IP, devuelva 429 tras N intentos y haga log auditables. Elimina el único vector de bruteforce que queda.
 
 - **P1 · Edge Function `finalize-match`** `@rls` 🔒 ⚙️
   Actualmente la finalización hace `match_players.upsert` + `players.update` (xp/badges) cliente-side con policies que requieren admin. Funciona, pero consolidar en Edge Function permite: validaciones de negocio (N goleadores ≠ N goles), logs unificados, futura idempotencia.
@@ -715,7 +729,7 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 | S2 | `NEXT_PUBLIC_ADMIN_PIN` en bundle | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | Eliminado. Super-admin vía Supabase Auth (email/password). Mig [013](../../supabase/migrations/013_super_admin.sql) + [admin/login](../../src/app/admin/login/page.tsx) |
 | S3 | `signInAnonymously` fire-and-forget → RLS no funciona | 🔴 Crítico | ✅ **Resuelto** 2026-04-23 | [AuthBootstrap](../../src/components/AuthBootstrap.tsx) bloquea render hasta `auth.uid()` |
 | S4 | Avatars sobrescribibles por cualquiera | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Mig [010](../../supabase/migrations/010_avatars_rls.sql) — policies owner/admin |
-| S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | Pendiente | Edge Function `login-by-pin` con rate-limit (§3 P1) |
+| S5 | Sin rate-limit → bruteforce PIN | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Edge Function [community-lookup](../../supabase/functions/community-lookup/index.ts) con RL (20 req/min/IP, 5 req/min/PIN) + mig [014](../../supabase/migrations/014_harden_communities_select.sql) cierra `communities_select` al propio community_id |
 | S6 | Stats/badges manipulables desde cliente | 🟠 Alto | 🟡 **Mitigado parcialmente** | Policy `players_update` exige owner o admin; aún falta Edge Function para consolidar dominio |
 | S7 | Votos falseables (`voter_id` del cliente) | 🟠 Alto | ✅ **Resuelto** 2026-04-23 | Policies `votes_insert` y `mvp_votes_insert` fuerzan `voter_id = public.users.player_id` del caller |
 | S8 | CORS `*` en Edge Functions | 🟡 Medio | Pendiente | Whitelist dominios (furbito.app + native custom scheme) |
@@ -724,10 +738,10 @@ Compila riesgos de §3, §4, §7, §8 en un mapa ejecutable.
 
 ### Resumen
 
-Cerrado el bloque **S1 + S2 + S3 + S4 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
+Cerrado el bloque **S1 + S2 + S3 + S4 + S5 + S7** (2026-04-23). El backend deja de ser "juguete funcional" y pasa a **producto defendible**. Lo que queda:
 
 1. **Próximo** — S6 (Edge Function `finalize-match`) para consolidar el dominio crítico en un solo sitio auditado.
-2. Después — S5 (rate-limit en `login-by-pin`) y S10 (re-auth en destructivas).
+2. Después — S10 (re-auth en destructivas).
 3. Legal/compliance — S9 (política de privacidad + términos), requisito para publicar en stores.
 
 ---

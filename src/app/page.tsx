@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { lookupCommunityByPin, checkPinAvailable } from '@/lib/supabase/community-lookup'
 import { useSession } from '@/stores/session'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
@@ -63,25 +64,16 @@ export default function LoginPage() {
     setJoinError('')
     setJoinLoading(true)
 
-    const supabase = createClient()
+    const result = await lookupCommunityByPin(pin)
 
-    // Find community by PIN
-    const { data: community, error } = await supabase
-      .from('communities')
-      .select('*')
-      .eq('pin', pin.toUpperCase())
-      .maybeSingle()
-
-    if (error) {
-      console.error('[FURBITO] Error al buscar comunidad:', error)
-      setJoinError(`Error de conexión: ${error.message}`)
-      triggerShake()
-      setJoinLoading(false)
-      return
-    }
-
-    if (!community) {
-      setJoinError('PIN incorrecto. Revisa el código de tu comunidad.')
+    if (!result.ok) {
+      if (result.error === 'rate_limited') {
+        setJoinError('Demasiados intentos. Espera un minuto e inténtalo de nuevo.')
+      } else if (result.error === 'not_found') {
+        setJoinError('PIN incorrecto. Revisa el código de tu comunidad.')
+      } else {
+        setJoinError('Error de conexión. Inténtalo de nuevo.')
+      }
       triggerShake()
       setJoinLoading(false)
       return
@@ -89,9 +81,9 @@ export default function LoginPage() {
 
     // Entra como guest; el usuario introduce su PIN de jugador luego
     // desde el icono 🔑 del layout para identificarse.
-    login(community.id, community.color, 'guest')
+    login(result.data.id, result.data.color, 'guest')
 
-    router.push(`/${community.id}`)
+    router.push(`/${result.data.id}`)
     setJoinLoading(false)
   }
 
@@ -104,21 +96,18 @@ export default function LoginPage() {
     setCreateError('')
     const supabase = createClient()
 
-    // Check PIN not already used
-    const { data: existing, error: checkError } = await supabase
-      .from('communities')
-      .select('id')
-      .eq('pin', newPin.toUpperCase())
-      .maybeSingle()
-
-    if (checkError) {
-      console.error('[FURBITO] Error al verificar PIN:', checkError)
-      setCreateError(`Error de conexion con Supabase: ${checkError.message}`)
+    // Check PIN not already used (vía Edge Function, rate-limit incluido)
+    const check = await checkPinAvailable(newPin)
+    if (!check.ok) {
+      setCreateError(
+        check.error === 'rate_limited'
+          ? 'Demasiados intentos. Espera un minuto.'
+          : 'Error de conexión. Inténtalo de nuevo.',
+      )
       setCreateLoading(false)
       return
     }
-
-    if (existing) {
+    if (!check.available) {
       setCreateError('Ese PIN ya esta en uso. Elige otro.')
       setCreateLoading(false)
       return
@@ -129,7 +118,7 @@ export default function LoginPage() {
     const playerId = uid()
     const playerCode = genPlayerCode()
 
-    const { data: community, error } = await supabase
+    const { error } = await supabase
       .from('communities')
       .insert({
         id: communityId,
@@ -139,16 +128,10 @@ export default function LoginPage() {
         comm_admin_id: playerId,
         admin_ids: [playerId],
       })
-      .select()
-      .single()
 
-    if (error || !community) {
+    if (error) {
       console.error('[FURBITO] Error al crear comunidad:', error)
-      setCreateError(
-        error
-          ? `Error Supabase (${error.code}): ${error.message}`
-          : 'No se recibieron datos. Intentalo de nuevo.'
-      )
+      setCreateError(`Error Supabase (${error.code}): ${error.message}`)
       setCreateLoading(false)
       return
     }
@@ -171,8 +154,8 @@ export default function LoginPage() {
     // Show the player's PIN
     alert(`Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuardalo para poder identificarte.`)
 
-    login(community.id, community.color, 'admin', playerId)
-    router.push(`/${community.id}`)
+    login(communityId, newColor, 'admin', playerId)
+    router.push(`/${communityId}`)
   }
 
   /* ═════════ Gate inicial ═════════ */
@@ -536,26 +519,25 @@ function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
     setLoading(true)
     const supabase = createClient()
 
-    const { data: community, error: commErr } = await supabase
-      .from('communities')
-      .select('id, color, pin')
-      .eq('pin', communityPin.toUpperCase())
-      .maybeSingle()
-
-    if (commErr || !community) {
-      setError('PIN de comunidad no encontrado.')
+    // Busca la comunidad vía Edge Function (rate-limited)
+    const lookup = await lookupCommunityByPin(communityPin)
+    if (!lookup.ok) {
+      setError(
+        lookup.error === 'rate_limited'
+          ? 'Demasiados intentos. Espera un minuto.'
+          : 'PIN de comunidad no encontrado.',
+      )
       triggerShake()
       setLoading(false)
       return
     }
 
-    // Evitar duplicados por nombre exacto en la misma comunidad (opcional defensivo)
     const playerId = uid()
     const playerCode = genPlayerCode()
 
     const { error: insertErr } = await supabase.from('players').insert({
       id: playerId,
-      community_id: community.id,
+      community_id: lookup.data.id,
       name: nm,
       code: playerCode,
     })
@@ -567,8 +549,8 @@ function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
     }
 
     setCreatedCode(playerCode)
-    setCreatedCommunityId(community.id)
-    setCreatedColor(community.color)
+    setCreatedCommunityId(lookup.data.id)
+    setCreatedColor(lookup.data.color)
     setCreatedPlayerId(playerId)
     setLoading(false)
   }
