@@ -37,7 +37,7 @@
 11. [XP, niveles, rachas e historial](#11-xp-niveles-rachas-e-historial)
 12. [Badges y vitrina](#12-badges-y-vitrina)
 13. [Ranking de comunidad](#13-ranking-de-comunidad)
-14. [Pistas y mapa](#14-pistas-y-mapa)
+14. [Pistas (sin mapa en web — mapa reservado para nativa)](#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa)
 15. [Notificaciones push + recordatorios](#15-notificaciones-push--recordatorios)
 16. [Feed de actividad](#16-feed-de-actividad)
 17. [Realtime y sincronización](#17-realtime-y-sincronización)
@@ -218,8 +218,8 @@
 - **P0 · Lista de espera con promoción automática** `@evento`
   Si `confirmed >= max_jugadores`, nuevas confirmaciones caen en `waitlist`. Cuando alguien cambia de `si` a `no`, promover el primero de waitlist y notificarle.
 
-- **P0 · Export a calendario (.ics) + deep-link maps** `@evento`
-  Botón "Añadir a mi calendario" genera `.ics` on-the-fly y abre. "Cómo llegar" con `geo:` / Google Maps URL desde `pista.lat/lng`. Coste mínimo, reduce no-shows ~10-15% según datos públicos de otros productos.
+- **P0 · Export a calendario (.ics)** `@evento`
+  Botón "Añadir a mi calendario" genera `.ics` on-the-fly y abre. Coste mínimo, reduce no-shows ~10-15% según datos públicos de otros productos. El "Cómo llegar" / deep-link a Maps queda aplazado a nativa (ver §14) — en web, sin mapa y sin captura fiable de `lat/lng`, no hay destino al que linkear.
 
 - **P1 · Cancelación con motivo + notificación a convocados** `@evento`
   "Cancelar por lluvia" / "Cancelar por falta de jugadores" → mensaje fijo en el evento, status `cancelled`, push a confirmados.
@@ -656,47 +656,51 @@
 
 ---
 
-## 14. Pistas y mapa
+## 14. Pistas (sin mapa en web — mapa reservado para nativa)
 
-**Código**: [src/hooks/usePistas.ts](../../src/hooks/usePistas.ts), [src/components/pistas/PistaMap.tsx](../../src/components/pistas/PistaMap.tsx), [src/app/[cid]/pistas/page.tsx](../../src/app/[cid]/pistas/page.tsx).
+**Código**: [src/hooks/usePistas.ts](../../src/hooks/usePistas.ts), selector + modal "nueva pista" en [src/components/events/EventForm.tsx](../../src/components/events/EventForm.tsx).
+
+> **Decisión 2026-04-23**: eliminado el módulo de mapa (Leaflet + ruta `/[cid]/pistas` + `PistaMap.tsx`). El mapa queda aplazado a la versión nativa (ver [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md)) donde la UX de mapa mobile-first justifica el coste (geolocalización nativa, tap-para-pin, integración con Apple/Google Maps). En web, el valor marginal era bajo: muchas comunidades juegan siempre en la misma pista y abrir un mapa para añadir un punto es fricción pura.
 
 **Comportamiento actual**:
 
-- Pistas con nombre, lat/lng, notas, superficie (según código).
-- Mapa con marcadores de las pistas de la comunidad.
-- Eventos se asocian a `pista_id`.
-- Badges específicos de pistas (`pistas_5/10`, `jugar_3_pistas`, `pista_favorita_*`, …).
+- Pistas con nombre, dirección opcional. Columnas `lat`/`lng` siguen en BD pero no se escriben desde la UI — quedan listas para cuando el mapa vuelva en nativa.
+- Eventos se asocian a `pista_id` vía `<Select>` de pistas existentes en [EventForm.tsx](../../src/components/events/EventForm.tsx).
+- Crear pista nueva desde la opción **"+ Nueva pista…"** del mismo selector → modal inline con 2 campos (nombre + dirección). Auto-seleccionada al guardar.
+- Sin ruta `/[cid]/pistas`, sin sección dedicada — pistas es infra silenciosa que alimenta eventos y badges.
+- Badges específicos de pistas (`pistas_5/10`, `jugar_3_pistas`, `pista_favorita_*`, …) siguen disparándose con `pista_id` del evento.
 
 ### 🟢 Fortalezas
 
-- Conectar eventos → pistas → badges cierra un loop completo (geo).
-- Pista como entidad permite "compartir pistas entre comunidades" (una pista en Madrid puede ser usada por dos comunidades distintas) — poco explotado hoy pero abre puerta a producto de red.
+- Conectar eventos → pistas → badges cierra un loop completo **sin exponer complejidad geográfica** en la web.
+- Flujo "crear pista" reducido a 2 campos y disparado solo cuando hace falta (desde el evento nuevo) — cero fricción para el admin.
+- `lat`/`lng` conservados en BD → migración nativa trivial: solo hay que volver a escribir esos campos cuando exista mapa.
 
 ### 🔴 Gaps
 
-1. **Añadir pista fuera del mapa es la única opción fluida** — añadir desde el mapa (tap en coordenadas) no está.
-2. **Sin info derivada** por pista: "aquí se juega a las 21h", "superficie cemento", "ha llovido → cerrada".
-3. **No hay "pistas favoritas"** del jugador (aparte del badge).
-4. **Sin integración con clima** — "mañana 90% de lluvia en tu pista" desaparecería partidos sin sentido.
-5. **Sin reseñas** — útiles: "vestuario: no", "aparcamiento: 100m", "balón propio: sí".
-6. **Sin "distancia desde tu ubicación"** ni "cómo llegar" — está en el [roadmap](../WARROOM_ROADMAP_30D.md) semana 2 pero pendiente.
+1. **No hay listado de pistas** fuera del selector del evento — si una comunidad quiere ver todas sus pistas, no hay surface. (Aceptable: el volumen es muy bajo — típicamente 1-3 pistas por grupo).
+2. **No hay edición ni borrado** de pistas desde UI. Si se crea con typo, hay que ir a la BD.
+3. **Sin info derivada** por pista: horario habitual, superficie, condiciones. (Pendiente para nativa junto con el mapa.)
+4. **Sin "pistas favoritas"** del jugador más allá del badge.
 
-### ✨ Propuestas
+### ✨ Propuestas (web actual)
 
-- **P0 · Añadir pista tocando el mapa** `@pistas`
-  Tap largo → pin draggable → formulario flotante. Cierra el loop sin salir del mapa.
+- **P2 · Editar/borrar pista desde el selector** `@pistas`
+  Junto a cada pista en el `<Select>`, icono de lápiz al hover → abre el modal en modo edición. Resuelve el gap de typos sin añadir pantalla.
 
-- **P0 · "Cómo llegar" + distancia** `@pistas`
-  Botón directo a Google Maps/Apple Maps via `geo:lat,lng`. Distancia en km desde ubicación (con permiso). Abre casos de "elijo pista más cercana".
+- **P2 · Mini-gestor "Mis pistas" en Ajustes** `@pistas`
+  Sección en `/ajustes` que liste pistas de la comunidad + permita editar/borrar. Surface administrativo sin volver a introducir una ruta dedicada. Solo si aparecen varias comunidades con >5 pistas.
 
-- **P1 · Reseñas minimalistas de pista** `@pistas`
-  3 campos: superficie, condiciones (buenas/regular/malas), nota corta. Agregadas por comunidad. Útiles + diferencian vs GMaps genérico.
+### 🧭 Propuestas aplazadas a nativa
 
-- **P1 · Clima en el evento** `@evento` + `@pistas`
-  Usar una API free (Open-Meteo) para mostrar pronóstico del día del partido en la card del evento. No hace falta cuenta ni API key. 0 coste, alta utilidad.
+Movidas a [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md). Aquí las listo solo como inventario para no perderlas:
 
-- **P2 · Pistas públicas compartidas entre comunidades** `@pistas`
-  Toggle "pista pública": aparece en el mapa de cualquier comunidad de FURBITO geográficamente cercana. Red de pistas crowd-sourced. Eventual diferencial vs cualquier competidor.
+- Mapa con pistas de la comunidad (`react-native-maps`).
+- Añadir pista tocando el mapa (tap largo → pin draggable).
+- "Cómo llegar" + distancia con geolocalización nativa.
+- Reseñas minimalistas (superficie, condiciones, nota).
+- Clima en el evento vía Open-Meteo.
+- Pistas públicas compartidas entre comunidades (crowd-sourcing geográfico).
 
 ---
 
@@ -928,7 +932,7 @@ Ordenadas por **ratio impacto/coste** asumiendo ~1 dev. Los tags y IDs cuadran c
 | 9  | P0 | @auth | Recovery key por jugador | Sin esto, cambio de móvil = pérdida de identidad |
 | 10 | P0 | @comunidad | Multi-comunidad por jugador | Desbloquea segmento enorme (curro + barrio + pichangas) |
 | 11 | P0 | @resultado | Undo 15 min tras finalizar | Elimina miedo al botón + errores en prod |
-| 12 | P0 | @evento | Export .ics + deep-link Maps | 15 min de trabajo, reduce no-shows |
+| 12 | P0 | @evento | Export .ics a calendario | 15 min de trabajo, reduce no-shows (deep-link Maps aplazado a nativa) |
 | 13 | P0 | @feed | Reactions (🔥 👏 🐐…) | Convierte feed pasivo en loop social |
 | 14 | P0 | @obs | Error tracking + analytics ligero | Ceguera total hoy; crítico antes del hard launch |
 | 15 | P1 | @equipos | Memoria de emparejamientos recientes | El partido semanal se vuelve aburrido sin rotación |

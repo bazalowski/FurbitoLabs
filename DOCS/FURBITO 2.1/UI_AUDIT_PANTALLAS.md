@@ -27,7 +27,7 @@
 7. [Lista de jugadores](#7-lista-de-jugadores)
 8. [Perfil de jugador](#8-perfil-de-jugador)
 9. [Ranking](#9-ranking)
-10. [Pistas (mapa)](#10-pistas-mapa)
+10. [Pistas — ELIMINADO (mapa aplazado a nativa)](#10-pistas--eliminado-2026-04-23)
 11. [Ajustes](#11-ajustes)
 12. [Ayuda / Tutorial](#12-ayuda--tutorial)
 13. [Admin (super-admin panel)](#13-admin-super-admin-panel)
@@ -417,35 +417,15 @@
 
 ---
 
-## 10. Pistas (mapa)
+## 10. Pistas — [ELIMINADO 2026-04-23]
 
-**Ruta**: `src/app/[cid]/pistas/page.tsx`
-
-**Estado actual**:
-
-- Mapa Leaflet con markers de pistas/canchas registradas.
-- Tap en marker → info.
-
-### 🔴 Issues detectados
-
-1. Leaflet en RN **no se porta directo** — será una decisión explícita en la migración.
-2. No está claro cuántas pistas hay ni cómo se añaden desde la UI.
-3. No hay distancia desde la ubicación del usuario.
-4. Muchos grupos siempre juegan en la misma pista — el mapa es overkill.
-
-### ✨ Propuestas
-
-- **P0 · Vista dual mapa/lista** `@pistas`
-  Toggle arriba: `Mapa | Lista`. Lista ordenada por "más usada por la comunidad", con nombre + dirección + nº de partidos jugados ahí.
-
-- **P1 · Pista habitual destacada** `@pistas`
-  Si la comunidad juega ≥70% de sus partidos en la misma pista, marcarla con badge "Tu pista" y permitir fijarla arriba.
-
-- **P1 · Link a Google Maps** `@pistas`
-  Tap en pista → botón "Cómo llegar" que abre Maps nativo con ruta. Reduce 4 taps.
-
-- **P2 · Sustituir Leaflet en RN por MapKit nativo** `@native`
-  Decisión de migración documentada: `react-native-maps` con MapKit (iOS) / Google Maps (Android). No se intenta portar Leaflet.
+> **Pantalla eliminada.** Ruta `/[cid]/pistas` + componente `PistaMap.tsx` + dependencia `leaflet` removidos del repo en la decisión 2026-04-23 (ver [FEATURE_AUDIT.md §14](FEATURE_AUDIT.md#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa)).
+>
+> El mapa queda **aplazado a la versión nativa**, donde la UX mobile-first (geolocalización, tap-pin, Apple/Google Maps integrado) justifica el coste. En web no compensaba: el valor marginal era bajo y la complejidad geográfica (geocoding, permisos, rendimiento Leaflet) no encajaba con la naturaleza ligera de la PWA.
+>
+> **Qué se conservó**: tabla `pistas`, columna `pista_id` en events, columnas `lat`/`lng` en BD (listas para cuando vuelva el mapa), badges geográficos. La creación de pistas vive ahora inline en [EventForm.tsx](../../src/components/events/EventForm.tsx) vía la opción **"+ Nueva pista…"** del selector.
+>
+> Todas las propuestas originales de esta sección (vista dual mapa/lista, pista habitual destacada, link a Maps) se reagrupan en [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md) bajo el apartado de features nativas.
 
 ---
 
@@ -691,7 +671,7 @@ Ordenadas por **ratio impacto / coste** para ejecutar antes del lanzamiento púb
 | 8 | "Tu posición" sticky en ranking | `@ranking` | P0 |
 | 9 | Compartir podio como imagen | `@ranking` | P0 |
 | 10 | Confirmación doble en admin destructivo | `@admin` | P0 |
-| 11 | Vista dual mapa/lista en pistas | `@pistas` | P0 |
+| 11 | ~~Vista dual mapa/lista en pistas~~ — módulo mapa eliminado 2026-04-23, aplazado a nativa | `@pistas` | — |
 | 12 | Empty states con personalidad | cross | P1 |
 | 13 | Auto-hide BottomNav al scroll | `@layout` | P1 |
 | 14 | Highlight último partido en perfil | `@perfil` | P1 |

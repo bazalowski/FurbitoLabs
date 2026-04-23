@@ -14,7 +14,7 @@ export default function NuevoEventoPage({ params }: NuevoEventoPageProps) {
   const { cid } = params
   const router = useRouter()
   const session = useSession()
-  const { pistas } = usePistas(cid)
+  const { pistas, reload: reloadPistas } = usePistas(cid)
 
   if (session.role !== 'admin') {
     return <div className="p-4" style={{ color: 'var(--muted)' }}>Solo admin puede crear eventos</div>
@@ -36,6 +36,7 @@ export default function NuevoEventoPage({ params }: NuevoEventoPageProps) {
           pistas={pistas}
           onDone={() => router.push(`/${cid}/partidos`)}
           onCancel={() => router.back()}
+          onPistaCreated={() => reloadPistas()}
         />
       </div>
     </div>

@@ -103,7 +103,6 @@ FurbitoLabs/
 │   │   ├── events/             ← EventCard, EventForm, NextMatchHero, MvpVoting…
 │   │   ├── players/            ← PlayerCard, TeamGenerator, BadgeVitrina, PlayerTimeline
 │   │   ├── ranking/            ← RankingTable (podio + lista)
-│   │   ├── pistas/             ← PistaMap (Leaflet)
 │   │   ├── feed/               ← ActivityFeed
 │   │   ├── notifications/      ← NotificationPrompt (CTA para aceptar push)
 │   │   ├── onboarding/         ← OnboardingOverlay (primer arranque)
@@ -390,10 +389,9 @@ Pestañas: **Puntos Furbito (default)**, Goles, Asistencias, Porterías a cero,
 Rating. Podio visual top 3 + lista desde 4º. `calcPlayerTotalPoints()` se
 calcula on-the-fly desde stats acumuladas (no se persiste).
 
-### 7.7. Pistas — `src/app/[cid]/pistas/page.tsx`
+### 7.7. Pistas — eliminado 2026-04-23
 
-`<PistaMap>` (Leaflet dinámico, SSR off). Listado + modal de añadir con
-geolocalización opcional.
+Ruta `/[cid]/pistas`, componente `PistaMap.tsx` y dependencia `leaflet` removidos. El mapa se aplaza a la versión nativa (ver [FURBITO 2.1/FEATURE_AUDIT.md §14](./FURBITO%202.1/FEATURE_AUDIT.md#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa)). La creación de pistas vive inline en [EventForm.tsx](../src/components/events/EventForm.tsx) vía la opción "+ Nueva pista…" del selector de pista.
 
 ### 7.8. Valorar — `src/app/[cid]/valorar/page.tsx`
 
@@ -461,7 +459,6 @@ jugador).
 ### 8.5. Otros
 
 - `ranking/RankingTable.tsx` — podio + lista, pestañas.
-- `pistas/PistaMap.tsx` — mapa Leaflet lazy-loaded.
 - `feed/ActivityFeed.tsx` — últimas actividades derivadas.
 - `notifications/NotificationPrompt.tsx` — CTA aceptar push.
 - `onboarding/OnboardingOverlay.tsx` — splash primer arranque (3 slides).

@@ -57,16 +57,15 @@
 │   │   ├── players/            # Componentes de jugadores
 │   │   │   ├── PlayerCard.tsx  # Tarjeta de jugador + avatar
 │   │   │   └── TeamGenerator.tsx # Generador de equipos
-│   │   ├── ranking/
-│   │   │   └── RankingTable.tsx # Tabla de rankings con tabs
-│   │   └── pistas/
-│   │       └── PistaMap.tsx    # Mapa Leaflet de pistas
+│   │   └── ranking/
+│   │       └── RankingTable.tsx # Tabla de rankings con tabs
+│   │   # NOTA: components/pistas/ eliminado 2026-04-23 — mapa aplazado a nativa
 │   │
 │   ├── hooks/                  # Custom React hooks (data fetching)
 │   │   ├── useCommunity.ts     # Datos de comunidad
 │   │   ├── useEvents.ts        # Eventos + real-time
 │   │   ├── usePlayers.ts       # Jugadores + real-time
-│   │   ├── usePistas.ts        # Pistas (locations)
+│   │   ├── usePistas.ts        # Pistas (locations — alimenta selector en EventForm)
 │   │   └── useVotes.ts         # Valoraciones
 │   │
 │   ├── lib/

@@ -44,10 +44,9 @@
 - [ ] Añadir botón "volver" donde falte
 - [ ] Verificar que el RoleBanner muestra correctamente guest/player/admin
 
-### Mapa de pistas
-- [ ] Probar PistaMap en móvil (zoom, tap para ver info)
-- [ ] Añadir funcionalidad para añadir/editar pistas desde el mapa
-- [ ] Mostrar distancia desde ubicación del usuario (si da permiso)
+### ~~Mapa de pistas~~ — descartado 2026-04-23
+- Mapa eliminado en web; se aplaza a la versión nativa (ver [FURBITO 2.1/FEATURE_AUDIT.md §14](./FURBITO%202.1/FEATURE_AUDIT.md#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa)).
+- En web, crear pista se hace inline desde el selector en `EventForm`.
 
 ---
 

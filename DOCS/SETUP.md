@@ -157,5 +157,3 @@ npm install
 - Verifica que el `communityId` en la URL existe en Supabase
 - Borra el localStorage del navegador y vuelve a entrar
 
-### Leaflet no carga el mapa
-- El mapa solo funciona en el cliente, no en SSR. Ya está configurado con `'use client'`.

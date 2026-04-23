@@ -5,10 +5,13 @@ import { createClient } from '@/lib/supabase/client'
 import { useSession } from '@/stores/session'
 import { Input, Textarea, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { showToast } from '@/components/ui/Toast'
 import { uid } from '@/lib/utils'
 import { notifyEventCreated } from '@/lib/notifications/notification-service'
 import type { Event, Pista, NewEventForm } from '@/types'
+
+const NEW_PISTA_OPTION = '__new__'
 
 interface EventFormProps {
   communityId: string
@@ -16,6 +19,7 @@ interface EventFormProps {
   event?: Event            // si se provee, es modo edición
   onDone: () => void
   onCancel: () => void
+  onPistaCreated?: (pista: Pista) => void
 }
 
 const DEFAULTS: NewEventForm = {
@@ -23,7 +27,7 @@ const DEFAULTS: NewEventForm = {
   lugar: '', max_jugadores: 10, notas: '', pista_id: '', abierto: false,
 }
 
-export function EventForm({ communityId, pistas, event, onDone, onCancel }: EventFormProps) {
+export function EventForm({ communityId, pistas, event, onDone, onCancel, onPistaCreated }: EventFormProps) {
   const [form, setForm] = useState<NewEventForm>(
     event
       ? {
@@ -40,10 +44,56 @@ export function EventForm({ communityId, pistas, event, onDone, onCancel }: Even
       : DEFAULTS
   )
   const [loading, setLoading] = useState(false)
+  const [pistaModalOpen, setPistaModalOpen] = useState(false)
+  const [pistaName, setPistaName] = useState('')
+  const [pistaAddress, setPistaAddress] = useState('')
+  const [pistaSaving, setPistaSaving] = useState(false)
   const session = useSession()
 
   const set = (key: keyof NewEventForm, value: string | number | boolean) =>
     setForm(f => ({ ...f, [key]: value }))
+
+  function handlePistaChange(value: string) {
+    if (value === NEW_PISTA_OPTION) {
+      setPistaModalOpen(true)
+      return
+    }
+    set('pista_id', value)
+  }
+
+  function closePistaModal() {
+    setPistaModalOpen(false)
+    setPistaName('')
+    setPistaAddress('')
+  }
+
+  async function savePista() {
+    const trimmedName = pistaName.trim()
+    if (!trimmedName) return
+    setPistaSaving(true)
+    const supabase = createClient()
+    const newId = uid()
+    const { data, error } = await supabase
+      .from('pistas')
+      .insert({
+        id: newId,
+        community_id: communityId,
+        name: trimmedName,
+        address: pistaAddress.trim() || null,
+        added_by: session.playerId,
+      })
+      .select()
+      .single()
+    setPistaSaving(false)
+    if (error) {
+      showToast('❌ Error al guardar pista')
+      return
+    }
+    showToast('✅ Pista creada')
+    set('pista_id', newId)
+    if (data && onPistaCreated) onPistaCreated(data as Pista)
+    closePistaModal()
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -110,16 +160,21 @@ export function EventForm({ communityId, pistas, event, onDone, onCancel }: Even
         />
       </div>
 
-      {pistas.length > 0 ? (
-        <Select label="Pista" value={form.pista_id} onChange={e => set('pista_id', e.target.value)}>
-          <option value="">Sin pista vinculada</option>
-          {pistas.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </Select>
-      ) : (
+      <Select
+        label="Pista"
+        value={form.pista_id}
+        onChange={e => handlePistaChange(e.target.value)}
+      >
+        <option value="">Sin pista vinculada</option>
+        {pistas.map(p => (
+          <option key={p.id} value={p.id}>{p.name}</option>
+        ))}
+        <option value={NEW_PISTA_OPTION}>+ Nueva pista…</option>
+      </Select>
+
+      {!form.pista_id && (
         <Input
-          label="Lugar"
+          label="Lugar (opcional)"
           value={form.lugar}
           onChange={e => set('lugar', e.target.value)}
           placeholder="Polideportivo, Campo 3..."
@@ -161,6 +216,37 @@ export function EventForm({ communityId, pistas, event, onDone, onCancel }: Even
           {loading ? 'Guardando...' : event ? '💾 Guardar' : '✅ Crear evento'}
         </Button>
       </div>
+
+      <Modal open={pistaModalOpen} onClose={closePistaModal} title="📍 Nueva pista">
+        <div className="space-y-4">
+          <Input
+            label="Nombre"
+            value={pistaName}
+            onChange={e => setPistaName(e.target.value)}
+            placeholder="Campo Municipal Norte"
+            autoFocus
+          />
+          <Input
+            label="Dirección (opcional)"
+            value={pistaAddress}
+            onChange={e => setPistaAddress(e.target.value)}
+            placeholder="Calle Mayor 12, Madrid"
+          />
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="ghost" onClick={closePistaModal} className="flex-1">
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={savePista}
+              disabled={pistaSaving || !pistaName.trim()}
+              className="flex-1"
+            >
+              {pistaSaving ? 'Guardando...' : '💾 Guardar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </form>
   )
 }

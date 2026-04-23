@@ -90,7 +90,7 @@ Conteo real (LoC) del proyecto:
 | Páginas `src/app/**` | ~15 archivos | 🔴 reescribir | expo-router en lugar de Next App Router |
 | Componentes UI `src/components/**` | ~30 archivos | 🔴 reescribir | `div` → `View`, Tailwind → `StyleSheet`/NativeWind |
 | Estilos globales `globals.css` | 1 archivo | 🔴 no aplica | Tokens sobreviven como constantes TS — la sintaxis CSS no |
-| PistaMap | `src/components/pistas/PistaMap.tsx` | 🔴 reescribir | Librería de mapa cambia (leaflet web → `react-native-maps`) |
+| PistaMap | — (eliminado en web 2026-04-23) | 🆕 **feature exclusiva nativa** | En web no existe mapa. Implementar desde cero en nativa con `react-native-maps` (Apple Maps iOS / Google Maps Android). La tabla `pistas` y columnas `lat`/`lng` ya existen en BD. Ver [FEATURE_AUDIT.md §14](FEATURE_AUDIT.md#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa) |
 | Chart de evolución puntos | `src/components/players/PointsEvolutionChart.tsx` | 🔴 reescribir | SVG web → `react-native-svg` + librería chart (`victory-native`, `recharts-native`…) |
 | **Backend Supabase** | `supabase/**` | 🟢 100% | **Mismo proyecto**. Sin cambios. |
 
@@ -272,10 +272,16 @@ Misma tabla, misma Edge Function, dos branches internas.
 
 ### 6.6 Mapas y gráficos
 
-- `PistaMap` (hoy con Leaflet o Google Maps web) → `react-native-maps` (Apple Maps / Google Maps según plataforma).
+- **Mapa de pistas**: feature **exclusiva de la versión nativa** (eliminada en web 2026-04-23). Implementar desde cero con `react-native-maps` (Apple Maps iOS / Google Maps Android). Alcance mínimo nativa: lista de pistas de la comunidad en mapa + tap-para-añadir con geolocalización + botón "Cómo llegar" a Maps nativo. Propuestas reagrupadas aquí del antiguo [UI_AUDIT_PANTALLAS.md §10](UI_AUDIT_PANTALLAS.md#10-pistas--eliminado-2026-04-23) y [FEATURE_AUDIT.md §14](FEATURE_AUDIT.md#14-pistas-sin-mapa-en-web--mapa-reservado-para-nativa):
+  - Vista dual mapa/lista con "pista habitual" destacada.
+  - Añadir pista tocando el mapa (tap largo → pin draggable).
+  - Distancia a pista desde geolocalización del usuario.
+  - Reseñas minimalistas (superficie, condiciones, nota).
+  - Clima en el evento vía Open-Meteo.
+  - Pistas públicas compartidas entre comunidades cercanas.
 - `PointsEvolutionChart` → `react-native-svg` + librería de chart (`victory-native`).
 
-Reescritura de cada componente, 1-2 días por pieza.
+El mapa es 3-5 días si se hace bien (permisos, lista dual, tap-pin, deep-link Maps). El chart, 1 día.
 
 ---
 

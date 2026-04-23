@@ -36,7 +36,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const session = useSession()
   const { event, loading, reload: reloadEvent } = useEvent(eid)
   const { players } = usePlayers(cid)
-  const { pistas } = usePistas(cid)
+  const { pistas, reload: reloadPistas } = usePistas(cid)
   const { votes } = useVotes(cid)
   const { votes: mvpVotes } = useMvpVotes(eid)
   const [editOpen, setEditOpen] = useState(false)
@@ -683,7 +683,8 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar evento">
         <EventForm communityId={cid} pistas={pistas} event={event}
-          onDone={() => setEditOpen(false)} onCancel={() => setEditOpen(false)} />
+          onDone={() => setEditOpen(false)} onCancel={() => setEditOpen(false)}
+          onPistaCreated={() => reloadPistas()} />
       </Modal>
 
       {/* Generador de equipos (admin, solo si no finalizado) */}

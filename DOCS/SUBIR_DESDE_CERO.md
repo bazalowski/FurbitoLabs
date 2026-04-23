@@ -228,8 +228,7 @@ furbito/
 │   │   ├── layout/        # Layout (Header, BottomNav...)
 │   │   ├── events/        # Eventos (EventCard, EventForm...)
 │   │   ├── players/       # Jugadores (PlayerCard, TeamGen...)
-│   │   ├── ranking/       # Ranking (RankingTable)
-│   │   └── pistas/        # Pistas (PistaMap)
+│   │   └── ranking/       # Ranking (RankingTable)
 │   │
 │   ├── hooks/             # Custom hooks (useEvents, usePlayers...)
 │   ├── lib/               # Lógica de negocio
