@@ -752,45 +752,63 @@ Movidas a [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md). Aquí las listo solo
 
 ---
 
-## 16. Feed de actividad
+## 16. Muro de comunidad (antes "Feed de actividad") ✅ 2026-04-24
 
-**Código**: [src/components/feed/ActivityFeed.tsx](../../src/components/feed/ActivityFeed.tsx), integrado en Home.
+**Reemplazo**: El feed generativo (`ActivityFeed.tsx`) se borró y se sustituyó por un **muro social real** con contenido escrito por los jugadores.
+
+**Código**:
+- Ruta dedicada: [src/app/[cid]/muro/page.tsx](../../src/app/[cid]/muro/page.tsx)
+- Preview en Home: [src/components/wall/WallPreview.tsx](../../src/components/wall/WallPreview.tsx)
+- Feed, composer, post: [src/components/wall/](../../src/components/wall/)
+- Hook: [src/hooks/useWallPosts.ts](../../src/hooks/useWallPosts.ts)
+- Migración: [supabase/migrations/016_wall_posts.sql](../../supabase/migrations/016_wall_posts.sql)
 
 **Comportamiento actual**:
 
-- Muestra últimos 5 eventos de la comunidad: partidos nuevos, resultados, MVPs, badges.
-- Formato texto con emoji.
+- Posts de texto (hasta 1000 chars) con reacciones fijas (🔥 ⚽ 👏 😂 💀 🎯, 1 por jugador/post/emoji).
+- Embed YouTube opcional (parseo cliente, iframe `loading="lazy"`).
+- RLS fina: lectura/escritura sólo dentro de la comunidad; borrado por autor o admin; helper `SECURITY DEFINER` `wall_post_community(text)` para evitar el patrón problemático de la mig 014→015.
+- Realtime: subscripción a `wall_posts` y `wall_reactions` vía Supabase Realtime (refetch al cambio).
+- Home: `WallPreview` (card calm + `hairline-top` + avatars apilados + último post + `chip-pulse` "+N nuevos" + YT thumb si el último tiene vídeo). Toda la card es link a `/[cid]/muro`.
+- Pantalla dedicada: composer sticky (1 fila colapsado, expande al tap), feed paginado 20 con botón "Cargar más".
+- Badge "+N nuevos desde tu última visita" via `localStorage:furbito:wall-last-seen`.
 
-### 🟢 Fortalezas
+### ✅ Cumplido respecto a la propuesta original
 
-- Surface pasivo de "lo que está pasando" en Home — captura curiosidad sin requerir acción.
+- **P0 · Reactions (🔥 👏 🐐 😂 💀)** → hecho con set de 6 fijos. Sustituye el 🐐 por 🎯 (consenso con el usuario).
+- **Linkeo universal al recurso** → N/A en el nuevo modelo: los posts son texto libre, no items generados. Si quieres linkear partidos/jugadores desde dentro de un post, eso sería V2 (menciones `@jugador` / `#partido`).
 
-### 🔴 Gaps
+### 🔴 Gaps del muro v1 (nuevos)
 
-1. **No hay filtro ni paginación** — si quieres ver "todos los goles de la semana" no se puede.
-2. **Items no siempre linkean** al recurso concreto (issue ya notado en [UI_AUDIT_PANTALLAS.md](UI_AUDIT_PANTALLAS.md) §2).
-3. **Sin reactions** — no se puede dar un 🔥 a un hat-trick de un compañero. El contenido es frío.
-4. **Sin generación de items por votación o pistas nuevas** — solo lo clásico (partidos, resultados, MVPs, badges).
-5. **Sin "destacados de la semana"** curados.
+1. **Sin imágenes** — V2 planeado: bucket Storage `wall-media` + columna `media_url`.
+2. **Sin notificaciones push** cuando alguien publica — opt-in V2. Sin esto, el muro depende de que alguien abra la app.
+3. **Sin menciones / referencias cruzadas** — no se puede taggear `@jugador` ni referenciar un partido.
+4. **Sin moderación más allá de borrar** — sin "pin a admin", sin "reportar".
+5. **Composer colapsado no pinta "+N"** — el badge vive en `WallPreview` (Home) y en la pantalla dedicada, pero no aparece en el composer.
+6. **Ítems automáticos (MVP pendiente, nuevo nivel) desaparecidos** — el viejo `ActivityFeed` los inyectaba; ahora no. Si los quieres de vuelta, habría que publicar "posts de sistema" (author_id = bot) o revivir un feed paralelo.
 
-### ✨ Propuestas
+### ✨ Propuestas siguientes
 
-- **P0 · Reactions (🔥 👏 🐐 😂 💀)** `@feed`
-  Cualquier jugador puede reaccionar a cualquier item. Contador visible. Clave para convertir feed pasivo en loop social. Persistente en BD.
+- **P1 · Subida de imágenes** `@muro`
+  Bucket `wall-media` con RLS por comunidad. Compresión cliente antes de subir. Moderación mínima (borrar por admin).
 
-- **P0 · Linkeo universal de items al recurso** `@feed`
-  Cada item del feed tiene `url` clara. Ya es un gap reconocido.
+- **P1 · Notificaciones push de nuevos posts** `@muro @notif`
+  Opt-in por jugador. Evita ruido pero asegura tracción.
 
-- **P1 · "Highlights de la semana"** `@feed`
-  Card generada los lunes 9h: "3 partidos jugados, 17 goles, MVP del fin de semana: Juan". Surface del digest semanal (§15) integrado en feed.
+- **P1 · Posts del sistema** `@muro`
+  Cuando se crea un partido / se corona un MVP / alguien sube de nivel, publicar post automático firmado por "FURBITO" (bot). Recupera la función del viejo feed sin revivir el componente.
 
-- **P1 · Nuevos tipos de item** `@feed`
-  - "Juan añadió la pista Las Moreras"
-  - "Votación MVP de hoy ya tiene 5 votos — tú faltas"
-  - "Ander ha subido al nivel 10"
+- **P2 · Menciones `@jugador` y referencias `#partido`** `@muro`
+  Convierte el muro en hub social real y cierra el gap de linkeo.
 
-- **P2 · Filtro por tipo + paginación infinita** `@feed`
-  Chips "Goles / MVPs / Badges / Todo" en la parte superior del feed. Scroll infinito para histórico.
+- **P2 · Pinned posts** `@muro`
+  Admin puede fijar un post arriba del feed (nueva pista, cambio de horario recurrente). 1 fijo por comunidad.
+
+- **P2 · Reaction picker dinámico** `@muro`
+  Pasar de 6 emojis fijos a picker (con rate-limit). Sólo si el set fijo se queda corto.
+
+- **P3 · Promoción a tab en BottomNav** `@muro`
+  Si los datos de uso demuestran tracción, promocionar de "preview en Home" a tab dedicado.
 
 ---
 
@@ -933,7 +951,7 @@ Ordenadas por **ratio impacto/coste** asumiendo ~1 dev. Los tags y IDs cuadran c
 | 10 | P0 | @comunidad | Multi-comunidad por jugador | Desbloquea segmento enorme (curro + barrio + pichangas) |
 | 11 | P0 | @resultado | Undo 15 min tras finalizar | Elimina miedo al botón + errores en prod |
 | 12 | P0 | @evento | Export .ics a calendario | 15 min de trabajo, reduce no-shows (deep-link Maps aplazado a nativa) |
-| 13 | P0 | @feed | Reactions (🔥 👏 🐐…) | Convierte feed pasivo en loop social |
+| 13 | ✅ | @muro | ~~Reactions~~ → Muro de comunidad V1 | **Hecho 2026-04-24** — reemplazó el feed por un muro social con reacciones + embed YouTube |
 | 14 | P0 | @obs | Error tracking + analytics ligero | Ceguera total hoy; crítico antes del hard launch |
 | 15 | P1 | @equipos | Memoria de emparejamientos recientes | El partido semanal se vuelve aburrido sin rotación |
 

@@ -92,9 +92,9 @@
 **Estado actual**:
 
 - Eliminado el grid 2x2 antiguo.
-- Nueva estructura: PlayerCard (propio) → NextMatchHero → stats 3-col → ActivityFeed (5 últimos).
-- Shortcuts: Generar equipos (solo si no hay partido próximo), MVP, Valorar, Tutorial (solo 1ª visita).
-- Cards migradas a `.card hairline-top card-glow`, chevrons convertidos en pills 7×7 tintadas.
+- Estructura actual (2026-04-24): PlayerCard (propio) → stats 3-col → shortcuts (MVP/Valorar/Tutorial) → NextMatchHero → Generador de equipos shortcut → **WallPreview** (enlaza a `/[cid]/muro`).
+- El antiguo `ActivityFeed` fue reemplazado por el muro social real (ver §16 del FEATURE_AUDIT).
+- Cards migradas a `.surface-calm` / `.surface-arena`, chevrons convertidos en pills 7×7 tintadas.
 - NextMatchHero es toggle (un click colapsa/expande), CTAs Sí/No semánticos.
 
 ### 🟢 Fortalezas
@@ -105,9 +105,9 @@
 
 ### 🔴 Issues detectados
 
-1. Para un usuario guest (que entró por link sin PIN de jugador), la PlayerCard personal **no existe** y la Home se siente vacía. No hay CTA claro para "entra como jugador".
-2. El `ActivityFeed` muestra eventos como "Juan metió 2 goles" pero no siempre linkea al partido → quedan huérfanos.
-3. No hay **contador de "pendiente tuyo"**: si tengo confirmación pendiente o un voto de MVP pendiente, no se ve desde Home sin entrar al partido.
+1. Para un usuario guest (que entró por link sin PIN de jugador), la PlayerCard personal **no existe** y la Home se siente vacía. No hay CTA claro para "entra como jugador". El muro tampoco se le ofrece porque requiere identificación.
+2. ~~El `ActivityFeed` muestra eventos como "Juan metió 2 goles" pero no siempre linkea al partido~~ → ✅ Resuelto: componente borrado. El nuevo muro no genera items automáticos (ver §16 FEATURE_AUDIT para gaps del muro v1).
+3. No hay **contador de "pendiente tuyo"**: si tengo confirmación pendiente o un voto de MVP pendiente, no se ve desde Home sin entrar al partido. (MVP pendiente sí se expone con `ShortcutCard`, pero la confirmación no).
 4. El "Tutorial" CTA desaparece al visitar → los power users que lo saltaron pierden visibilidad.
 
 ### ✨ Propuestas
@@ -121,8 +121,7 @@
 - **P0 · CTA guest → convertir a jugador** `@home`
   Si el role es `guest` en una comunidad, card inicial "Eres espectador. ¿Quieres jugar con este grupo?" → abre modal de alta (nombre + genera código). Convierte directo sin salir a la landing.
 
-- **P1 · ActivityFeed con deep link** `@home`
-  Cada item del feed enlaza a su origen (partido, perfil, badge) con preview visual. Refuerza navegación horizontal.
+- ~~**P1 · ActivityFeed con deep link** `@home`~~ ✅ Obsoleto: `ActivityFeed` ya no existe (2026-04-24). Sustituido por `WallPreview` + pantalla `/muro`.
 
 - **P1 · Saludo con hora + racha** `@home`
   Header de la home con "Buenos días, Juan 🔥 7 partidos seguidos" (si existe racha). Refuerza identidad + retención emocional.
