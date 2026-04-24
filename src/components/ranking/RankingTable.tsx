@@ -165,7 +165,7 @@ export function RankingTable({
 
   return (
     <div className="space-y-3 pb-4" style={{ ['--aura-color' as string]: communityColor }}>
-      {/* ── Chips de ventana temporal ──────────────────── */}
+      {/* ── Chips de ventana temporal — calm, borde community en activo ─── */}
       <div
         className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x scrollbar-none"
         role="tablist"
@@ -179,23 +179,18 @@ export function RankingTable({
               role="tab"
               aria-selected={active}
               onClick={() => setWindowKey(w.key)}
-              className="flex-shrink-0 snap-start px-3 py-1.5 rounded-s text-[11px] uppercase min-h-[36px] flex items-center active:scale-95 transition-all"
+              className="flex-shrink-0 snap-start px-3 rounded-s font-barlow text-[10px] font-bold uppercase tracking-widest min-h-[36px] flex items-center active:scale-95 transition-all"
               style={
                 active
                   ? {
-                      background: `color-mix(in srgb, ${communityColor} 18%, var(--card))`,
+                      background: `${communityColor}1f`,
                       color: communityColor,
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
                       border: `1px solid ${communityColor}66`,
-                      boxShadow: `0 0 0 1px ${communityColor}22, 0 4px 12px ${communityColor}22`,
                     }
                   : {
                       background: 'var(--card)',
                       color: 'var(--muted)',
                       border: '1px solid var(--border)',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
                     }
               }
             >
@@ -205,7 +200,7 @@ export function RankingTable({
         })}
       </div>
 
-      {/* ── Tabs métrica: todas en el mismo registro calm ────── */}
+      {/* ── Tabs métrica: activo canónico con tinte community pleno ────── */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x scrollbar-none">
         {TABS.map(t => {
           const active = tab === t.key
@@ -214,22 +209,18 @@ export function RankingTable({
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className="flex-shrink-0 snap-start px-3.5 py-2 rounded-full text-[11px] uppercase min-h-[36px] flex items-center gap-1 active:scale-95"
+              className="flex-shrink-0 snap-start px-3.5 rounded-full font-barlow text-[10px] font-bold uppercase tracking-widest min-h-[36px] flex items-center gap-1.5 active:scale-95"
               style={
                 active
                   ? {
                       background: communityColor,
                       color: '#040807',
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
                       boxShadow: 'var(--shadow-depth-1)',
                     }
                   : {
                       background: 'var(--card)',
                       color: 'var(--muted)',
                       border: '1px solid var(--border)',
-                      fontWeight: 600,
-                      letterSpacing: '0.08em',
                     }
               }
             >
@@ -254,22 +245,18 @@ export function RankingTable({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setRoleFilter(r.key)}
-                className="flex-1 px-3 py-2 rounded-s text-[11px] uppercase min-h-[36px] flex items-center justify-center gap-1 active:scale-95 transition-all"
+                className="flex-1 px-3 rounded-s font-barlow text-[10px] font-bold uppercase tracking-widest min-h-[36px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
                 style={
                   active
                     ? {
                         background: 'var(--card2)',
                         color: 'var(--text)',
                         border: `1px solid ${communityColor}66`,
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
                       }
                     : {
                         background: 'var(--card)',
                         color: 'var(--muted)',
                         border: '1px solid var(--border)',
-                        fontWeight: 600,
-                        letterSpacing: '0.08em',
                       }
                 }
               >
@@ -283,10 +270,14 @@ export function RankingTable({
 
       {/* ── Empty state ─────────────────────────────────── */}
       {!windowLoading && sorted.length === 0 && (
-        <div className="text-center py-8" style={{ color: 'var(--muted)' }}>
-          <p className="text-2xl mb-2">📭</p>
-          <p className="text-sm font-bold">Sin partidos en esta ventana</p>
-          <p className="text-xs mt-1">Prueba con un rango más amplio.</p>
+        <div className="surface-calm text-center py-10">
+          <p className="text-3xl mb-3" aria-hidden="true">📭</p>
+          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>
+            Sin partidos en esta ventana
+          </p>
+          <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
+            Prueba con un rango más amplio.
+          </p>
         </div>
       )}
 
@@ -429,7 +420,7 @@ export function RankingTable({
         </div>
       )}
 
-      {/* ── Lista 4th+ ─────────────────────────────────── */}
+      {/* ── Lista 4th+ ─── patrón beat-5 PostMatchReveal: inkbar por tier ── */}
       {rest.length > 0 && (
         <div className="space-y-1.5">
           {rest.map((player, index) => {
@@ -445,20 +436,19 @@ export function RankingTable({
             return (
               <Link key={player.id} href={`/${communityId}/jugadores/${player.id}`}>
                 <div
-                  className="card flex items-center gap-3 px-4 py-3 active:scale-[0.98]"
-                  style={isMe ? {
-                    borderColor: `${communityColor}66`,
-                    boxShadow: `0 0 0 1px ${communityColor}33, var(--shadow-depth-1)`,
-                  } : undefined}
+                  className={`inkbar flex items-center gap-3 rounded-m pl-4 pr-3 py-2.5 active:scale-[0.98] transition-transform`}
+                  data-tone={rowTier ? `tier-${rowTier.key}` : undefined}
+                  style={{
+                    background: isMe ? 'var(--card2)' : 'var(--card)',
+                    border: isMe ? `1px solid ${communityColor}66` : '1px solid var(--border)',
+                    boxShadow: isMe
+                      ? `0 0 0 1px ${communityColor}33, var(--shadow-depth-1)`
+                      : undefined,
+                  }}
                 >
                   <span
-                    className="font-bebas w-7 text-center flex-shrink-0 leading-none tabular-nums"
-                    style={{
-                      fontSize: 20,
-                      letterSpacing: '-0.01em',
-                      color: isMe ? communityColor : 'var(--muted)',
-                      fontWeight: 400,
-                    }}
+                    className="font-mono text-[12px] font-bold w-6 text-center flex-shrink-0 tabular-nums"
+                    style={{ color: isMe ? communityColor : 'var(--muted)' }}
                   >
                     {pos}
                   </span>
@@ -474,10 +464,7 @@ export function RankingTable({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p
-                        className="truncate"
-                        style={{ fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.005em' }}
-                      >
+                      <p className="truncate text-[13px] font-semibold">
                         {player.name}
                       </p>
                       {adminIds.includes(player.id) && (
@@ -488,10 +475,11 @@ export function RankingTable({
                       )}
                     </div>
                     <p
-                      className="text-xs"
-                      style={{ color: communityColor, fontWeight: 500 }}
+                      className="font-mono text-[10px] mt-0.5"
+                      style={{ color: 'var(--muted)' }}
                     >
-                      {level.icon} {level.name}
+                      <span aria-hidden="true">{level.icon}</span>{' '}
+                      <span style={{ color: communityColor }}>{level.name}</span>
                     </p>
                   </div>
 
@@ -501,24 +489,17 @@ export function RankingTable({
 
                   {isPointsTab && rowTier ? (
                     <span
-                      className="font-bebas flex-shrink-0 leading-none rounded px-2.5 py-1 text-center tabular-nums"
-                      style={{
-                        fontSize: 20,
-                        letterSpacing: '-0.015em',
-                        color: rowTier.color,
-                        background: `${rowTier.color}14`,
-                        border: `1px solid ${rowTier.color}44`,
-                        minWidth: 52,
-                      }}
+                      className="chip-tier"
+                      data-tier={rowTier.key}
+                      style={{ minWidth: 52, fontSize: 20, minHeight: 32 }}
                     >
                       {formatValue(player)}
                     </span>
                   ) : (
                     <p
-                      className="font-bebas flex-shrink-0 leading-none tabular-nums"
+                      className="font-bebas flex-shrink-0 leading-none tabular-nums tracking-display"
                       style={{
                         fontSize: 22,
-                        letterSpacing: '-0.015em',
                         color: communityColor,
                       }}
                     >
@@ -532,7 +513,7 @@ export function RankingTable({
         </div>
       )}
 
-      {/* ── Tu posición sticky ─────────────────────────── */}
+      {/* ── Tu posición sticky ─ highlight personal arena-ish ── */}
       {showStickyMe && myPlayer && (
         <div
           data-role="sticky"
@@ -541,9 +522,9 @@ export function RankingTable({
         >
           <Link href={`/${communityId}/jugadores/${myPlayer.id}`}>
             <div
-              className="card hairline-top flex items-center gap-3 px-4 py-3 active:scale-[0.98]"
+              className="hairline-top flex items-center gap-3 rounded-m px-4 py-3 active:scale-[0.98] transition-transform"
               style={{
-                borderColor: `${communityColor}66`,
+                border: `1px solid ${communityColor}66`,
                 background: `linear-gradient(180deg, var(--card2), var(--card))`,
                 boxShadow: `0 0 0 1px ${communityColor}44, 0 8px 24px ${communityColor}22, var(--shadow-depth-2)`,
                 backdropFilter: 'blur(8px)',
@@ -551,12 +532,8 @@ export function RankingTable({
               }}
             >
               <span
-                className="font-bebas w-7 text-center flex-shrink-0 leading-none tabular-nums"
-                style={{
-                  fontSize: 22,
-                  color: communityColor,
-                  fontWeight: 400,
-                }}
+                className="font-bebas w-7 text-center flex-shrink-0 leading-none tabular-nums tracking-display"
+                style={{ fontSize: 26, color: communityColor }}
               >
                 {myIndex + 1}
               </span>
@@ -571,23 +548,23 @@ export function RankingTable({
               />
 
               <div className="flex-1 min-w-0">
-                <p
-                  className="truncate"
-                  style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}
-                >
-                  Tú · {myPlayer.name.split(' ')[0]}
+                <p className="truncate text-[13px]" style={{ fontWeight: 700 }}>
+                  <span className="font-barlow text-[10px] font-bold uppercase tracking-widest mr-1.5" style={{ color: communityColor }}>
+                    Tú
+                  </span>
+                  {myPlayer.name.split(' ')[0]}
                 </p>
                 {playerAbove && deltaToAbove > 0 ? (
                   <p
-                    className="text-xs leading-tight tabular-nums"
-                    style={{ color: 'var(--muted)', fontWeight: 500 }}
+                    className="font-mono text-[11px] leading-tight mt-0.5 tabular-nums"
+                    style={{ color: 'var(--muted)' }}
                   >
                     {describeDelta(tab, deltaToAbove)} para subir al #{myIndex}
                   </p>
                 ) : (
                   <p
-                    className="text-xs leading-tight"
-                    style={{ color: communityColor, fontWeight: 600 }}
+                    className="font-mono text-[11px] leading-tight mt-0.5"
+                    style={{ color: communityColor }}
                   >
                     🏆 Liderando esta lista
                   </p>
@@ -595,12 +572,8 @@ export function RankingTable({
               </div>
 
               <p
-                className="font-bebas flex-shrink-0 leading-none tabular-nums"
-                style={{
-                  fontSize: 22,
-                  letterSpacing: '-0.015em',
-                  color: communityColor,
-                }}
+                className="font-bebas flex-shrink-0 leading-none tabular-nums tracking-display"
+                style={{ fontSize: 26, color: communityColor }}
               >
                 {formatValue(myPlayer)}
               </p>
