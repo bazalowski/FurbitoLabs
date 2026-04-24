@@ -7,9 +7,9 @@ import { usePlayer } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { Header } from '@/components/layout/Header'
-import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { BadgeShowcase } from '@/components/ui/Badge'
 import { BadgeVitrina } from '@/components/players/BadgeVitrina'
 import { PlayerTimeline } from '@/components/players/PlayerTimeline'
@@ -192,67 +192,78 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         }
       />
 
-      <div className="px-4 space-y-4 pt-2 pb-28">
+      <div className="px-4 space-y-4 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
 
-        {/* ── Profile header ───────────────────────── */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <Avatar
-              name={player.name}
-              avatar={player.avatar}
-              size={80}
-              fontSize={28}
-              communityColor={communityColor}
-              borderColor={isProfileAdmin ? 'var(--gold, #ffd700)' : communityColor + '44'}
-              borderWidth={3}
-            />
-            {isOwnProfile && (
-              <button
-                onClick={() => setPhotoModalOpen(true)}
-                aria-label="Cambiar foto"
-                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full flex items-center justify-center text-xs active:scale-95 transition-transform"
-                style={{
-                  background: communityColor,
-                  color: '#000',
-                  border: '2px solid var(--bg)',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                }}
-              >
-                📷
-              </button>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-bebas text-3xl tracking-wider leading-none">{player.name}</h1>
-              {isProfileAdmin && (
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                  style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold, #ffd700)' }}
+        {/* ── Hero header — arena: portada deportiva ───── */}
+        <div className="surface-arena p-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0" style={{ ['--aura-color' as string]: isProfileAdmin ? 'var(--gold)' : communityColor }}>
+              <span aria-hidden="true" className="aura-halo" style={{ inset: '-14%' }} />
+              <Avatar
+                name={player.name}
+                avatar={player.avatar}
+                size={80}
+                fontSize={28}
+                communityColor={communityColor}
+                borderColor={isProfileAdmin ? 'var(--gold)' : communityColor + '66'}
+                borderWidth={3}
+              />
+              {isOwnProfile && (
+                <button
+                  onClick={() => setPhotoModalOpen(true)}
+                  aria-label="Cambiar foto"
+                  className="absolute -bottom-0.5 -right-0.5 w-8 h-8 rounded-full flex items-center justify-center text-xs active:scale-95 transition-transform"
+                  style={{
+                    background: communityColor,
+                    color: '#000',
+                    border: '2px solid var(--bg)',
+                    boxShadow: 'var(--shadow-depth-1)',
+                  }}
                 >
-                  Admin
-                </span>
+                  📷
+                </button>
               )}
             </div>
-            {player.position && (
-              <p className="text-sm capitalize mt-0.5" style={{ color: 'var(--muted)' }}>{player.position}</p>
-            )}
-            <div className="flex items-center gap-2 mt-1.5">
-              <span style={{ color: communityColor }} className="font-bold text-sm">
-                {level?.icon} Nv.{level?.level} {level?.name}
-              </span>
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>{player.xp} XP</span>
-            </div>
-            <div className="xp-bar mt-1.5">
-              <div className="xp-bar-fill" style={{ width: `${pct}%`, background: communityColor }} />
-            </div>
-            {nextLevel && (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                Siguiente: {nextLevel.name} ({nextLevel.min - player.xp} XP)
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-bebas text-4xl leading-none tracking-display truncate" style={{ maxWidth: '100%' }}>
+                  {player.name}
+                </h1>
+                {isProfileAdmin && (
+                  <span
+                    className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)', border: '1px solid rgba(255,215,0,0.35)' }}
+                  >
+                    Admin
+                  </span>
+                )}
+              </div>
+              {player.position && (
+                <p className="font-mono text-[11px] capitalize mt-1" style={{ color: 'var(--muted)' }}>
+                  {player.position}
+                </p>
+              )}
+              <p className="font-mono text-[11px] mt-1.5" style={{ color: communityColor }}>
+                <span aria-hidden="true">{level?.icon}</span>{' '}
+                <span className="font-barlow font-bold">Nv.{level?.level}</span>{' '}
+                <span style={{ color: 'var(--muted)' }}>{level?.name}</span>
+                <span className="divider-dot" aria-hidden="true" />
+                <span>{player.xp} XP</span>
               </p>
-            )}
+            </div>
           </div>
+
+          <div className="xp-bar mt-3">
+            <div className="xp-bar-fill" style={{ width: `${pct}%`, background: communityColor }} />
+          </div>
+          {nextLevel && (
+            <p className="font-mono text-[10px] mt-1.5" style={{ color: 'var(--muted)' }}>
+              Siguiente: <span style={{ color: 'var(--text)' }}>{nextLevel.name}</span>
+              <span className="divider-dot" aria-hidden="true" />
+              {nextLevel.min - player.xp} XP restantes
+            </p>
+          )}
         </div>
 
         {/* ── Expositor de insignias (5 slots editable by owner) ── */}
@@ -264,61 +275,83 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           editable={isOwnProfile}
         />
 
-        {/* ── Stats: fila horizontal 5 chips ────────── */}
-        <div className="-mx-4 px-4 flex gap-2 overflow-x-auto pb-1 snap-x">
-          {[
-            { label: 'Partidos',    value: player.partidos,       icon: '🗓️' },
-            { label: 'Goles',       value: player.goles,          icon: '⚽' },
-            { label: 'Asistencias', value: player.asistencias,    icon: '🎯' },
-            { label: 'MVPs',        value: player.mvps,           icon: '👑' },
-            { label: 'Badges',      value: player.badges.length,  icon: '🏅' },
-          ].map(s => (
-            <div
-              key={s.label}
-              className="flex-shrink-0 snap-start rounded-m p-3 text-center min-w-[72px]"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <p className="text-base leading-none mb-1">{s.icon}</p>
-              <p className="font-bebas text-2xl leading-none tracking-wider" style={{ color: communityColor }}>
-                {s.value}
-              </p>
-              <p className="text-[10px] mt-1 leading-tight" style={{ color: 'var(--muted)' }}>{s.label}</p>
-            </div>
-          ))}
+        {/* ── Stats: fila horizontal 5 chips con fade edges ───────── */}
+        <div className="relative -mx-4">
+          <div className="px-4 flex gap-2 overflow-x-auto pb-1 snap-x scroll-px-4">
+            {[
+              { label: 'Partidos',    value: player.partidos,       icon: '🗓️' },
+              { label: 'Goles',       value: player.goles,          icon: '⚽' },
+              { label: 'Asistencias', value: player.asistencias,    icon: '🎯' },
+              { label: 'MVPs',        value: player.mvps,           icon: '👑' },
+              { label: 'Badges',      value: player.badges.length,  icon: '🏅' },
+            ].map(s => (
+              <div
+                key={s.label}
+                className="surface-calm flex-shrink-0 snap-start p-3 text-center min-w-[76px]"
+              >
+                <p className="text-base leading-none mb-1" aria-hidden="true">{s.icon}</p>
+                <p
+                  className="font-bebas text-2xl leading-none tabular-nums tracking-display"
+                  style={{ color: communityColor }}
+                >
+                  {s.value}
+                </p>
+                <p
+                  className="font-barlow text-[10px] font-bold uppercase tracking-widest mt-1 leading-tight"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  {s.label}
+                </p>
+              </div>
+            ))}
+          </div>
+          {/* Fade edges — pista visual de que hay más a la derecha */}
+          <div
+            className="pointer-events-none absolute top-0 bottom-1 left-0 w-4"
+            style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }}
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute top-0 bottom-1 right-0 w-8"
+            style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }}
+            aria-hidden="true"
+          />
         </div>
 
         {/* ── Skill bars (siempre visibles) ─────────── */}
-        <div
-          className="rounded-m p-4"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
+        <div className="surface-calm p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
               Habilidades
             </p>
             {playerRating ? (
-              <p className="font-bebas text-xl tracking-wider" style={{ color: communityColor }}>
+              <p className="font-bebas text-xl leading-none tracking-display tabular-nums" style={{ color: communityColor }}>
                 ★ {playerRating.avg.toFixed(1)}
-                <span className="text-xs font-sans font-normal ml-1" style={{ color: 'var(--muted)' }}>
+                <span className="font-mono text-[10px] ml-1.5" style={{ color: 'var(--muted)' }}>
                   ({playerRating.count} votos)
                 </span>
               </p>
             ) : (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin valoraciones</p>
+              <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>Sin valoraciones</p>
             )}
           </div>
           <div className="space-y-2.5">
             {skillBars.map(sk => (
               <div key={sk.key} className="flex items-center gap-2">
-                <span className="text-sm w-5 flex-shrink-0">{sk.icon}</span>
-                <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--muted)' }}>{sk.label}</span>
+                <span className="text-sm w-5 flex-shrink-0" aria-hidden="true">{sk.icon}</span>
+                <span className="font-barlow text-[10px] font-bold uppercase tracking-widest w-20 flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                  {sk.label}
+                </span>
                 <div className="flex-1 xp-bar">
                   <div
                     className="xp-bar-fill transition-all"
                     style={{ width: `${sk.pct}%`, background: communityColor, opacity: sk.pct === 0 ? 0.25 : 1 }}
                   />
                 </div>
-                <span className="text-xs font-bold w-8 text-right" style={{ color: sk.pct > 0 ? communityColor : 'var(--muted)' }}>
+                <span
+                  className="font-mono text-[11px] font-bold w-9 text-right tabular-nums"
+                  style={{ color: sk.pct > 0 ? communityColor : 'var(--muted)' }}
+                >
                   {sk.avg > 0 ? sk.avg.toFixed(1) : '—'}
                 </span>
               </div>
@@ -338,7 +371,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
         {/* ── Historial de partidos ─────────────────── */}
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2 px-1" style={{ color: 'var(--muted)' }}>
             Historial
           </p>
           <PlayerTimeline
@@ -349,45 +382,47 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         </div>
 
         {/* ── CTA Valorar ───────────────────────────── */}
-        {/* Visible para cualquiera que no sea el propio jugador */}
         {!isOwnProfile && (
-          <button
+          <Button
+            variant="primary"
+            className="w-full"
+            disabled={!!(canVote && existingVote)}
             onClick={() => {
               if (!canVote) { openPinModal(); return }
               if (existingVote) { showToast('Ya has valorado a este jugador'); return }
               setVoteOpen(true)
             }}
-            disabled={!!(canVote && existingVote)}
-            className="w-full h-12 rounded-m font-bold text-sm tracking-wide uppercase active:scale-[0.98] transition-transform select-none disabled:opacity-60 disabled:active:scale-100"
-            style={{ background: communityColor, color: '#000' }}
           >
             {canVote
               ? (existingVote ? '✓ Ya valorado' : '⭐ Valorar jugador')
               : '🔑 Acceder para valorar'}
-          </button>
+          </Button>
         )}
 
         {/* ── Admin: PIN de jugador ─────────────────── */}
         {session.role === 'admin' && (
-          <Card>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>
+          <div className="surface-calm p-4">
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
               PIN de jugador
             </p>
-            <p className="font-bebas text-2xl tracking-widest" style={{ color: communityColor }}>
+            <p
+              className="font-mono text-3xl font-bold tabular-nums"
+              style={{ color: communityColor, letterSpacing: '0.3em' }}
+            >
               {player.code}
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+            <p className="font-mono text-[10px] mt-2" style={{ color: 'var(--muted)' }}>
               Comparte este PIN con el jugador para que pueda identificarse
             </p>
-          </Card>
+          </div>
         )}
 
-        {/* ── Cambiar nombre / PIN (own profile) ────── */}
+        {/* ── Acciones de perfil propio ─────────────── */}
         {isOwnProfile && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Button
-                className="w-full select-none"
+                className="w-full"
                 variant="ghost"
                 onClick={() => { setNewName(player.name); setNameModalOpen(true) }}
                 style={{ minHeight: 48 }}
@@ -395,7 +430,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
                 ✏️ Cambiar nombre
               </Button>
               <Button
-                className="w-full select-none"
+                className="w-full"
                 variant="ghost"
                 onClick={() => setPinModalOpen(true)}
                 style={{ minHeight: 48 }}
@@ -405,7 +440,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             </div>
             <Link
               href={`/${cid}/ayuda`}
-              className="w-full flex items-center justify-center rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
+              className="w-full flex items-center justify-center rounded-m font-bold text-sm uppercase tracking-widest active:scale-[0.98] transition-transform select-none"
               style={{
                 minHeight: 48,
                 background: communityColor + '15',
@@ -420,23 +455,23 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
       </div>
 
-      {/* ── Modal: Valorar (centrado) ─────────────────── */}
+      {/* ── Modal: Valorar ────────────────────────────── */}
       <Modal
         open={voteOpen && !!canVote && !existingVote}
         onClose={() => { if (!voting) setVoteOpen(false) }}
         title={`⭐ Valorar a ${player.name}`}
         footer={
-          <button
+          <Button
+            variant="primary"
+            className="w-full"
             onClick={submitVote}
             disabled={voting}
-            className="w-full h-12 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
-            style={{ background: communityColor, color: '#000' }}
           >
             {voting ? 'Guardando...' : '✅ Enviar valoración'}
-          </button>
+          </Button>
         }
       >
-        <p className="text-xs mb-2" style={{ color: 'var(--muted)' }}>Puntúa del 1 al 5 cada habilidad</p>
+        <p className="font-mono text-[11px] mb-2" style={{ color: 'var(--muted)' }}>Puntúa del 1 al 5 cada habilidad</p>
         <p className="text-[11px] mb-4" style={{ color: 'var(--muted)', opacity: 0.8 }}>
           Solo puedes valorar una vez. No podrás cambiarlo después.
         </p>
@@ -446,9 +481,9 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             <div key={skill.key}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-bold">
-                  {skill.icon} {skill.label}
+                  <span aria-hidden="true">{skill.icon}</span> {skill.label}
                 </span>
-                <span className="text-sm font-bebas tracking-wider" style={{ color: communityColor }}>
+                <span className="font-bebas text-base tabular-nums" style={{ color: communityColor }}>
                   {rating[skill.key] ?? '—'}
                 </span>
               </div>
@@ -475,210 +510,151 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
       </Modal>
 
       {/* ── Modal: Cambiar PIN ────────────────────────── */}
-      {pinModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setPinModalOpen(false); setCurrentPin(''); setNewPin(''); setPinError('')
-            }
-          }}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+      <Modal
+        open={pinModalOpen}
+        onClose={() => {
+          if (pinSaving) return
+          setPinModalOpen(false); setCurrentPin(''); setNewPin(''); setPinError('')
+        }}
+        title="🔑 Cambiar PIN"
+        footer={
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={handlePinChange}
+            disabled={pinSaving || currentPin.length !== 4 || newPin.length !== 4}
           >
-            <h2 className="text-lg font-bold text-center">Cambiar PIN</h2>
-
-            {(['PIN actual', 'Nuevo PIN'] as const).map((labelText, i) => {
-              const val = i === 0 ? currentPin : newPin
-              const setter = i === 0 ? setCurrentPin : setNewPin
-              return (
-                <div key={labelText}>
-                  <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
-                    {labelText}
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={4}
-                    value={val}
-                    onChange={(e) => { setter(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError('') }}
-                    placeholder="0000"
-                    autoFocus={i === 0}
-                    className="w-full text-center text-2xl font-mono tracking-[0.4em] py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
-                    style={{
-                      borderColor: pinError ? '#ef4444' : 'var(--border)',
-                      color: 'var(--fg)',
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      ['--tw-ring-color' as any]: communityColor,
-                    }}
-                  />
-                </div>
-              )
-            })}
-
-            {pinError && <p className="text-xs text-red-400 font-medium text-center">{pinError}</p>}
-
-            <button
-              onClick={handlePinChange}
-              disabled={pinSaving || currentPin.length !== 4 || newPin.length !== 4}
-              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 select-none"
-              style={{ background: communityColor, color: '#000', minHeight: 48 }}
-            >
-              {pinSaving ? 'Guardando...' : 'Confirmar cambio'}
-            </button>
-
-            <button
-              onClick={() => { setPinModalOpen(false); setCurrentPin(''); setNewPin(''); setPinError('') }}
-              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
-              style={{ color: 'var(--muted)', minHeight: 48 }}
-            >
-              Cancelar
-            </button>
-          </div>
+            {pinSaving ? 'Guardando...' : 'Confirmar cambio'}
+          </Button>
+        }
+      >
+        <div className="space-y-3">
+          {(['PIN actual', 'Nuevo PIN'] as const).map((labelText, i) => {
+            const val = i === 0 ? currentPin : newPin
+            const setter = i === 0 ? setCurrentPin : setNewPin
+            return (
+              <Input
+                key={labelText}
+                label={labelText}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                value={val}
+                onChange={(e) => { setter(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError('') }}
+                placeholder="0000"
+                data-autofocus={i === 0 ? true : undefined}
+                className="text-center font-mono text-2xl tracking-[0.4em]"
+                style={{
+                  borderColor: pinError ? 'var(--red)' : undefined,
+                }}
+              />
+            )
+          })}
+          {pinError && (
+            <p className="font-mono text-[11px] text-center" style={{ color: 'var(--red)' }}>{pinError}</p>
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* ── Modal: Cambiar nombre ─────────────────────── */}
-      {nameModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setNameModalOpen(false); setNewName(''); setNameError('')
-            }
-          }}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+      <Modal
+        open={nameModalOpen}
+        onClose={() => {
+          if (nameSaving) return
+          setNameModalOpen(false); setNewName(''); setNameError('')
+        }}
+        title="✏️ Cambiar nombre"
+        footer={
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={handleNameChange}
+            disabled={nameSaving || newName.trim().length < 2}
           >
-            <h2 className="text-lg font-bold text-center">Cambiar nombre</h2>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
-                Nuevo nombre
-              </label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => { setNewName(e.target.value); setNameError('') }}
-                placeholder="Tu nombre"
-                maxLength={40}
-                autoFocus
-                className="w-full text-center text-base font-medium py-3 px-4 rounded-xl border bg-transparent outline-none focus:ring-2"
-                style={{
-                  borderColor: nameError ? '#ef4444' : 'var(--border)',
-                  color: 'var(--fg)',
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  ['--tw-ring-color' as any]: communityColor,
-                }}
-              />
-            </div>
-
-            {nameError && <p className="text-xs text-red-400 font-medium text-center">{nameError}</p>}
-
-            <button
-              onClick={handleNameChange}
-              disabled={nameSaving || newName.trim().length < 2}
-              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 select-none"
-              style={{ background: communityColor, color: '#000', minHeight: 48 }}
-            >
-              {nameSaving ? 'Guardando...' : 'Guardar nombre'}
-            </button>
-
-            <button
-              onClick={() => { setNameModalOpen(false); setNewName(''); setNameError('') }}
-              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
-              style={{ color: 'var(--muted)', minHeight: 48 }}
-            >
-              Cancelar
-            </button>
-          </div>
+            {nameSaving ? 'Guardando...' : 'Guardar nombre'}
+          </Button>
+        }
+      >
+        <div className="space-y-3">
+          <Input
+            label="Nuevo nombre"
+            type="text"
+            value={newName}
+            onChange={(e) => { setNewName(e.target.value); setNameError('') }}
+            placeholder="Tu nombre"
+            maxLength={40}
+            data-autofocus
+            style={{
+              borderColor: nameError ? 'var(--red)' : undefined,
+            }}
+          />
+          {nameError && (
+            <p className="font-mono text-[11px] text-center" style={{ color: 'var(--red)' }}>{nameError}</p>
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* ── Modal: Cambiar foto ───────────────────────── */}
-      {photoModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !photoSaving) {
-              setPhotoModalOpen(false); setPhotoError('')
-            }
-          }}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+      <Modal
+        open={photoModalOpen}
+        onClose={() => {
+          if (photoSaving) return
+          setPhotoModalOpen(false); setPhotoError('')
+        }}
+        title="📷 Foto de perfil"
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Avatar
+            name={player.name}
+            avatar={player.avatar}
+            size={96}
+            fontSize={32}
+            communityColor={communityColor}
+            borderColor={communityColor + '66'}
+            borderWidth={3}
+          />
+
+          <label
+            className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-widest text-center cursor-pointer active:scale-95 transition-transform select-none hairline-top"
+            style={{
+              background: communityColor,
+              color: '#000',
+              minHeight: 48,
+              pointerEvents: photoSaving ? 'none' : 'auto',
+              opacity: photoSaving ? 0.4 : 1,
+            }}
           >
-            <h2 className="text-lg font-bold text-center">Foto de perfil</h2>
-
-            <div className="flex justify-center">
-              <Avatar
-                name={player.name}
-                avatar={player.avatar}
-                size={96}
-                fontSize={32}
-                communityColor={communityColor}
-                borderColor={communityColor + '44'}
-                borderWidth={3}
-              />
-            </div>
-
-            <label
-              className="w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wide text-center cursor-pointer active:scale-95 transition-transform disabled:opacity-40 select-none"
-              style={{
-                background: communityColor,
-                color: '#000',
-                minHeight: 48,
-                pointerEvents: photoSaving ? 'none' : 'auto',
-                opacity: photoSaving ? 0.4 : 1,
-              }}
-            >
-              {photoSaving ? 'Subiendo...' : '📷 Elegir imagen'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={photoSaving}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  e.target.value = ''
-                  if (file) handlePhotoUpload(file)
-                }}
-              />
-            </label>
-
-            {isAvatarUrl(player.avatar) && (
-              <button
-                onClick={handlePhotoRemove}
-                disabled={photoSaving}
-                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 select-none"
-                style={{ background: 'transparent', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', minHeight: 48 }}
-              >
-                🗑️ Eliminar foto
-              </button>
-            )}
-
-            {photoError && <p className="text-xs text-red-400 font-medium text-center">{photoError}</p>}
-
-            <button
-              onClick={() => { if (!photoSaving) { setPhotoModalOpen(false); setPhotoError('') } }}
+            {photoSaving ? 'Subiendo...' : '📷 Elegir imagen'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
               disabled={photoSaving}
-              className="text-xs uppercase tracking-wide opacity-50 hover:opacity-80 transition-opacity select-none"
-              style={{ color: 'var(--muted)', minHeight: 48 }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) handlePhotoUpload(file)
+              }}
+            />
+          </label>
+
+          {isAvatarUrl(player.avatar) && (
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={handlePhotoRemove}
+              disabled={photoSaving}
             >
-              Cerrar
-            </button>
-          </div>
+              🗑️ Eliminar foto
+            </Button>
+          )}
+
+          {photoError && (
+            <p className="font-mono text-[11px] text-center" style={{ color: 'var(--red)' }}>{photoError}</p>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

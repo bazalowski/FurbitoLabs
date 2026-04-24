@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   open: boolean
@@ -9,36 +10,138 @@ interface ModalProps {
   children: React.ReactNode
   /**
    * 'sheet'  — caja auto-ajustable al contenido, centrada (default).
-   * 'window' — ventana a pantalla completa en móvil, ocupa 90vh.
+   * 'window' — ventana a pantalla completa en móvil, ocupa 90dvh.
    */
   variant?: 'sheet' | 'window'
   footer?: React.ReactNode
+  /** Si se pasa, se intenta enfocar al abrir en vez del primer focusable. */
+  initialFocusRef?: RefObject<HTMLElement | null>
 }
 
-export function Modal({ open, onClose, title, children, variant = 'sheet', footer }: ModalProps) {
-  const isWindow = variant === 'window'
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
 
+function getModalRoot(): HTMLElement {
+  let root = document.getElementById('modal-root')
+  if (!root) {
+    root = document.createElement('div')
+    root.id = 'modal-root'
+    document.body.appendChild(root)
+  }
+  return root
+}
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  variant = 'sheet',
+  footer,
+  initialFocusRef,
+}: ModalProps) {
+  const isWindow = variant === 'window'
+  const panelRef = useRef<HTMLDivElement>(null)
+  const scrollYRef = useRef(0)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
+  // Escape to close
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  useEffect(() => {
+  // Scroll-lock robusto (iOS Safari friendly)
+  useLayoutEffect(() => {
     if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    const body = document.body
+    const y = window.scrollY
+    scrollYRef.current = y
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    }
+    body.style.position = 'fixed'
+    body.style.top = `-${y}px`
+    body.style.width = '100%'
+    return () => {
+      body.style.position = prev.position
+      body.style.top = prev.top
+      body.style.width = prev.width
+      window.scrollTo(0, scrollYRef.current)
+    }
   }, [open])
 
+  // Focus trap + return focus
+  useEffect(() => {
+    if (!open) return
+    triggerRef.current = document.activeElement as HTMLElement | null
+    const panel = panelRef.current
+    if (!panel) return
+
+    const focusInitial = () => {
+      const target =
+        initialFocusRef?.current ??
+        panel.querySelector<HTMLElement>('[data-autofocus]') ??
+        panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ??
+        panel
+      target.focus({ preventScroll: true })
+    }
+    // esperar al próximo frame para evitar que el scroll-lock robe el foco
+    const raf = requestAnimationFrame(focusInitial)
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1)
+      if (focusables.length === 0) {
+        e.preventDefault()
+        panel.focus({ preventScroll: true })
+        return
+      }
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault()
+          last.focus({ preventScroll: true })
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault()
+          first.focus({ preventScroll: true })
+        }
+      }
+    }
+    panel.addEventListener('keydown', onKey)
+    return () => {
+      cancelAnimationFrame(raf)
+      panel.removeEventListener('keydown', onKey)
+      triggerRef.current?.focus?.({ preventScroll: true })
+    }
+  }, [open, initialFocusRef])
+
   if (!open) return null
+  if (typeof window === 'undefined') return null
 
   const panelClass = isWindow
-    ? 'relative w-full max-w-app rounded-l flex flex-col overflow-hidden animate-slide-up h-[90vh] sm:h-auto sm:max-h-[85vh]'
-    : 'relative w-full max-w-app rounded-l flex flex-col overflow-hidden animate-slide-up max-h-[90vh] sm:max-h-[85vh]'
+    ? 'relative w-full max-w-app rounded-l flex flex-col overflow-hidden animate-slide-up h-[90dvh] sm:h-auto sm:max-h-[85dvh] outline-none'
+    : 'relative w-full max-w-app rounded-l flex flex-col overflow-hidden animate-slide-up max-h-[90dvh] sm:max-h-[85dvh] outline-none'
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center px-3 py-[max(env(safe-area-inset-top,0px),0.5rem)]"
       role="dialog"
@@ -53,13 +156,15 @@ export function Modal({ open, onClose, title, children, variant = 'sheet', foote
       />
 
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={panelClass}
         style={{
           background: 'var(--bg2)',
           border: '1px solid var(--border)',
           boxShadow: 'var(--shadow-depth-3)',
         }}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (
           <div
@@ -103,6 +208,7 @@ export function Modal({ open, onClose, title, children, variant = 'sheet', foote
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    getModalRoot(),
   )
 }

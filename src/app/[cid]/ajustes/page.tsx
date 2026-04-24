@@ -8,8 +8,8 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { usePlayers } from '@/hooks/usePlayers'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/layout/Header'
-import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
@@ -34,7 +34,6 @@ export default function AjustesPage({ params }: AjustesPageProps) {
   const [adminLoading, setAdminLoading] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // Push notifications
   const push = usePushNotifications(session.playerId, session.communityId)
   const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>({
     event_created: true,
@@ -43,7 +42,6 @@ export default function AjustesPage({ params }: AjustesPageProps) {
     badge_earned: true,
   })
 
-  // Load notification preferences
   useEffect(() => {
     if (session.playerId && session.communityId) {
       getPreferences(session.playerId, session.communityId).then(prefs => {
@@ -56,14 +54,12 @@ export default function AjustesPage({ params }: AjustesPageProps) {
   const adminIds = community?.admin_ids ?? []
   const isPrimaryAdmin = community?.comm_admin_id === session.playerId
 
-  // Players who are admins
   const adminPlayers = players.filter(p => adminIds.includes(p.id))
-  // Players who can be promoted (not already admin)
   const promotablePlayers = players.filter(p => !adminIds.includes(p.id))
 
   async function promoteToAdmin(playerId: string) {
     if (adminIds.length >= MAX_ADMINS) {
-      showToast(`Maximo ${MAX_ADMINS} admins permitidos`)
+      showToast(`Máximo ${MAX_ADMINS} admins permitidos`)
       return
     }
     setAdminLoading(true)
@@ -76,21 +72,19 @@ export default function AjustesPage({ params }: AjustesPageProps) {
     if (error) {
       showToast('Error al hacer admin')
     } else {
-      showToast('Admin anadido')
+      showToast('Admin añadido')
       setPromoteOpen(false)
-      // Force page refresh to get updated community data
       window.location.reload()
     }
     setAdminLoading(false)
   }
 
   async function demoteAdmin(playerId: string) {
-    // Cannot demote the primary (creator) admin
     if (playerId === community?.comm_admin_id) {
       showToast('No se puede quitar admin al creador de la comunidad')
       return
     }
-    if (!confirm('Quitar permisos de admin a este jugador?')) return
+    if (!confirm('¿Quitar permisos de admin a este jugador?')) return
     setAdminLoading(true)
     const supabase = createClient()
     const newAdminIds = adminIds.filter(id => id !== playerId)
@@ -102,7 +96,6 @@ export default function AjustesPage({ params }: AjustesPageProps) {
       showToast('Error al quitar admin')
     } else {
       showToast('Admin removido')
-      // If demoting yourself, update session
       if (playerId === session.playerId) {
         session.setRole('player')
       }
@@ -120,142 +113,54 @@ export default function AjustesPage({ params }: AjustesPageProps) {
     <div className="view-enter">
       <Header title="Ajustes" />
 
-      <div className="px-4 space-y-4 pt-2">
-        {/* Community info */}
-        {community && (
-          <Card>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-              Comunidad
-            </p>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex-shrink-0"
-                style={{ background: community.color }}
-              />
-              <div>
-                <p className="font-bold">{community.name}</p>
-                <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                  PIN: <span className="font-mono font-bold tracking-widest">{community.pin}</span>
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
+      <div className="px-4 space-y-4 pt-2 pb-28">
+        {/* ── Mi cuenta ──────────────────────────── */}
+        <SectionLabel>Mi cuenta</SectionLabel>
 
         {/* Session info */}
-        <Card>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-            Tu sesion
+        <div className="surface-calm p-4">
+          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
+            Tu sesión
           </p>
-          <div className="space-y-1 text-sm">
+          <div className="space-y-1.5 font-mono text-[12px]">
             <div className="flex justify-between">
               <span style={{ color: 'var(--muted)' }}>Rol</span>
               <span className="font-bold capitalize">
                 {session.role === 'admin' ? (
-                  <span style={{ color: 'var(--gold, #ffd700)' }}>{'\uD83D\uDC51'} Admin</span>
+                  <span style={{ color: 'var(--gold)' }}>👑 Admin</span>
                 ) : session.role}
               </span>
             </div>
             {session.playerId && (
               <div className="flex justify-between">
                 <span style={{ color: 'var(--muted)' }}>ID jugador</span>
-                <span className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
-                  {session.playerId.slice(0, 8)}...
+                <span style={{ color: 'var(--muted)' }}>
+                  {session.playerId.slice(0, 8)}…
                 </span>
               </div>
             )}
           </div>
-        </Card>
-
-        {/* Admin Management Section — only visible to admins */}
-        {isAdmin && (
-          <Card>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--gold, #ffd700)' }}>
-                {'\uD83D\uDC51'} Administradores ({adminPlayers.length}/{MAX_ADMINS})
-              </p>
-              {isPrimaryAdmin && adminIds.length < MAX_ADMINS && (
-                <button
-                  onClick={() => setPromoteOpen(true)}
-                  className="px-2.5 py-1.5 rounded-m text-xs font-bold transition-all active:scale-95"
-                  style={{
-                    background: 'rgba(255,215,0,0.15)',
-                    color: 'var(--gold, #ffd700)',
-                    border: '1px solid rgba(255,215,0,0.3)',
-                    minHeight: '36px',
-                  }}
-                >
-                  + Hacer admin
-                </button>
-              )}
-            </div>
-
-            {adminPlayers.length === 0 ? (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin admins configurados</p>
-            ) : (
-              <div className="space-y-2">
-                {adminPlayers.map(p => {
-                  const isPrimary = p.id === community?.comm_admin_id
-                  return (
-                    <div key={p.id} className="flex items-center gap-2.5">
-                      <PlayerAvatar player={p} size={36} communityColor={session.communityColor} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold truncate">{p.name}</span>
-                          {isPrimary && (
-                            <span
-                              className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                              style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold, #ffd700)' }}
-                            >
-                              Creador
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Demote button — primary admin can demote others, but nobody can demote the creator */}
-                      {isPrimaryAdmin && !isPrimary && (
-                        <button
-                          onClick={() => demoteAdmin(p.id)}
-                          disabled={adminLoading}
-                          className="px-2.5 py-1.5 rounded-m text-xs font-bold transition-all active:scale-95"
-                          style={{
-                            background: 'rgba(239,68,68,0.12)',
-                            color: '#ef4444',
-                            border: '1px solid rgba(239,68,68,0.3)',
-                            minHeight: '36px',
-                            opacity: adminLoading ? 0.5 : 1,
-                          }}
-                        >
-                          Quitar admin
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </Card>
-        )}
+        </div>
 
         {/* Theme */}
-        <Card>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+        <div className="surface-calm p-4">
+          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
             Apariencia
           </p>
           <ThemeToggle />
-        </Card>
+        </div>
 
         {/* Notifications */}
         {session.playerId && (
-          <Card>
+          <div className="surface-calm p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-                {'\uD83D\uDD14'} Notificaciones
+              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                🔔 Notificaciones
               </p>
               {push.supported && !push.subscribed && (
                 <button
                   onClick={push.subscribe}
-                  className="px-2.5 py-1.5 rounded-m text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                  className="px-2.5 rounded-m font-barlow text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
                   style={{
                     background: 'rgba(168,255,62,0.12)',
                     color: 'var(--accent)',
@@ -269,24 +174,24 @@ export default function AjustesPage({ params }: AjustesPageProps) {
             </div>
 
             {!push.supported ? (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
                 Tu navegador no soporta notificaciones push.
               </p>
             ) : push.permission === 'denied' ? (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Notificaciones bloqueadas. Activalas desde los ajustes del navegador.
+              <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
+                Notificaciones bloqueadas. Actívalas desde los ajustes del navegador.
               </p>
             ) : !push.subscribed ? (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
                 Activa las notificaciones para recibir avisos de partidos y logros.
               </p>
             ) : (
               <div className="space-y-2.5">
                 {([
-                  { key: 'event_created', label: 'Nuevo partido creado', emoji: '\u26BD' },
-                  { key: 'event_reminder', label: 'Recordatorio 24h antes', emoji: '\u23F0' },
-                  { key: 'match_finished', label: 'Resultado final', emoji: '\uD83C\uDFC6' },
-                  { key: 'badge_earned', label: 'Insignia desbloqueada', emoji: '\uD83C\uDFC5' },
+                  { key: 'event_created', label: 'Nuevo partido creado', emoji: '⚽' },
+                  { key: 'event_reminder', label: 'Recordatorio 24h antes', emoji: '⏰' },
+                  { key: 'match_finished', label: 'Resultado final', emoji: '🏆' },
+                  { key: 'badge_earned', label: 'Insignia desbloqueada', emoji: '🏅' },
                 ] as const).map(item => (
                   <label
                     key={item.key}
@@ -316,10 +221,10 @@ export default function AjustesPage({ params }: AjustesPageProps) {
                     await push.unsubscribe()
                     showToast('Notificaciones desactivadas')
                   }}
-                  className="w-full mt-2 py-2 rounded-m text-xs font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                  className="w-full mt-2 py-2 rounded-m font-barlow text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
                   style={{
                     background: 'rgba(239,68,68,0.08)',
-                    color: '#ef4444',
+                    color: 'var(--red)',
                     border: '1px solid rgba(239,68,68,0.2)',
                     minHeight: '40px',
                   }}
@@ -328,46 +233,141 @@ export default function AjustesPage({ params }: AjustesPageProps) {
                 </button>
               </div>
             )}
-          </Card>
+          </div>
+        )}
+
+        {/* ── Esta comunidad ─────────────────────── */}
+        <SectionLabel>Esta comunidad</SectionLabel>
+
+        {/* Community info */}
+        {community && (
+          <div className="surface-calm p-4">
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
+              Comunidad
+            </p>
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-10 h-10 rounded-full flex-shrink-0"
+                style={{ background: community.color, boxShadow: 'var(--shadow-depth-1)' }}
+              />
+              <p className="font-bebas text-2xl leading-none tracking-display truncate">
+                {community.name}
+              </p>
+            </div>
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+              PIN de comunidad
+            </p>
+            <p
+              className="font-mono text-3xl font-bold tabular-nums mt-1"
+              style={{ color: community.color, letterSpacing: '0.3em' }}
+            >
+              {community.pin}
+            </p>
+          </div>
+        )}
+
+        {/* Admin Management Section — only visible to admins */}
+        {isAdmin && (
+          <div className="surface-calm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--gold)' }}>
+                👑 Admins <span className="font-mono" style={{ color: 'var(--muted)' }}>{adminPlayers.length}/{MAX_ADMINS}</span>
+              </p>
+              {isPrimaryAdmin && adminIds.length < MAX_ADMINS && (
+                <button
+                  onClick={() => setPromoteOpen(true)}
+                  className="px-2.5 rounded-m font-barlow text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95"
+                  style={{
+                    background: 'rgba(255,215,0,0.15)',
+                    color: 'var(--gold)',
+                    border: '1px solid rgba(255,215,0,0.3)',
+                    minHeight: '36px',
+                  }}
+                >
+                  + Hacer admin
+                </button>
+              )}
+            </div>
+
+            {adminPlayers.length === 0 ? (
+              <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>Sin admins configurados</p>
+            ) : (
+              <div className="space-y-2">
+                {adminPlayers.map(p => {
+                  const isPrimary = p.id === community?.comm_admin_id
+                  return (
+                    <div key={p.id} className="flex items-center gap-2.5">
+                      <PlayerAvatar player={p} size={36} communityColor={session.communityColor} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold truncate">{p.name}</span>
+                          {isPrimary && (
+                            <span
+                              className="font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+                              style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)', border: '1px solid rgba(255,215,0,0.35)' }}
+                            >
+                              Creador
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isPrimaryAdmin && !isPrimary && (
+                        <button
+                          onClick={() => demoteAdmin(p.id)}
+                          disabled={adminLoading}
+                          className="px-2.5 rounded-m font-barlow text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95"
+                          style={{
+                            background: 'rgba(239,68,68,0.12)',
+                            color: 'var(--red)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            minHeight: '36px',
+                            opacity: adminLoading ? 0.5 : 1,
+                          }}
+                        >
+                          Quitar admin
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Ayuda / tutorial */}
-        <Card>
-          <Link
-            href={`/${cid}/ayuda`}
-            className="w-full flex items-center gap-3 py-3 px-1 rounded-m text-sm font-bold transition-all active:scale-[0.98] select-none"
-            style={{ color: 'var(--fg)', minHeight: '48px' }}
-          >
-            <span className="text-lg select-none">{'❓'}</span>
-            <span className="flex-1">Cómo usar Furbito</span>
-            <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
-          </Link>
-        </Card>
+        <Link
+          href={`/${cid}/ayuda`}
+          className="surface-calm flex items-center gap-3 py-3 px-4 text-sm font-bold transition-all active:scale-[0.98] select-none"
+          style={{ color: 'var(--text)', minHeight: '48px' }}
+        >
+          <span className="text-lg" aria-hidden="true">❓</span>
+          <span className="flex-1">Cómo usar Furbito</span>
+          <span className="text-lg" style={{ color: 'var(--muted)' }}>›</span>
+        </Link>
 
         {/* Exit community */}
-        <Card>
-          <button
-            onClick={() => setShowExitModal(true)}
-            className="w-full flex items-center gap-3 py-3 px-1 rounded-m text-sm font-bold transition-all active:scale-[0.98] select-none"
-            style={{ color: 'var(--muted)', minHeight: '48px' }}
-          >
-            <span className="text-lg select-none">{'\u{1F6AA}'}</span>
-            <span>Salir de la comunidad</span>
-          </button>
-        </Card>
+        <button
+          onClick={() => setShowExitModal(true)}
+          className="surface-calm w-full flex items-center gap-3 py-3 px-4 text-sm font-bold transition-all active:scale-[0.98] select-none"
+          style={{ color: 'var(--muted)', minHeight: '48px' }}
+        >
+          <span className="text-lg" aria-hidden="true">🚪</span>
+          <span>Salir de la comunidad</span>
+        </button>
 
         {/* App info */}
         <div className="text-center pt-4" style={{ color: 'var(--muted)' }}>
           <p className="font-bebas text-xl tracking-widest">FURBITO</p>
-          <p className="text-xs">v2.0 · Next.js + Supabase + Vercel</p>
+          <p className="font-mono text-[10px] mt-1">v2.0 · Next.js + Supabase + Vercel</p>
         </div>
       </div>
 
       {/* Promote Player Modal */}
-      <Modal open={promoteOpen} onClose={() => setPromoteOpen(false)} title={'\uD83D\uDC51 Hacer admin'}>
+      <Modal open={promoteOpen} onClose={() => setPromoteOpen(false)} title="👑 Hacer admin">
         <div className="space-y-3">
-          <p className="text-xs" style={{ color: 'var(--muted)' }}>
-            Selecciona un jugador para hacerlo administrador. Maximo {MAX_ADMINS} admins por comunidad.
+          <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
+            Selecciona un jugador para hacerlo administrador. Máximo {MAX_ADMINS} admins por comunidad.
           </p>
           {promotablePlayers.length === 0 ? (
             <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>
@@ -391,10 +391,10 @@ export default function AjustesPage({ params }: AjustesPageProps) {
                   <PlayerAvatar player={p} size={32} communityColor={session.communityColor} />
                   <span className="text-sm font-bold flex-1 text-left truncate">{p.name}</span>
                   <span
-                    className="text-xs font-bold px-2 py-1 rounded"
-                    style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold, #ffd700)' }}
+                    className="font-barlow text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+                    style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)', border: '1px solid rgba(255,215,0,0.35)' }}
                   >
-                    {'\uD83D\uDC51'} Hacer admin
+                    👑 Hacer admin
                   </span>
                 </button>
               ))}
@@ -404,51 +404,36 @@ export default function AjustesPage({ params }: AjustesPageProps) {
       </Modal>
 
       {/* Exit Confirmation Modal */}
-      {showExitModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-          style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowExitModal(false) }}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl p-6 flex flex-col items-center gap-5 animate-slide-up"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-          >
-            <span className="text-3xl select-none">{'\u{1F6AA}'}</span>
-            <h2 className="text-lg font-bold text-center" style={{ color: 'var(--fg)' }}>
-              {'\u00BF'}Seguro que quieres salir?
-            </h2>
-            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
-              Volver{'\u00E1'}s a la pantalla de selecci{'\u00F3'}n de comunidad.
-            </p>
-
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={() => setShowExitModal(false)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
-                style={{
-                  background: 'var(--border)',
-                  color: 'var(--fg)',
-                  minHeight: '48px',
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all active:scale-95 select-none"
-                style={{
-                  background: 'var(--muted)',
-                  color: 'var(--bg)',
-                  minHeight: '48px',
-                }}
-              >
-                Salir
-              </button>
-            </div>
+      <Modal
+        open={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        title="🚪 Salir de la comunidad"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button variant="ghost" className="flex-1" onClick={() => setShowExitModal(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={handleLogout}>
+              Salir
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <p className="font-mono text-[11px] text-center" style={{ color: 'var(--muted)' }}>
+          Volverás a la pantalla de selección de comunidad.
+        </p>
+      </Modal>
     </div>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="font-barlow text-[10px] font-bold uppercase tracking-widest pt-2 px-1"
+      style={{ color: 'var(--muted)' }}
+    >
+      {children}
+    </p>
   )
 }

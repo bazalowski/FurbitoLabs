@@ -7,6 +7,9 @@ import { lookupCommunityByPin, checkPinAvailable } from '@/lib/supabase/communit
 import { useSession } from '@/stores/session'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 type LoginTab = 'join' | 'create'
 type Gate = 'chooser' | 'auth'
@@ -18,21 +21,16 @@ export default function LoginPage() {
   const router = useRouter()
   const login = useSession(s => s.login)
 
-  // Gate inicial: "Usuario nuevo" / "Ya tengo un PIN".
-  // La primera vez se muestra siempre; a partir de la segunda el usuario
-  // puede marcar "No volver a mostrar" y saltarlo.
   const [gate, setGate] = useState<Gate>('auth')
   const [gateVisits, setGateVisits] = useState(0)
   const [newUserOpen, setNewUserOpen] = useState(false)
 
   const [tab, setTab] = useState<LoginTab>('join')
 
-  // Join tab — solo PIN de comunidad (código opcional eliminado)
   const [pin, setPin] = useState('')
   const [joinError, setJoinError] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
 
-  // Create tab
   const [newName, setNewName] = useState('')
   const [newPin, setNewPin] = useState('')
   const [newColor, setNewColor] = useState(COMMUNITY_COLORS[0])
@@ -40,7 +38,6 @@ export default function LoginPage() {
   const [createLoading, setCreateLoading] = useState(false)
   const [createError, setCreateError] = useState('')
 
-  // Shake animation flag
   const [shaking, setShaking] = useState(false)
 
   useEffect(() => {
@@ -79,10 +76,7 @@ export default function LoginPage() {
       return
     }
 
-    // Entra como guest; el usuario introduce su PIN de jugador luego
-    // desde el icono 🔑 del layout para identificarse.
     login(result.data.id, result.data.color, 'guest')
-
     router.push(`/${result.data.id}`)
     setJoinLoading(false)
   }
@@ -96,7 +90,6 @@ export default function LoginPage() {
     setCreateError('')
     const supabase = createClient()
 
-    // Check PIN not already used (vía Edge Function, rate-limit incluido)
     const check = await checkPinAvailable(newPin)
     if (!check.ok) {
       setCreateError(
@@ -108,12 +101,11 @@ export default function LoginPage() {
       return
     }
     if (!check.available) {
-      setCreateError('Ese PIN ya esta en uso. Elige otro.')
+      setCreateError('Ese PIN ya está en uso. Elige otro.')
       setCreateLoading(false)
       return
     }
 
-    // Create community
     const communityId = uid()
     const playerId = uid()
     const playerCode = genPlayerCode()
@@ -136,7 +128,6 @@ export default function LoginPage() {
       return
     }
 
-    // Create the admin player
     const { error: playerError } = await supabase.from('players').insert({
       id: playerId,
       community_id: communityId,
@@ -151,8 +142,7 @@ export default function LoginPage() {
       return
     }
 
-    // Show the player's PIN
-    alert(`Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuardalo para poder identificarte.`)
+    alert(`¡Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuárdalo para poder identificarte.`)
 
     login(communityId, newColor, 'admin', playerId)
     router.push(`/${communityId}`)
@@ -165,37 +155,7 @@ export default function LoginPage() {
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
         <OnboardingOverlay />
         <div className="w-full max-w-app">
-
-          {/* Crest + wordmark */}
-          <div className="text-center mb-3">
-            <img
-              src="/icons/icon.svg"
-              alt="FURBITO"
-              width={112}
-              height={112}
-              className="animate-float inline-block"
-              style={{ filter: 'drop-shadow(0 6px 24px rgba(168,255,62,0.25))' }}
-            />
-          </div>
-          <div className="text-center mb-1">
-            <div
-              className="font-bebas text-6xl tracking-widest"
-              style={{
-                color: 'var(--accent)',
-                transform: 'skewX(-8deg)',
-                display: 'inline-block',
-                textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
-              }}
-            >
-              FUR<span style={{ color: 'var(--text)' }}>BITO</span>
-            </div>
-          </div>
-          <p
-            className="text-center text-[13px] font-bold mb-1"
-            style={{ color: 'var(--accent)', letterSpacing: '0.12em' }}
-          >
-            Tu app de comunidades de fútbol
-          </p>
+          <LogoBlock />
           <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
             ¿Cómo quieres empezar?
           </p>
@@ -204,46 +164,37 @@ export default function LoginPage() {
           <div className="space-y-3">
             <button
               onClick={() => setNewUserOpen(true)}
-              className="w-full text-left rounded-l p-5 transition-all active:scale-[0.98] select-none"
-              style={{
-                background: 'var(--bg2)',
-                border: '1px solid var(--accent)',
-                boxShadow: '0 0 0 3px rgba(168,255,62,0.08), 0 10px 30px rgba(168,255,62,0.12)',
-              }}
+              className="surface-arena hairline-top w-full text-left p-5 transition-all active:scale-[0.98] select-none block"
             >
               <div className="flex items-center gap-3">
-                <span className="text-3xl leading-none">🆕</span>
+                <span className="text-3xl leading-none" aria-hidden="true">🆕</span>
                 <div className="flex-1">
-                  <p className="font-bebas text-2xl tracking-wider" style={{ color: 'var(--accent)' }}>
+                  <p className="font-bebas text-2xl leading-none tracking-display" style={{ color: 'var(--accent)' }}>
                     Usuario nuevo
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                  <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
                     Únete con el PIN de la comunidad. Te crea tu jugador y tu PIN personal.
                   </p>
                 </div>
-                <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+                <span className="text-lg" style={{ color: 'var(--accent)' }} aria-hidden="true">›</span>
               </div>
             </button>
 
             <button
               onClick={() => setGate('auth')}
-              className="w-full text-left rounded-l p-5 transition-all active:scale-[0.98] select-none"
-              style={{
-                background: 'var(--bg2)',
-                border: '1px solid var(--border)',
-              }}
+              className="surface-calm w-full text-left p-5 transition-all active:scale-[0.98] select-none block"
             >
               <div className="flex items-center gap-3">
-                <span className="text-3xl leading-none">🔑</span>
+                <span className="text-3xl leading-none" aria-hidden="true">🔑</span>
                 <div className="flex-1">
-                  <p className="font-bebas text-2xl tracking-wider">
+                  <p className="font-bebas text-2xl leading-none tracking-display">
                     Ya tengo un PIN
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                  <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
                     Entra directamente con el PIN de tu comunidad.
                   </p>
                 </div>
-                <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+                <span className="text-lg" style={{ color: 'var(--muted)' }} aria-hidden="true">›</span>
               </div>
             </button>
           </div>
@@ -254,24 +205,21 @@ export default function LoginPage() {
                 localStorage.setItem(GATE_KEY, '1')
                 setGate('auth')
               }}
-              className="w-full mt-4 py-2 text-xs uppercase tracking-wider font-bold active:scale-[0.98] transition-transform select-none"
+              className="w-full mt-4 py-2 font-barlow text-[10px] font-bold uppercase tracking-widest active:scale-[0.98] transition-transform select-none"
               style={{ color: 'var(--muted)' }}
             >
               No volver a mostrar
             </button>
           )}
 
-          <p className="text-center text-xs mt-6" style={{ color: 'var(--muted)' }}>
-            FURBITO v2.1 · Powered by Supabase
-          </p>
+          <Footer />
         </div>
 
-        {newUserOpen && (
-          <NewUserModal
-            onClose={() => setNewUserOpen(false)}
-            triggerShake={triggerShake}
-          />
-        )}
+        <NewUserModal
+          open={newUserOpen}
+          onClose={() => setNewUserOpen(false)}
+          triggerShake={triggerShake}
+        />
       </div>
     )
   }
@@ -281,57 +229,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
       <OnboardingOverlay />
       <div className="w-full max-w-app">
-
-        {/* Crest */}
-        <div className="text-center mb-3">
-          <img
-            src="/icons/icon.svg"
-            alt="FURBITO"
-            width={112}
-            height={112}
-            className="animate-float inline-block"
-            style={{ filter: 'drop-shadow(0 6px 24px rgba(168,255,62,0.25))' }}
-          />
-        </div>
-
-        {/* Wordmark */}
-        <div className="text-center mb-1">
-          <div
-            className="font-bebas text-6xl tracking-widest"
-            style={{
-              color: 'var(--accent)',
-              transform: 'skewX(-8deg)',
-              display: 'inline-block',
-              textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
-            }}
-          >
-            FUR<span style={{ color: 'var(--text)' }}>BITO</span>
-          </div>
-        </div>
-
-        {/* Tagline */}
-        <p
-          className="text-center text-[13px] font-bold mb-1"
-          style={{ color: 'var(--accent)', letterSpacing: '0.12em' }}
-        >
-          Tu app de comunidades de fútbol
-        </p>
-        <p className="text-center text-sm mb-8" style={{ color: 'var(--muted)' }}>
+        <LogoBlock />
+        <p className="text-center text-sm mb-6" style={{ color: 'var(--muted)' }}>
           Introduce el PIN de tu comunidad
         </p>
 
         {/* Card */}
-        <div
-          className="rounded-l p-6"
-          style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
-        >
+        <div className="surface-calm p-6">
           {/* Tabs */}
           <div className="flex rounded-m overflow-hidden mb-5" style={{ background: 'var(--card)' }}>
             {(['join', 'create'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all min-h-[44px] active:scale-[0.97]"
+                className="flex-1 py-2 font-barlow text-[10px] font-bold uppercase tracking-widest transition-all min-h-[44px] active:scale-[0.97]"
                 style={
                   tab === t
                     ? { background: 'var(--accent)', color: '#050d05' }
@@ -347,7 +258,7 @@ export default function LoginPage() {
           {tab === 'join' && (
             <form id="join-form" onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
+                <label className="block font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
                   PIN de comunidad
                 </label>
                 <input
@@ -356,28 +267,25 @@ export default function LoginPage() {
                   onChange={e => setPin(e.target.value)}
                   placeholder="Ej: FURIA24"
                   maxLength={20}
-                  className={`w-full px-4 py-4 rounded-m text-center text-xl font-bold uppercase tracking-[0.3em] outline-none ${shaking ? 'animate-shake' : ''}`}
+                  data-autofocus
+                  className={`w-full px-4 py-4 rounded-m text-center text-xl font-bold uppercase outline-none ${shaking ? 'animate-shake' : ''}`}
                   style={{
                     background: 'var(--card)',
                     border: joinError ? '1px solid var(--red)' : '1px solid var(--border)',
                     color: 'var(--accent)',
                     letterSpacing: '0.3em',
+                    fontSize: '20px',
                   }}
                   required
                 />
               </div>
               {joinError && (
-                <p className="text-sm font-semibold text-center" style={{ color: 'var(--red)' }}>{joinError}</p>
+                <p className="font-mono text-[12px] font-semibold text-center" style={{ color: 'var(--red)' }}>{joinError}</p>
               )}
-              <button
-                type="submit"
-                disabled={joinLoading}
-                className="w-full py-3.5 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
-                style={{ background: 'var(--accent)', color: '#050d05' }}
-              >
-                {joinLoading ? 'Buscando...' : 'ENTRAR'}
-              </button>
-              <p className="text-center text-xs" style={{ color: 'var(--muted)' }}>
+              <Button type="submit" disabled={joinLoading} className="w-full">
+                {joinLoading ? 'Buscando...' : 'Entrar'}
+              </Button>
+              <p className="font-mono text-center text-[11px]" style={{ color: 'var(--muted)' }}>
                 Una vez dentro, pulsa 🔑 arriba a la derecha para identificarte con tu PIN personal.
               </p>
             </form>
@@ -386,68 +294,39 @@ export default function LoginPage() {
           {/* Create form */}
           {tab === 'create' && (
             <form onSubmit={handleCreate} className="space-y-4">
+              <Input
+                label="Nombre de la comunidad"
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Ej: Los Cracks FC"
+                maxLength={40}
+                required
+              />
+              <Input
+                label="PIN de acceso (4-10 chars)"
+                type="text"
+                value={newPin}
+                onChange={e => setNewPin(e.target.value)}
+                placeholder="Ej: CRACKS24"
+                maxLength={10}
+                className="uppercase tracking-widest"
+                required
+              />
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Nombre de la comunidad
-                </label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="Ej: Los Cracks FC"
-                  maxLength={40}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold outline-none"
-                  style={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
-                  PIN de acceso (4-10 chars)
-                </label>
-                <input
-                  type="text"
-                  value={newPin}
-                  onChange={e => setNewPin(e.target.value)}
-                  placeholder="Ej: CRACKS24"
-                  maxLength={10}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold uppercase tracking-wider outline-none"
-                  style={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Tu nombre (admin)
-                </label>
-                <input
+                <Input
+                  label="Tu nombre (admin)"
                   type="text"
                   value={adminName}
                   onChange={e => setAdminName(e.target.value)}
                   placeholder="Ej: Carlos"
                   maxLength={30}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold outline-none"
-                  style={{
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
                   required
+                  hint="Serás el administrador de la comunidad."
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                  Seras el administrador de la comunidad
-                </p>
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>
+                <label className="block font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
                   Color de la comunidad
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -456,34 +335,86 @@ export default function LoginPage() {
                       key={c}
                       type="button"
                       onClick={() => setNewColor(c)}
+                      aria-label={`Color ${c}`}
+                      aria-pressed={newColor === c}
                       className="w-10 h-10 rounded-full border-2 transition-transform"
                       style={{
                         background: c,
-                        borderColor: newColor === c ? 'white' : 'transparent',
-                        transform: newColor === c ? 'scale(1.2)' : 'scale(1)',
+                        borderColor: newColor === c ? 'var(--text)' : 'transparent',
+                        transform: newColor === c ? 'scale(1.15)' : 'scale(1)',
+                        boxShadow: newColor === c ? `0 0 0 3px ${c}44` : undefined,
                       }}
                     />
                   ))}
                 </div>
               </div>
               {createError && (
-                <p className="text-sm font-semibold" style={{ color: 'var(--red)' }}>{createError}</p>
+                <p className="font-mono text-[12px] font-semibold" style={{ color: 'var(--red)' }}>{createError}</p>
               )}
-              <button
-                type="submit"
-                disabled={createLoading}
-                className="w-full py-3.5 rounded-m font-bold text-sm uppercase tracking-wider transition-all disabled:opacity-50 min-h-[44px] active:scale-[0.97]"
-                style={{ background: 'var(--accent)', color: '#050d05' }}
-              >
+              <Button type="submit" disabled={createLoading} className="w-full">
                 {createLoading ? 'Creando...' : 'Crear comunidad'}
-              </button>
+              </Button>
             </form>
           )}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: 'var(--muted)' }}>
-          FURBITO v2.1 · Powered by Supabase
-        </p>
+        <Footer />
+      </div>
+    </div>
+  )
+}
+
+/** Hero logotipo + wordmark + tagline — arena-style para la primera impresión */
+function LogoBlock() {
+  return (
+    <>
+      <div className="text-center mb-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/icon.svg"
+          alt="FURBITO"
+          width={112}
+          height={112}
+          className="animate-float inline-block"
+          style={{ filter: 'drop-shadow(0 6px 24px rgba(168,255,62,0.25))' }}
+        />
+      </div>
+      <div className="text-center mb-1">
+        <div
+          className="font-bebas text-6xl tracking-display leading-none"
+          style={{
+            color: 'var(--accent)',
+            transform: 'skewX(-8deg)',
+            display: 'inline-block',
+            textShadow: '0 0 40px rgba(168,255,62,0.3), 0 0 80px rgba(168,255,62,0.15)',
+          }}
+        >
+          FUR<span style={{ color: 'var(--text)' }}>BITO</span>
+        </div>
+      </div>
+      <p
+        className="text-center font-barlow text-[11px] font-bold uppercase tracking-widest mt-2"
+        style={{ color: 'var(--accent)' }}
+      >
+        Partidos, equipos y ranking. Sin WhatsApp.
+      </p>
+    </>
+  )
+}
+
+/** Footer con links legales + versión — requerido por stores */
+function Footer() {
+  return (
+    <div className="text-center mt-6 space-y-2">
+      <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>
+        FURBITO v2.1 · Powered by Supabase
+      </p>
+      <div className="flex items-center justify-center gap-1 font-mono text-[10px]" style={{ color: 'var(--muted)' }}>
+        <a href="/privacidad" className="underline-offset-2 hover:underline">Privacidad</a>
+        <span className="divider-dot" aria-hidden="true" />
+        <a href="/terminos" className="underline-offset-2 hover:underline">Términos</a>
+        <span className="divider-dot" aria-hidden="true" />
+        <a href="/ayuda" className="underline-offset-2 hover:underline">Ayuda</a>
       </div>
     </div>
   )
@@ -492,11 +423,12 @@ export default function LoginPage() {
 /* ─────────── Modal: Usuario nuevo ─────────── */
 
 interface NewUserModalProps {
+  open: boolean
   onClose: () => void
   triggerShake: () => void
 }
 
-function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
+function NewUserModal({ open, onClose, triggerShake }: NewUserModalProps) {
   const router = useRouter()
   const login = useSession(s => s.login)
 
@@ -519,7 +451,6 @@ function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
     setLoading(true)
     const supabase = createClient()
 
-    // Busca la comunidad vía Edge Function (rate-limited)
     const lookup = await lookupCommunityByPin(communityPin)
     if (!lookup.ok) {
       setError(
@@ -562,119 +493,82 @@ function NewUserModal({ onClose, triggerShake }: NewUserModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)' }}
-      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose() }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="newuser-title"
-        className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4 animate-slide-up"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        {!createdCode ? (
-          <>
-            <h2 id="newuser-title" className="text-lg font-bold text-center">🆕 Usuario nuevo</h2>
-            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
-              Pide a tu admin el PIN de la comunidad, elige tu nombre y te crearemos un PIN personal de 4 dígitos.
-            </p>
-
-            <form onSubmit={submit} className="flex flex-col gap-3">
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
-                  PIN de comunidad
-                </label>
-                <input
-                  type="text"
-                  value={communityPin}
-                  onChange={e => { setCommunityPin(e.target.value); setError('') }}
-                  placeholder="Ej: FURIA24"
-                  maxLength={20}
-                  className="w-full px-4 py-3 rounded-m text-center text-base font-bold uppercase tracking-[0.3em] outline-none"
-                  style={{
-                    background: 'var(--bg2)',
-                    border: `1px solid ${error ? 'var(--red)' : 'var(--border)'}`,
-                    color: 'var(--accent)',
-                  }}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider mb-1 block" style={{ color: 'var(--muted)' }}>
-                  Tu nombre
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => { setName(e.target.value); setError('') }}
-                  placeholder="Ej: Carlos"
-                  maxLength={30}
-                  className="w-full px-4 py-3 rounded-m text-base font-bold outline-none"
-                  style={{
-                    background: 'var(--bg2)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                  }}
-                  required
-                />
-              </div>
-
-              {error && (
-                <p className="text-xs text-center font-semibold" style={{ color: 'var(--red)' }}>{error}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-50 select-none"
-                style={{ background: 'var(--accent)', color: '#050d05', minHeight: 48 }}
-              >
-                {loading ? 'Creando…' : 'Crear mi usuario'}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="text-xs uppercase tracking-wide opacity-60 hover:opacity-100 transition-opacity select-none"
-                style={{ color: 'var(--muted)', minHeight: 44 }}
-              >
-                Cancelar
-              </button>
-            </form>
-          </>
+    <Modal
+      open={open}
+      onClose={() => { if (!loading) onClose() }}
+      title="🆕 Usuario nuevo"
+      footer={
+        !createdCode ? (
+          <Button type="submit" form="newuser-form" disabled={loading} className="w-full">
+            {loading ? 'Creando…' : 'Crear mi usuario'}
+          </Button>
         ) : (
-          <>
-            <h2 className="text-lg font-bold text-center">✅ ¡Listo!</h2>
-            <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
-              Guarda este PIN — lo necesitas para identificarte como jugador.
-            </p>
-            <div
-              className="rounded-m p-5 text-center"
-              style={{ background: 'var(--bg2)', border: '1px solid var(--accent)' }}
-            >
-              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-                Tu PIN de jugador
-              </p>
-              <p
-                className="font-bebas text-5xl tracking-[0.3em] mt-1"
-                style={{ color: 'var(--accent)', textShadow: '0 0 20px rgba(168,255,62,0.4)' }}
-              >
-                {createdCode}
-              </p>
+          <Button className="w-full" onClick={enterAsNewPlayer}>
+            Entrar a la comunidad
+          </Button>
+        )
+      }
+    >
+      {!createdCode ? (
+        <>
+          <p className="font-mono text-[11px] mb-4" style={{ color: 'var(--muted)' }}>
+            Pide a tu admin el PIN de la comunidad, elige tu nombre y te crearemos un PIN personal de 4 dígitos.
+          </p>
+          <form id="newuser-form" onSubmit={submit} className="space-y-3">
+            <div>
+              <label className="block font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
+                PIN de comunidad
+              </label>
+              <input
+                type="text"
+                value={communityPin}
+                onChange={e => { setCommunityPin(e.target.value); setError('') }}
+                placeholder="Ej: FURIA24"
+                maxLength={20}
+                data-autofocus
+                className="w-full px-4 py-3 rounded-m text-center font-bold uppercase outline-none"
+                style={{
+                  background: 'var(--card)',
+                  border: `1px solid ${error ? 'var(--red)' : 'var(--border)'}`,
+                  color: 'var(--accent)',
+                  letterSpacing: '0.3em',
+                  fontSize: '16px',
+                }}
+                required
+              />
             </div>
-            <button
-              onClick={enterAsNewPlayer}
-              className="w-full py-3 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
-              style={{ background: 'var(--accent)', color: '#050d05', minHeight: 48 }}
+            <Input
+              label="Tu nombre"
+              type="text"
+              value={name}
+              onChange={e => { setName(e.target.value); setError('') }}
+              placeholder="Ej: Carlos"
+              maxLength={30}
+              required
+            />
+            {error && (
+              <p className="font-mono text-[11px] text-center font-semibold" style={{ color: 'var(--red)' }}>{error}</p>
+            )}
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="font-mono text-[11px] text-center mb-4" style={{ color: 'var(--muted)' }}>
+            Guarda este PIN — lo necesitas para identificarte como jugador.
+          </p>
+          <div className="surface-arena p-5 text-center hairline-top">
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+              Tu PIN de jugador
+            </p>
+            <p
+              className="font-mono text-5xl font-bold tabular-nums mt-2"
+              style={{ color: 'var(--accent)', letterSpacing: '0.3em' }}
             >
-              Entrar a la comunidad
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+              {createdCode}
+            </p>
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }
