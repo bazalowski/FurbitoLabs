@@ -59,173 +59,108 @@ export default function HomePage({ params }: HomePageProps) {
         }
       />
 
-      <div className="px-4 space-y-4 pt-2 pb-28">
+      <div className="px-4 space-y-4 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
 
-        {/* Player Profile Summary Card */}
+        {/* Player Profile Summary — arena: portada del jugador (única por pantalla) */}
         {isLoggedIn && me && level && (
           <Link href={`/${cid}/jugadores/${session.playerId}`} className="block select-none">
-            <div
-              className="card hairline-top card-glow p-3 flex items-center gap-3 active:scale-[0.97] transition-transform relative overflow-hidden"
-              style={{ borderColor: communityColor + '2a' }}
-            >
-              <span
-                aria-hidden="true"
-                className="absolute pointer-events-none"
-                style={{
-                  top: -40,
-                  right: -40,
-                  width: 160,
-                  height: 160,
-                  borderRadius: '50%',
-                  background: `radial-gradient(circle at center, ${communityColor}22 0%, transparent 60%)`,
-                  filter: 'blur(4px)',
-                }}
-              />
-              <div className="relative">
-                <PlayerAvatar player={me} size={48} communityColor={communityColor} />
+            <div className="surface-arena p-3 flex items-center gap-3 active:scale-[0.97] transition-transform">
+              <div className="relative flex-shrink-0">
+                <PlayerAvatar player={me} size={52} communityColor={communityColor} />
               </div>
-              <div className="flex-1 min-w-0 relative">
-                <p className="font-bold text-sm truncate">{me.name}</p>
-                <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                  {level.icon} Nv. {level.level} - {level.name}
+              <div className="flex-1 min-w-0">
+                <p className="font-bebas text-2xl leading-none tracking-display truncate">{me.name}</p>
+                <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
+                  <span aria-hidden="true">{level.icon}</span>{' '}
+                  <span style={{ color: communityColor }}>Nv.{level.level}</span>
+                  <span className="divider-dot" aria-hidden="true" />
+                  <span>{level.name}</span>
                 </p>
-                <div
-                  className="w-full h-1.5 rounded-full mt-1.5 overflow-hidden"
-                  style={{ background: communityColor + '22', boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset' }}
-                >
+                <div className="xp-bar mt-2">
                   <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      background: `linear-gradient(90deg, ${communityColor}cc 0%, ${communityColor} 100%)`,
-                      boxShadow: `0 0 10px ${communityColor}66`,
-                    }}
+                    className="xp-bar-fill transition-all"
+                    style={{ width: `${pct}%`, background: communityColor }}
                   />
                 </div>
-                <div className="flex items-center gap-3 mt-1.5 text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
+                <p className="font-mono text-[10px] mt-1.5 tabular-nums" style={{ color: 'var(--muted)' }}>
                   <span>{me.goles} goles</span>
-                  <span>{me.asistencias} asist.</span>
-                  <span>{me.partidos} partidos</span>
+                  <span className="divider-dot" aria-hidden="true" />
+                  <span>{me.asistencias} asist</span>
+                  <span className="divider-dot" aria-hidden="true" />
+                  <span>{me.partidos} PJ</span>
                   {rating && (
-                    <span style={{ color: communityColor, fontWeight: 600 }}>
-                      ★ {rating.avg.toFixed(1)}
-                    </span>
+                    <>
+                      <span className="divider-dot" aria-hidden="true" />
+                      <span style={{ color: communityColor }}>★ {rating.avg.toFixed(1)}</span>
+                    </>
                   )}
-                </div>
+                </p>
               </div>
             </div>
           </Link>
         )}
 
-        {/* Community stats — justo bajo el perfil */}
+        {/* Community stats — calm, metric-minor-like */}
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Jugadores', value: players.length, icon: '👥', href: `/${cid}/jugadores` },
-            { label: 'Próximos', value: upcoming.length, icon: '📅', href: `/${cid}/partidos?tab=proximos` },
-            { label: 'Jugados', value: past.length, icon: '🏆', href: `/${cid}/partidos?tab=historial` },
+            { label: 'Próximos',  value: upcoming.length, icon: '📅', href: `/${cid}/partidos?tab=proximos` },
+            { label: 'Jugados',   value: past.length, icon: '🏆', href: `/${cid}/partidos?tab=historial` },
           ].map(stat => (
             <Link
               key={stat.label}
               href={stat.href}
-              className="card hairline-top card-glow stat-tile p-3 text-center block select-none active:scale-[0.97] transition-transform"
+              className="surface-calm p-3 text-center block select-none active:scale-[0.97] transition-transform"
             >
-              <p className="text-xl relative">{stat.icon}</p>
+              <p className="text-xl leading-none mb-1" aria-hidden="true">{stat.icon}</p>
               <p
-                className="font-bebas text-2xl tracking-wider relative tabular-nums"
-                style={{
-                  color: 'var(--comm-color, var(--accent))',
-                  textShadow: '0 0 14px color-mix(in srgb, var(--comm-color, var(--accent)) 35%, transparent)',
-                }}
+                className="font-bebas text-2xl leading-none tabular-nums tracking-display"
+                style={{ color: communityColor }}
               >
                 {stat.value}
               </p>
-              <p className="text-xs relative" style={{ color: 'var(--muted)' }}>{stat.label}</p>
+              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--muted)' }}>
+                {stat.label}
+              </p>
             </Link>
           ))}
         </div>
 
         {/* MVP reminder — solo si hay partidos con voto pendiente */}
         {isLoggedIn && mvpPending > 0 && (
-          <Link
+          <ShortcutCard
             href={`/${cid}/partidos?tab=historial`}
-            className="card hairline-top card-glow block select-none p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
-            style={{
-              borderColor: `${communityColor}66`,
-              boxShadow: `0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px ${communityColor}22 inset, 0 8px 22px ${communityColor}22`,
-            }}
-          >
-            <span className="text-2xl" style={{ filter: `drop-shadow(0 2px 6px ${communityColor}66)` }}>🏆</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">Vota al MVP de tus últimos partidos</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {mvpPending === 1
-                  ? 'Tienes 1 partido con votación abierta.'
-                  : `Tienes ${mvpPending} partidos con votación abierta.`}
-              </p>
-            </div>
-            <span
-              className="flex items-center justify-center w-7 h-7 rounded-full text-lg font-bold"
-              style={{
-                color: communityColor,
-                background: `${communityColor}1a`,
-                border: `1px solid ${communityColor}44`,
-              }}
-            >
-              {'›'}
-            </span>
-          </Link>
+            icon="🏆"
+            title="Vota al MVP de tus últimos partidos"
+            hint={mvpPending === 1
+              ? 'Tienes 1 partido con votación abierta.'
+              : `Tienes ${mvpPending} partidos con votación abierta.`}
+            emphasis
+            communityColor={communityColor}
+          />
         )}
 
-        {/* Quick actions — acceso rápido a valoraciones */}
+        {/* Quick action: Valorar compañeros */}
         {isLoggedIn && (
-          <Link
+          <ShortcutCard
             href={`/${cid}/valorar`}
-            className="card hairline-top card-glow block select-none p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
-          >
-            <span className="text-2xl">⭐</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">Valorar compañeros</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Puntúa habilidades para equilibrar equipos.
-              </p>
-            </div>
-            <span
-              className="flex items-center justify-center w-7 h-7 rounded-full text-lg"
-              style={{ color: 'var(--muted)', background: 'var(--card2)', border: '1px solid var(--border)' }}
-            >
-              {'›'}
-            </span>
-          </Link>
+            icon="⭐"
+            title="Valorar compañeros"
+            hint="Puntúa habilidades para equilibrar equipos."
+            communityColor={communityColor}
+          />
         )}
 
         {/* Tutorial onboarding — solo si el jugador aún no tiene la insignia */}
         {isLoggedIn && me && !me.badges.includes('tutorial') && (
-          <Link
+          <ShortcutCard
             href={`/${cid}/ayuda`}
-            className="card hairline-top card-glow block select-none p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
-            style={{
-              borderColor: `${communityColor}55`,
-              boxShadow: `0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px ${communityColor}22 inset, 0 8px 22px ${communityColor}1a`,
-            }}
-          >
-            <span className="text-2xl" style={{ filter: `drop-shadow(0 2px 6px ${communityColor}55)` }}>🎓</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">Cómo usar Furbito</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                Tutorial de bienvenida · gana la insignia Manual del Jugador.
-              </p>
-            </div>
-            <span
-              className="flex items-center justify-center w-7 h-7 rounded-full text-lg font-bold"
-              style={{
-                color: communityColor,
-                background: `${communityColor}1a`,
-                border: `1px solid ${communityColor}44`,
-              }}
-            >
-              {'›'}
-            </span>
-          </Link>
+            icon="🎓"
+            title="Cómo usar Furbito"
+            hint="Tutorial de bienvenida · gana la insignia Manual del Jugador."
+            emphasis
+            communityColor={communityColor}
+          />
         )}
 
         {/* Hero: Próximo partido con CTAs inline */}
@@ -240,30 +175,28 @@ export default function HomePage({ params }: HomePageProps) {
           />
         )}
 
-        {/* Shortcut: Generador de equipos (solo cuando no hay partido próximo,
-            para evitar duplicar el trigger del hero) */}
+        {/* Shortcut: Generador de equipos (solo cuando no hay partido próximo) */}
         {isLoggedIn && players.length >= 2 && !nextEvent && (
           <button
             type="button"
             onClick={() => setShowTeams(prev => !prev)}
             aria-expanded={showTeams}
-            className="card hairline-top card-glow no-lift w-full text-left select-none p-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+            className={`no-lift w-full text-left select-none p-3 flex items-center gap-3 rounded-m active:scale-[0.98] transition-transform ${showTeams ? 'hairline-top' : ''}`}
             style={{
-              borderColor: showTeams ? communityColor + '88' : undefined,
-              boxShadow: showTeams
-                ? `0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px ${communityColor}22 inset, 0 10px 26px ${communityColor}22`
-                : undefined,
+              background: showTeams ? 'var(--card2)' : 'var(--card)',
+              border: `1px solid ${showTeams ? communityColor + '88' : 'var(--border)'}`,
+              boxShadow: showTeams ? 'var(--shadow-depth-2)' : 'var(--shadow-depth-1)',
             }}
           >
-            <span className="text-2xl">⚖️</span>
+            <span className="text-2xl leading-none" aria-hidden="true">⚖️</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold">Generar equipos</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              <p className="font-mono text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
                 Prueba combinaciones rápidas sin abrir un partido.
               </p>
             </div>
             <span
-              className="flex items-center justify-center w-7 h-7 rounded-full text-lg transition-transform"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-lg transition-transform font-bold"
               style={{
                 color: showTeams ? communityColor : 'var(--muted)',
                 background: showTeams ? `${communityColor}1a` : 'var(--card2)',
@@ -271,21 +204,19 @@ export default function HomePage({ params }: HomePageProps) {
                 transform: showTeams ? 'rotate(90deg)' : 'none',
               }}
             >
-              {'›'}
+              ›
             </span>
           </button>
         )}
 
         {/* Team Generator — aparece SIEMPRE justo debajo de su trigger */}
         {showTeams && (
-          <div
-            className="rounded-m p-4 relative animate-slide-up"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-          >
+          <div className="surface-calm p-4 relative animate-slide-up">
             <button
               onClick={() => setShowTeams(false)}
+              aria-label="Cerrar generador"
               className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold select-none active:scale-[0.95] transition-transform"
-              style={{ background: 'var(--border)', color: 'var(--muted)' }}
+              style={{ background: 'var(--card2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
             >
               ✕
             </button>
@@ -302,5 +233,55 @@ export default function HomePage({ params }: HomePageProps) {
 
       </div>
     </div>
+  )
+}
+
+/**
+ * Shortcut card unificado — calm consistente con surface-calm, con énfasis opcional
+ * (borde community) para los ítems accionables (MVP pendiente, tutorial).
+ */
+function ShortcutCard({
+  href,
+  icon,
+  title,
+  hint,
+  emphasis = false,
+  communityColor,
+}: {
+  href: string
+  icon: string
+  title: string
+  hint: string
+  emphasis?: boolean
+  communityColor: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="block select-none p-3 flex items-center gap-3 rounded-m active:scale-[0.98] transition-transform"
+      style={{
+        background: emphasis ? 'var(--card2)' : 'var(--card)',
+        border: emphasis ? `1px solid ${communityColor}66` : '1px solid var(--border)',
+        boxShadow: emphasis ? `0 0 0 1px ${communityColor}22, var(--shadow-depth-1)` : 'var(--shadow-depth-1)',
+      }}
+    >
+      <span className="text-2xl leading-none" aria-hidden="true">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold">{title}</p>
+        <p className="font-mono text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
+          {hint}
+        </p>
+      </div>
+      <span
+        className="flex items-center justify-center w-7 h-7 rounded-full text-lg font-bold"
+        style={{
+          color: emphasis ? communityColor : 'var(--muted)',
+          background: emphasis ? `${communityColor}1a` : 'var(--card2)',
+          border: `1px solid ${emphasis ? communityColor + '44' : 'var(--border)'}`,
+        }}
+      >
+        ›
+      </span>
+    </Link>
   )
 }
