@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { lookupCommunityByPin, checkPinAvailable } from '@/lib/supabase/community-lookup'
-import { useSession } from '@/stores/session'
+import { useSession, isPlayerAdmin } from '@/stores/session'
+import { getRememberedPlayer, rememberPlayer } from '@/lib/remembered-player'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import { Modal } from '@/components/ui/Modal'
@@ -76,8 +77,28 @@ export default function LoginPage() {
       return
     }
 
-    login(result.data.id, result.data.color, 'guest')
-    router.push(`/${result.data.id}`)
+    const communityId = result.data.id
+    const color = result.data.color
+    const rememberedPlayerId = getRememberedPlayer(communityId)
+
+    if (rememberedPlayerId) {
+      const supabase = createClient()
+      const [{ data: foundPlayer }, { data: freshCommunity }] = await Promise.all([
+        supabase.from('players').select('id').eq('community_id', communityId).eq('id', rememberedPlayerId).maybeSingle(),
+        supabase.from('communities').select('comm_admin_id, admin_ids').eq('id', communityId).maybeSingle(),
+      ])
+
+      if (foundPlayer) {
+        const role = isPlayerAdmin(foundPlayer.id, freshCommunity) ? 'admin' : 'player'
+        await login(communityId, color, role, foundPlayer.id)
+        router.push(`/${communityId}`)
+        setJoinLoading(false)
+        return
+      }
+    }
+
+    await login(communityId, color, 'guest')
+    router.push(`/${communityId}`)
     setJoinLoading(false)
   }
 
@@ -144,6 +165,7 @@ export default function LoginPage() {
 
     alert(`¡Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuárdalo para poder identificarte.`)
 
+    rememberPlayer(communityId, playerId)
     login(communityId, newColor, 'admin', playerId)
     router.push(`/${communityId}`)
   }
@@ -488,6 +510,7 @@ function NewUserModal({ open, onClose, triggerShake }: NewUserModalProps) {
 
   function enterAsNewPlayer() {
     if (!createdCommunityId || !createdColor || !createdPlayerId) return
+    rememberPlayer(createdCommunityId, createdPlayerId)
     login(createdCommunityId, createdColor, 'player', createdPlayerId)
     router.push(`/${createdCommunityId}`)
   }

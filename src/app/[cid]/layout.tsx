@@ -7,6 +7,7 @@ import { usePlayer } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { createClient } from '@/lib/supabase/client'
 import { isPlayerAdmin } from '@/stores/session'
+import { rememberPlayer, forgetPlayer } from '@/lib/remembered-player'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { ToastProvider, showToast } from '@/components/ui/Toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
@@ -40,6 +41,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
   const push = usePushNotifications(session.playerId, session.communityId)
 
   function handleExit() {
+    forgetPlayer(cid)
     session.logout()
     router.push('/')
   }
@@ -111,6 +113,7 @@ export default function CommunityLayout({ children, params }: CommunityLayoutPro
 
       // Determine role: check if this player is a community admin (admin_ids array or legacy comm_admin_id)
       const role = isPlayerAdmin(foundPlayer.id, freshCommunity ?? community) ? 'admin' : 'player'
+      rememberPlayer(cid, foundPlayer.id)
       session.login(cid, session.communityColor, role, foundPlayer.id)
 
       setShowPinModal(false)
