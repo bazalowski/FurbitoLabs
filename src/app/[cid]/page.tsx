@@ -8,7 +8,7 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { usePendingMvpVotes } from '@/hooks/usePendingMvpVotes'
 import { NextMatchHero } from '@/components/events/NextMatchHero'
-import { ActivityFeed } from '@/components/feed/ActivityFeed'
+import { WallPreview } from '@/components/wall/WallPreview'
 import { Header, Logo } from '@/components/layout/Header'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
@@ -24,7 +24,7 @@ export default function HomePage({ params }: HomePageProps) {
   const { cid } = params
   const session = useSession()
   const { community } = useCommunity(cid)
-  const { events, upcoming, past, loading: eventsLoading } = useEvents(cid)
+  const { upcoming, past, loading: eventsLoading } = useEvents(cid)
   const { players } = usePlayers(cid)
   const { votes } = useVotes(cid)
   const { player: me } = usePlayer(
@@ -228,8 +228,14 @@ export default function HomePage({ params }: HomePageProps) {
           </div>
         )}
 
-        {/* Activity feed (últimas 5 líneas) */}
-        <ActivityFeed events={events.slice(0, 10)} players={players} maxItems={5} />
+        {/* Muro de la comunidad — preview premium que enlaza a /muro */}
+        {isLoggedIn && (
+          <WallPreview
+            communityId={cid}
+            me={me ?? null}
+            communityColor={communityColor}
+          />
+        )}
 
       </div>
     </div>

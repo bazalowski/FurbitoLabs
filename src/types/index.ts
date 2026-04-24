@@ -199,3 +199,22 @@ export interface MatchPlayerStats {
   olimpico: boolean
   tacon: boolean
 }
+
+// ── Muro de comunidad ──────────────────────────────
+export interface WallPost {
+  id: string
+  community_id: string
+  author_id: string
+  body: string
+  youtube_id: string | null
+  created_at: string
+  author?: Player
+  reactions?: WallReaction[]
+}
+
+export interface WallReaction {
+  post_id: string
+  player_id: string
+  emoji: string
+  created_at: string
+}
