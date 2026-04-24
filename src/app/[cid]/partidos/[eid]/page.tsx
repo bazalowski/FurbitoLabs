@@ -178,60 +178,62 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     const hasTeams = teamA.length > 0 || teamB.length > 0
     const canEditTeams = isAdmin && !event.finalizado
 
+    const renderTeamCard = (label: string, team: typeof players) => (
+      <div className="surface-calm p-3">
+        <div
+          className="flex items-baseline justify-between mb-3 pb-2"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <p className="font-bebas text-base tracking-wider" style={{ color: communityColor }}>
+            {label}
+          </p>
+          <p className="font-mono text-[10px] tabular-nums" style={{ color: 'var(--muted)' }}>
+            {team.length}
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          {team.length === 0 && (
+            <p className="text-[11px] text-center py-2" style={{ color: 'var(--muted)' }}>—</p>
+          )}
+          {team.map(p => (
+            <div
+              key={p.id}
+              className="flex items-center gap-2 rounded-m pl-2 pr-2 py-1.5"
+              style={{ background: 'var(--card2)' }}
+            >
+              <PlayerAvatar player={p} size={24} communityColor={communityColor} />
+              <span className="text-[12px] font-semibold truncate">{p.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+
     return (
       <div className="space-y-4">
-        {/* Teams snapshot */}
         {hasTeams ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Equipo A', team: teamA },
-              { label: 'Equipo B', team: teamB },
-            ].map(({ label, team }) => (
-              <div
-                key={label}
-                className="card hairline-top p-3"
-                style={{ borderColor: communityColor + '44' }}
-              >
-                <p
-                  className="font-bebas text-lg tracking-wider text-center mb-3 pb-2"
-                  style={{ color: communityColor, borderBottom: `1px solid ${communityColor}22` }}
-                >
-                  {label}
-                </p>
-                <div className="space-y-2">
-                  {team.length === 0 && (
-                    <p className="text-[11px] text-center py-2" style={{ color: 'var(--muted)' }}>—</p>
-                  )}
-                  {team.map(p => (
-                    <div key={p.id} className="flex items-center gap-2">
-                      <PlayerAvatar player={p} size={28} communityColor={communityColor} />
-                      <span className="text-xs font-semibold truncate">{p.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-2">
+            {renderTeamCard('Equipo A', teamA)}
+            {renderTeamCard('Equipo B', teamB)}
           </div>
         ) : (
-          <div className="text-center py-10" style={{ color: 'var(--muted)' }}>
-            <p className="text-3xl mb-3">⚖️</p>
-            <p className="font-bold text-sm">Sin equipos generados</p>
+          <div className="surface-calm text-center py-10">
+            <p className="text-3xl mb-3" aria-hidden="true">⚖️</p>
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>
+              Sin equipos
+            </p>
             {canEditTeams && (
-              <p className="text-xs mt-2">Úsalo el botón ⚡ para generar y confirmar</p>
+              <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                Pulsa ⚡ para generarlos
+              </p>
             )}
           </div>
         )}
 
-        {/* Admin: abrir generador (para crear o regenerar) */}
         {canEditTeams && (
-          <button
-            type="button"
-            onClick={() => setTeamGenOpen(true)}
-            className="w-full h-11 rounded-m font-bold text-sm uppercase tracking-wide active:scale-[0.98] transition-transform select-none"
-            style={{ background: communityColor, color: '#050d05' }}
-          >
+          <Button variant="primary" className="w-full" onClick={() => setTeamGenOpen(true)}>
             ⚡ {hasTeams ? 'Regenerar equipos' : 'Generar equipos'}
-          </button>
+          </Button>
         )}
       </div>
     )
@@ -322,22 +324,27 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   function renderConvocados() {
     if (!event) return null
     return (
-      <div className="space-y-4">
-        {/* Confirmation bar */}
+      <div className="space-y-5">
+        {/* Contador + progreso — calm con cifra Bebas y etiqueta tracking-widest */}
         {!event.finalizado && (
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs" style={{ color: 'var(--muted)' }}>
-              <span>✅ {confirmed.length} confirmados</span>
-              <span>{confirmed.length}/{event.max_jugadores}</span>
+          <div className="surface-calm p-4">
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Confirmados
+              </p>
+              <p className="font-bebas text-2xl leading-none tabular-nums tracking-display" style={{ color: communityColor }}>
+                {confirmed.length}
+                <span className="text-[14px] ml-1" style={{ color: 'var(--muted)' }}>/{event.max_jugadores}</span>
+              </p>
             </div>
             <div className="xp-bar"><div className="xp-bar-fill" style={{ width: `${pct}%` }} /></div>
           </div>
         )}
 
-        {/* My confirmation */}
+        {/* Mi confirmación */}
         {isPlayer && myPlayer && !event.finalizado && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
               Tu confirmación
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -368,16 +375,21 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
           </div>
         )}
 
-        {/* Player lists */}
+        {/* Listas por estado — mismo patrón (label tracking-widest + count mono) */}
         {[
-          { label: `✅ Van (${confirmed.length})`, list: confirmed },
-          { label: `🤔 Quizás (${maybe.length})`, list: maybe },
-          { label: `❌ No van (${declined.length})`, list: declined },
-        ].map(({ label, list }) => list.length > 0 && (
+          { label: 'Van',     list: confirmed, tone: '#22c55e' },
+          { label: 'Quizás',  list: maybe,     tone: '#f59e0b' },
+          { label: 'No van',  list: declined,  tone: '#ef4444' },
+        ].map(({ label, list, tone }) => list.length > 0 && (
           <div key={label}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
-              {label}
-            </p>
+            <div className="flex items-baseline justify-between mb-2 px-1">
+              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: tone }}>
+                {label}
+              </p>
+              <p className="font-mono text-[10px] tabular-nums" style={{ color: 'var(--muted)' }}>
+                {list.length}
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               {list.map(c => {
                 const p = players.find(pl => pl.id === c.player_id)
@@ -393,16 +405,13 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
           </div>
         ))}
 
-        {/* Admin attendance */}
+        {/* Admin: registrar asistencia */}
         {isAdmin && !event.finalizado && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--muted)' }}>
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2 px-1" style={{ color: 'var(--muted)' }}>
               Registrar asistencia
             </p>
-            <div
-              className="rounded-m overflow-hidden divide-y"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', borderColor: 'var(--border)' }}
-            >
+            <div className="surface-calm overflow-hidden divide-y" style={{ borderColor: 'var(--border)' }}>
               {players.map(p => {
                 const conf = event.confirmations?.find(c => c.player_id === p.id)
                 const currentStatus = conf?.status
@@ -453,51 +462,70 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
       />
 
       <div className="px-4 space-y-4 pt-2 pb-28">
-        {/* Info card — always visible */}
-        <div
-          className="rounded-m p-3 space-y-1.5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
+        {/* Info card — datos neutros (calm) */}
+        <div className="surface-calm p-3 space-y-1.5">
           {event.fecha && (
-            <p className="text-sm flex items-center gap-2">
-              <span>📅</span><span>{fmtDateTime(event.fecha, event.hora)}</span>
+            <p className="font-mono text-[12px] flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+              <span aria-hidden="true">📅</span>
+              <span style={{ color: 'var(--text)' }}>{fmtDateTime(event.fecha, event.hora)}</span>
             </p>
           )}
           {(event.pista?.name || event.lugar) && (
-            <p className="text-sm flex items-center gap-2">
-              <span>📍</span><span className="truncate">{event.pista?.name ?? event.lugar}</span>
+            <p className="font-mono text-[12px] flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+              <span aria-hidden="true">📍</span>
+              <span className="truncate" style={{ color: 'var(--text)' }}>{event.pista?.name ?? event.lugar}</span>
             </p>
           )}
           {event.notas && (
-            <p className="text-sm flex items-start gap-2">
-              <span>📝</span><span style={{ color: 'var(--muted)' }}>{event.notas}</span>
+            <p className="text-[13px] flex items-start gap-2 pt-0.5">
+              <span aria-hidden="true">📝</span>
+              <span style={{ color: 'var(--muted)' }}>{event.notas}</span>
             </p>
           )}
           {event.finalizado && (
             <span
-              className="inline-block text-xs font-bold px-2 py-0.5 rounded-full mt-0.5"
-              style={{ background: 'var(--border)', color: 'var(--muted)' }}
+              className="inline-block font-mono text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full mt-1"
+              style={{ background: 'var(--card2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
             >
               Finalizado
             </span>
           )}
         </div>
 
-        {/* Pill tab bar */}
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1">
-          {tabs.map(t => (
-            <button key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide transition-all min-h-[36px] active:scale-95"
-              style={
-                activeTab === t.key
-                  ? { background: communityColor, color: '#050d05' }
-                  : { background: 'var(--card)', color: 'var(--muted)', border: '1px solid var(--border)' }
-              }
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Tab bar — calm, acento community en activo */}
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1"
+          role="tablist"
+          aria-label="Pestañas del partido"
+        >
+          {tabs.map(t => {
+            const active = activeTab === t.key
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(t.key)}
+                className="flex-shrink-0 px-4 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all min-h-[36px] active:scale-95 select-none"
+                style={
+                  active
+                    ? {
+                        background: `${communityColor}1f`,
+                        color: communityColor,
+                        border: `1px solid ${communityColor}66`,
+                      }
+                    : {
+                        background: 'var(--card)',
+                        color: 'var(--muted)',
+                        border: '1px solid var(--border)',
+                      }
+                }
+              >
+                {t.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Tab content */}
