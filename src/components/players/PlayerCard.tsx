@@ -40,12 +40,15 @@ export function PlayerCard({
     <Link href={`/${communityId}/jugadores/${player.id}`}>
       <div
         className="flex items-center gap-3 px-3 py-2.5 rounded-m active:scale-[0.98] transition-transform"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+        style={{
+          background: 'var(--card)',
+          border: `1px solid ${isAdmin ? 'rgba(255,215,0,0.28)' : 'var(--border)'}`,
+        }}
       >
         {/* Rank */}
         {rank !== undefined && (
           <span
-            className="font-bebas text-lg w-5 text-center flex-shrink-0 tabular-nums"
+            className="font-mono text-[12px] font-bold w-6 text-center flex-shrink-0 tabular-nums"
             style={{ color: 'var(--muted)' }}
           >
             {rank}
@@ -64,7 +67,7 @@ export function PlayerCard({
           />
           {posBadge && (
             <span
-              className="absolute -bottom-1 -right-1.5 text-[9px] font-bold px-1 py-px rounded"
+              className="absolute -bottom-1 -right-1.5 font-mono text-[9px] font-bold px-1 py-px rounded"
               style={{ background: 'var(--bg2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
             >
               {posBadge}
@@ -75,24 +78,22 @@ export function PlayerCard({
         {/* Name + level + XP bar */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-sm truncate">{player.name}</span>
+            <span className="font-bold text-[13px] truncate">{player.name}</span>
             {isAdmin && (
               <span
-                className="text-[9px] font-bold uppercase tracking-wider px-1 py-px rounded flex-shrink-0"
-                style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)' }}
+                className="font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-px rounded-full flex-shrink-0"
+                style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)', border: '1px solid rgba(255,215,0,0.35)' }}
               >
                 Admin
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[11px]" style={{ color: communityColor }}>
-              {level.icon} {level.name}
-            </span>
-            <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
-              · {player.xp} XP
-            </span>
-          </div>
+          <p className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>
+            <span aria-hidden="true">{level.icon}</span>{' '}
+            <span style={{ color: communityColor }}>{level.name}</span>
+            <span className="divider-dot" aria-hidden="true" />
+            <span>{player.xp} XP</span>
+          </p>
           <div
             className="mt-1.5 h-[2px] rounded-full overflow-hidden"
             style={{ background: communityColor + '22' }}
@@ -105,24 +106,24 @@ export function PlayerCard({
         </div>
 
         {/* Stats */}
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0 tabular-nums">
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <span>⚽ {player.goles}</span>
-            <span style={{ color: 'var(--muted)' }}>A {player.asistencias}</span>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold tabular-nums">
+            <span><span aria-hidden="true">⚽</span> {player.goles}</span>
+            <span style={{ color: 'var(--muted)' }}><span aria-hidden="true">🎯</span> {player.asistencias}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums">
             {rating ? (
-              <span className="text-[11px] font-bold" style={{ color: communityColor }}>
+              <span className="font-bold" style={{ color: communityColor }}>
                 ★ {rating.avg.toFixed(1)}
               </span>
             ) : (
-              <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
+              <span style={{ color: 'var(--muted)' }}>
                 {player.partidos} PJ
               </span>
             )}
             {player.mvps > 0 && (
-              <span className="text-[11px] font-bold" style={{ color: 'var(--gold)' }}>
-                🏅 {player.mvps}
+              <span className="font-bold" style={{ color: 'var(--gold)' }}>
+                <span aria-hidden="true">🏅</span> {player.mvps}
               </span>
             )}
           </div>

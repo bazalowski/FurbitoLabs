@@ -101,14 +101,20 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
         }
       />
 
-      <div className="px-4 space-y-2 pt-2">
+      <div className="px-4 space-y-2 pt-2 pb-28">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
         ) : players.length === 0 ? (
-          <div className="text-center py-12" style={{ color: 'var(--muted)' }}>
+          <div className="surface-calm text-center py-12">
             <p className="text-3xl mb-3">{'\uD83D\uDC65'}</p>
-            <p className="font-bold">Sin jugadores todavia</p>
-            {isAdmin && <p className="text-sm mt-1">Anade el primer jugador</p>}
+            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>
+              Sin jugadores
+            </p>
+            {isAdmin && (
+              <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
+                Añade el primer jugador
+              </p>
+            )}
           </div>
         ) : (
           players.map((p, i) => (
@@ -166,11 +172,8 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
             autoFocus
           />
 
-          <div
-            className="rounded-m p-3 text-xs flex items-start gap-2"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--muted)' }}
-          >
-            <span>🔑</span>
+          <div className="surface-calm p-3 font-mono text-[11px] flex items-start gap-2" style={{ color: 'var(--muted)' }}>
+            <span aria-hidden="true">🔑</span>
             <span>
               Se generará un PIN numérico de 4 dígitos para que el jugador pueda identificarse al entrar a la comunidad.
             </span>
