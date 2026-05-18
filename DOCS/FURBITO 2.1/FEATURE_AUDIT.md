@@ -785,7 +785,7 @@ Movidas a [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md). Aquí las listo solo
 3. **Sin menciones / referencias cruzadas** — no se puede taggear `@jugador` ni referenciar un partido.
 4. **Sin moderación más allá de borrar** — sin "pin a admin", sin "reportar".
 5. **Composer colapsado no pinta "+N"** — el badge vive en `WallPreview` (Home) y en la pantalla dedicada, pero no aparece en el composer.
-6. **Ítems automáticos (MVP pendiente, nuevo nivel) desaparecidos** — el viejo `ActivityFeed` los inyectaba; ahora no. Si los quieres de vuelta, habría que publicar "posts de sistema" (author_id = bot) o revivir un feed paralelo.
+6. ~~**Ítems automáticos (MVP pendiente, nuevo nivel) desaparecidos**~~ — **resuelto 2026-05-18**: mig 018 + 3 triggers SECURITY DEFINER → `system_match_created`, `system_match_result`, `system_mvp`. `WallSystemPost.tsx` renderiza variantes con icono + deep link. `system_level_up` queda para v2 (requiere comparación pre/post finalize).
 
 ### ✨ Propuestas siguientes
 
@@ -795,8 +795,7 @@ Movidas a [PORTABILIDAD_NATIVA.md](PORTABILIDAD_NATIVA.md). Aquí las listo solo
 - **P1 · Notificaciones push de nuevos posts** `@muro @notif`
   Opt-in por jugador. Evita ruido pero asegura tracción.
 
-- **P1 · Posts del sistema** `@muro`
-  Cuando se crea un partido / se corona un MVP / alguien sube de nivel, publicar post automático firmado por "FURBITO" (bot). Recupera la función del viejo feed sin revivir el componente.
+- ✅ ~~**P1 · Posts del sistema**~~ — **Hecho 2026-05-18**. 3 tipos vía triggers en `events` (created/result/mvp). `system_level_up` queda pendiente.
 
 - **P2 · Menciones `@jugador` y referencias `#partido`** `@muro`
   Convierte el muro en hub social real y cierra el gap de linkeo.
@@ -940,7 +939,7 @@ Ordenadas por **ratio impacto/coste** asumiendo ~1 dev. Los tags y IDs cuadran c
 | #  | Prioridad | Tag | Mejora | Por qué mueve aguja |
 |----|-----------|-----|--------|---------------------|
 | 1  | P0 | @evento | Eventos recurrentes | Mata el principal dolor del organizador — el uso semanal se colapsa sin esto |
-| 2  | P0 | @confirmaciones | Score de fiabilidad por jugador | Social, métrica nueva, diferencial vs WhatsApp, trivial de calcular |
+| 2  | ✅ | @confirmaciones | ~~Score de fiabilidad por jugador~~ | **Hecho 2026-05-18** — helper `reliability.ts` + chip "Fiable / Variable" en perfil (oculto si <5 muestras) |
 | 3  | P0 | @valorar | Sesión de valoración post-partido | 3x tasa de voto → feeds balanceador → mejores equipos → retención |
 | 4  | P0 | @badges | Pantalla "badges que te faltan" | Desbloquea el coleccionismo pasivo, cero coste de contenido nuevo |
 | 5  | P0 | @notif | Digest semanal | Principal driver de retención en apps de grupo; infra ya existe |
@@ -949,11 +948,13 @@ Ordenadas por **ratio impacto/coste** asumiendo ~1 dev. Los tags y IDs cuadran c
 | 8  | P0 | @ranking | Selector temporal (7d/30d/temporada/histórico) | Cambia la narrativa del ranking |
 | 9  | P0 | @auth | Recovery key por jugador | Sin esto, cambio de móvil = pérdida de identidad |
 | 10 | P0 | @comunidad | Multi-comunidad por jugador | Desbloquea segmento enorme (curro + barrio + pichangas) |
-| 11 | P0 | @resultado | Undo 15 min tras finalizar | Elimina miedo al botón + errores en prod |
+| 11 | ✅ | @resultado | ~~Undo 15 min tras finalizar~~ | **Hecho 2026-05-18** — mig 017 snapshots + Edge Function `unfinalize-match` + CTA con countdown |
 | 12 | P0 | @evento | Export .ics a calendario | 15 min de trabajo, reduce no-shows (deep-link Maps aplazado a nativa) |
 | 13 | ✅ | @muro | ~~Reactions~~ → Muro de comunidad V1 | **Hecho 2026-04-24** — reemplazó el feed por un muro social con reacciones + embed YouTube |
 | 14 | P0 | @obs | Error tracking + analytics ligero | Ceguera total hoy; crítico antes del hard launch |
 | 15 | P1 | @equipos | Memoria de emparejamientos recientes | El partido semanal se vuelve aburrido sin rotación |
+
+> **Marcador**: 4/15 hechos al 2026-05-18. Quedan **11 P0** (de los cuales #1, #14 y #9 son los prerequisitos más visibles para hard launch).
 
 ### Mapa de correspondencia con el plan de marketing
 
