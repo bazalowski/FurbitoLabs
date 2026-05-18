@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { lookupCommunityByPin, checkPinAvailable } from '@/lib/supabase/community-lookup'
+import { lookupCommunityByPin } from '@/lib/supabase/community-lookup'
+import { createCommunity, type CreateError } from '@/lib/supabase/community-create'
 import { useSession, isPlayerAdmin } from '@/stores/session'
 import { getRememberedPlayer, rememberPlayer } from '@/lib/remembered-player'
 import { COMMUNITY_COLORS, uid, genPlayerCode } from '@/lib/utils'
@@ -109,64 +110,37 @@ export default function LoginPage() {
 
     setCreateLoading(true)
     setCreateError('')
-    const supabase = createClient()
 
-    const check = await checkPinAvailable(newPin)
-    if (!check.ok) {
-      setCreateError(
-        check.error === 'rate_limited'
-          ? 'Demasiados intentos. Espera un minuto.'
-          : 'Error de conexión. Inténtalo de nuevo.',
-      )
-      setCreateLoading(false)
-      return
-    }
-    if (!check.available) {
-      setCreateError('Ese PIN ya está en uso. Elige otro.')
-      setCreateLoading(false)
-      return
-    }
-
-    const communityId = uid()
-    const playerId = uid()
-    const playerCode = genPlayerCode()
-
-    const { error } = await supabase
-      .from('communities')
-      .insert({
-        id: communityId,
-        name: newName.trim(),
-        pin: newPin.toUpperCase(),
-        color: newColor,
-        comm_admin_id: playerId,
-        admin_ids: [playerId],
-      })
-
-    if (error) {
-      console.error('[FURBITO] Error al crear comunidad:', error)
-      setCreateError(`Error Supabase (${error.code}): ${error.message}`)
-      setCreateLoading(false)
-      return
-    }
-
-    const { error: playerError } = await supabase.from('players').insert({
-      id: playerId,
-      community_id: communityId,
-      name: adminName.trim(),
-      code: playerCode,
+    const result = await createCommunity({
+      name: newName.trim(),
+      pin: newPin,
+      color: newColor,
+      adminName: adminName.trim(),
     })
 
-    if (playerError) {
-      console.error('[FURBITO] Error al crear jugador admin:', playerError)
-      setCreateError(`Comunidad creada pero error al crear jugador: ${playerError.message}`)
+    if (!result.ok) {
+      const messages: Record<CreateError, string> = {
+        rate_limited: 'Demasiados intentos. Espera un minuto.',
+        pin_in_use: 'Ese PIN ya está en uso. Elige otro.',
+        invalid_pin: 'PIN inválido. Usa entre 3 y 32 caracteres alfanuméricos.',
+        invalid_name: 'Nombre de comunidad inválido.',
+        invalid_admin_name: 'Nombre de admin inválido.',
+        invalid_color: 'Color inválido.',
+        invalid_body: 'Datos inválidos. Revisa el formulario.',
+        server_error: 'Error en el servidor. Inténtalo de nuevo.',
+        network_error: 'Error de conexión. Inténtalo de nuevo.',
+      }
+      setCreateError(messages[result.error])
       setCreateLoading(false)
       return
     }
+
+    const { communityId, playerId, playerCode, color } = result.data
 
     alert(`¡Tu comunidad ha sido creada!\n\nTu PIN de jugador es: ${playerCode}\n\nGuárdalo para poder identificarte.`)
 
     rememberPlayer(communityId, playerId)
-    login(communityId, newColor, 'admin', playerId)
+    login(communityId, color, 'admin', playerId)
     router.push(`/${communityId}`)
   }
 
