@@ -5,7 +5,33 @@ import { useEffect, useMemo, useState } from 'react'
 import { useWallPosts } from '@/hooks/useWallPosts'
 import { getWallLastSeen } from '@/lib/wall-last-seen'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
-import type { Player } from '@/types'
+import type { Player, WallPost } from '@/types'
+
+function describeLastPost(p: WallPost): { authorName: string; body: string } {
+  if (p.kind === 'user') {
+    return { authorName: p.author?.name ?? 'Alguien', body: p.body }
+  }
+  const payload = p.payload ?? {}
+  switch (p.kind) {
+    case 'system_match_created':
+      return {
+        authorName: 'Furbito',
+        body: `📅 Nuevo evento: ${payload.titulo ?? 'partido'}`,
+      }
+    case 'system_match_result':
+      return {
+        authorName: 'Furbito',
+        body: `🏁 ${payload.titulo ?? 'Partido'} · ${payload.goles_a ?? 0}-${payload.goles_b ?? 0}`,
+      }
+    case 'system_mvp':
+      return {
+        authorName: 'Furbito',
+        body: `👑 MVP: ${payload.mvp_name ?? 'jugador'}`,
+      }
+    default:
+      return { authorName: 'Furbito', body: p.body || '' }
+  }
+}
 
 interface WallPreviewProps {
   communityId: string
@@ -58,6 +84,8 @@ export function WallPreview({ communityId, me, communityColor }: WallPreviewProp
   const last = posts[0]
   const lastIsNew = !!(lastSeenAtMount && last && new Date(last.created_at).getTime() > new Date(lastSeenAtMount).getTime() && last.author_id !== me?.id)
   const href = `/${communityId}/muro`
+
+  const lastDisplay = last ? describeLastPost(last) : null
 
   // Loading inicial: placeholder discreto calm
   if (loading && posts.length === 0) {
@@ -171,7 +199,7 @@ export function WallPreview({ communityId, me, communityColor }: WallPreviewProp
               className="font-barlow font-bold"
               style={{ color: lastIsNew ? communityColor : 'var(--text)' }}
             >
-              {last.author?.name ?? 'Alguien'}
+              {lastDisplay?.authorName ?? 'Alguien'}
             </span>
             <span className="divider-dot" aria-hidden="true" />
             <span>hace {timeAgoShort(last.created_at)}</span>
@@ -185,7 +213,7 @@ export function WallPreview({ communityId, me, communityColor }: WallPreviewProp
               overflow: 'hidden',
             }}
           >
-            {last.body}
+            {lastDisplay?.body ?? last.body}
           </p>
         </div>
 

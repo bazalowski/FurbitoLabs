@@ -21,7 +21,15 @@ import { PostMatchRating } from '@/components/events/PostMatchRating'
 import { PostMatchReveal } from '@/components/events/PostMatchReveal'
 import { finalizeMvpByVotes } from '@/lib/game/mvp-finalize'
 import { useMvpVotes } from '@/hooks/useMvpVotes'
+import { unfinalizeMatch, undoMsRemaining } from '@/lib/supabase/unfinalize-match'
 import type { Confirmation, MatchPlayer, TeamGeneratorResult } from '@/types'
+
+function fmtUndoCountdown(ms: number): string {
+  const total = Math.ceil(ms / 1000)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
 
 type DetailTab = 'convocados' | 'equipos' | 'resultado'
 
@@ -44,6 +52,8 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [closingMvp, setClosingMvp] = useState(false)
   const [teamGenOpen, setTeamGenOpen] = useState(false)
   const [confirmingTeams, setConfirmingTeams] = useState(false)
+  const [undoMs, setUndoMs] = useState<number | null>(() => undoMsRemaining(event?.finalizado_at))
+  const [undoing, setUndoing] = useState(false)
 
   // match_players llega embebido en el Event vía el hook (con realtime). Evitamos
   // una query aparte para que cualquier cambio (admin cierra MVP, re-registra
@@ -53,6 +63,52 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   useEffect(() => {
     if (event?.finalizado) setActiveTab('resultado')
   }, [event?.finalizado])
+
+  // Countdown del undo: solo activo si el partido se acaba de finalizar y aún
+  // estamos en la ventana de 15 min. Tick cada 1s. Se apaga solo al expirar.
+  useEffect(() => {
+    if (!event?.finalizado_at) { setUndoMs(null); return }
+    const tick = () => {
+      const ms = undoMsRemaining(event.finalizado_at)
+      setUndoMs(ms)
+      if (ms === null) return false
+      return true
+    }
+    if (!tick()) return
+    const id = setInterval(() => {
+      if (!tick()) clearInterval(id)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [event?.finalizado_at])
+
+  async function handleUndoFinalize() {
+    if (!event || undoing) return
+    if (!confirm('¿Deshacer la finalización? Stats, MVP y votos volverán al estado previo. Los jugadores con cambios verán las cifras antiguas.')) return
+    setUndoing(true)
+    const result = await unfinalizeMatch(event.id)
+    if (!result.ok) {
+      const messages: Record<typeof result.error, string> = {
+        no_auth: 'Sesión no disponible. Recarga la página.',
+        invalid_auth: 'Sesión inválida. Vuelve a entrar.',
+        not_admin: 'Solo admin de la comunidad.',
+        event_not_found: 'Evento no encontrado.',
+        not_finalized: 'El partido no estaba finalizado.',
+        window_expired: 'La ventana de 15 min ya expiró.',
+        snapshot_not_found: 'No hay snapshot — este partido se finalizó antes de habilitar undo.',
+        rate_limited: 'Demasiados intentos. Espera un minuto.',
+        invalid_event_id: 'ID de evento inválido.',
+        server_error: 'Error en el servidor. Vuelve a intentarlo.',
+        network_error: 'Sin conexión. Vuelve a intentarlo.',
+      }
+      showToast(`❌ ${messages[result.error]}`)
+      setUndoing(false)
+      return
+    }
+    showToast('↩️ Finalización deshecha')
+    await reloadEvent()
+    setActiveTab('convocados')
+    setUndoing(false)
+  }
 
   const myPlayer = players.find(p => p.id === session.playerId)
   const myConf = event?.confirmations?.find(c => c.player_id === session.playerId)
@@ -295,6 +351,26 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 onClick={() => router.push(`/${cid}/partidos/${eid}/resultado`)}>
                 🏁 Registrar resultado
               </Button>
+            )}
+            {event.finalizado && undoMs !== null && (
+              <button
+                type="button"
+                onClick={handleUndoFinalize}
+                disabled={undoing}
+                className="w-full rounded-m px-4 py-3 font-bold text-[13px] active:scale-[0.98] transition-transform"
+                style={{
+                  background: 'rgba(239,68,68,0.10)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(239,68,68,0.45)',
+                }}
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <span>{undoing ? 'Deshaciendo…' : '↩️ Deshacer finalización'}</span>
+                  <span className="font-mono text-[11px] tabular-nums" style={{ opacity: 0.8 }}>
+                    {fmtUndoCountdown(undoMs)}
+                  </span>
+                </span>
+              </button>
             )}
             {event.finalizado && matchPlayers.length > 0 && (() => {
               const closesAtMs = event.mvp_voting_closes_at ? new Date(event.mvp_voting_closes_at).getTime() : null

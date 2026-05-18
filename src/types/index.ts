@@ -55,6 +55,7 @@ export interface Event {
   notas: string | null
   abierto: boolean
   finalizado: boolean
+  finalizado_at: string | null
   goles_a: number | null
   goles_b: number | null
   equipo_a: string[]
@@ -201,12 +202,32 @@ export interface MatchPlayerStats {
 }
 
 // ── Muro de comunidad ──────────────────────────────
+export type WallPostKind =
+  | 'user'
+  | 'system_match_created'
+  | 'system_match_result'
+  | 'system_mvp'
+
+export interface WallPostPayload {
+  event_id?: string
+  titulo?: string
+  fecha?: string | null
+  hora?: string | null
+  tipo?: 'partido' | 'entrenamiento' | 'otro'
+  goles_a?: number | null
+  goles_b?: number | null
+  mvp_id?: string
+  mvp_name?: string
+}
+
 export interface WallPost {
   id: string
   community_id: string
-  author_id: string
+  author_id: string | null
   body: string
   youtube_id: string | null
+  kind: WallPostKind
+  payload: WallPostPayload | null
   created_at: string
   author?: Player
   reactions?: WallReaction[]

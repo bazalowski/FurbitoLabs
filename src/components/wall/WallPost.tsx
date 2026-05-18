@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
+import { WallSystemPost } from './WallSystemPost'
 import type { WallPost as WallPostType } from '@/types'
 
 export const REACTION_EMOJIS = ['🔥', '⚽', '👏', '😂', '💀', '🎯'] as const
@@ -14,6 +15,7 @@ interface WallPostProps {
   meId: string
   canDelete: boolean
   communityColor: string
+  communityId: string
 }
 
 function timeAgo(dateStr: string): string {
@@ -28,10 +30,15 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 7)}sem`
 }
 
-export function WallPost({ post, meId, canDelete, communityColor }: WallPostProps) {
+export function WallPost({ post, meId, canDelete, communityColor, communityId }: WallPostProps) {
   const [busyEmoji, setBusyEmoji] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // Posts del sistema tienen su propio render: sin reacciones, sin autor humano.
+  if (post.kind !== 'user') {
+    return <WallSystemPost post={post} communityId={communityId} communityColor={communityColor} />
+  }
 
   const reactions = post.reactions ?? []
 

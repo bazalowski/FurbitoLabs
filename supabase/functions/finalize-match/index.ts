@@ -239,6 +239,8 @@ serve(async (req) => {
   if (evErr || !event) return json(404, { error: 'event_not_found' })
   if (event.finalizado) return json(409, { error: 'already_finalized' })
 
+  const finalizadoAt = new Date().toISOString()
+
   // 2) Caller debe ser admin de la comunidad del evento
   //    (policy check duplicado en servidor — defensa en profundidad)
   const { data: pubUser } = await supa
@@ -268,11 +270,43 @@ serve(async (req) => {
     if (!commIdsSet.has(id)) return json(400, { error: 'player_not_in_community', detail: id })
   }
 
-  // 4) Ejecutar los writes con service_role
+  // 4) Snapshot del estado pre-finalización de cada jugador afectado.
+  //    Se usará por `unfinalize-match` si el admin pulsa "Deshacer" en
+  //    los 15 min siguientes. Lo hacemos ANTES de los updates para tener
+  //    los valores originales.
+  const affectedIds = payload.player_updates.map(u => u.id)
+  if (affectedIds.length > 0) {
+    const { data: pre, error: preErr } = await supa
+      .from('players')
+      .select('id, partidos, goles, asistencias, partidos_cero, mvps, xp, badges')
+      .in('id', affectedIds)
+    if (preErr) return json(500, { error: 'db_error_snapshot_read', detail: preErr.message })
+
+    const snapRows = (pre ?? []).map(p => ({
+      event_id: payload.event_id,
+      player_id: p.id,
+      partidos: p.partidos,
+      goles: p.goles,
+      asistencias: p.asistencias,
+      partidos_cero: p.partidos_cero,
+      mvps: p.mvps,
+      xp: p.xp,
+      badges: p.badges ?? [],
+    }))
+    if (snapRows.length > 0) {
+      const { error: snapErr } = await supa
+        .from('event_player_snapshots')
+        .upsert(snapRows, { onConflict: 'event_id,player_id' })
+      if (snapErr) return json(500, { error: 'db_error_snapshot_write', detail: snapErr.message })
+    }
+  }
+
+  // 5) Ejecutar los writes con service_role
   const { error: evUpdErr } = await supa
     .from('events')
     .update({
       finalizado: true,
+      finalizado_at: finalizadoAt,
       goles_a: payload.goles_a,
       goles_b: payload.goles_b,
       equipo_a: payload.equipo_a,

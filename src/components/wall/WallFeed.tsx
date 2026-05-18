@@ -139,6 +139,7 @@ export function WallFeed({ communityId, community, me, communityColor, variant =
                 meId={me?.id ?? ''}
                 canDelete={isAuthor || canDeleteAny}
                 communityColor={communityColor}
+                communityId={communityId}
               />
             )
           })}

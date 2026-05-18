@@ -16,6 +16,7 @@ import { PlayerTimeline } from '@/components/players/PlayerTimeline'
 import { PointsEvolutionChart } from '@/components/players/PointsEvolutionChart'
 import { getLevel, getNextLevel, xpPercent } from '@/lib/game/levels'
 import { getPlayerRating, SKILLS } from '@/lib/game/scoring'
+import { usePlayerReliability } from '@/hooks/usePlayerReliability'
 import { createClient } from '@/lib/supabase/client'
 import { showToast } from '@/components/ui/Toast'
 import { Avatar, isAvatarUrl } from '@/components/ui/Avatar'
@@ -69,6 +70,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
   const nextLevel = player ? getNextLevel(player.xp) : null
   const pct = player ? xpPercent(player.xp) : 0
   const communityColor = session.communityColor
+  const { reliability } = usePlayerReliability(cid, pid)
 
   async function submitVote() {
     if (!myPlayer || !player) return
@@ -251,6 +253,23 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
                 <span className="divider-dot" aria-hidden="true" />
                 <span>{player.xp} XP</span>
               </p>
+              {reliability && reliability.label !== 'Sin datos' && (
+                <span
+                  className="inline-flex items-center gap-1 mt-1.5 font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{
+                    background: reliability.label === 'Fiable' ? 'rgba(34,197,94,0.10)' : 'rgba(245,158,11,0.10)',
+                    color: reliability.label === 'Fiable' ? '#22c55e' : '#f59e0b',
+                    border: reliability.label === 'Fiable' ? '1px solid rgba(34,197,94,0.45)' : '1px solid rgba(245,158,11,0.45)',
+                  }}
+                  title={`Confirmó "sí" y apareció en ${reliability.matched} de ${reliability.sampleSize} partidos recientes`}
+                >
+                  <span aria-hidden="true">{reliability.label === 'Fiable' ? '✓' : '~'}</span>
+                  <span>{reliability.label}</span>
+                  <span className="tabular-nums" style={{ opacity: 0.8 }}>
+                    {Math.round(reliability.pct * 100)}%
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
