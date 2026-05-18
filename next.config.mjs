@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -13,4 +15,20 @@ const nextConfig = {
   compress: true,
 }
 
-export default nextConfig
+// Opciones del wrapper Sentry. Mínimas: sin auth token aún (no subiremos
+// sourcemaps al servidor hasta que el usuario configure SENTRY_AUTH_TOKEN).
+// El wrapper sigue funcionando sin él — solo perdemos stack traces minified.
+const sentryWebpackPluginOptions = {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Sin auth token, desactivamos upload de sourcemaps para no romper el build.
+  disableLogger: true,
+  hideSourceMaps: true,
+  widenClientFileUpload: true,
+  // Skip telemetría del propio plugin a Sentry.
+  telemetry: false,
+}
+
+export default withSentryConfig(nextConfig, sentryWebpackPluginOptions)
