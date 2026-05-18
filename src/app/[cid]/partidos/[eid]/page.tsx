@@ -22,6 +22,7 @@ import { PostMatchReveal } from '@/components/events/PostMatchReveal'
 import { finalizeMvpByVotes } from '@/lib/game/mvp-finalize'
 import { useMvpVotes } from '@/hooks/useMvpVotes'
 import { unfinalizeMatch, undoMsRemaining } from '@/lib/supabase/unfinalize-match'
+import { shareWhatsApp, buildMatchInviteUrl } from '@/lib/share/whatsapp'
 import type { Confirmation, MatchPlayer, TeamGeneratorResult } from '@/types'
 
 function fmtUndoCountdown(ms: number): string {
@@ -531,9 +532,26 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
           <button onClick={() => router.back()} className="text-lg" style={{ color: 'var(--muted)' }}>←</button>
         }
         right={
-          isAdmin && (
-            <button onClick={() => setEditOpen(true)} className="text-sm font-bold" style={{ color: 'var(--muted)' }}>✏️</button>
-          )
+          <>
+            <button
+              onClick={() => {
+                shareWhatsApp(buildMatchInviteUrl({
+                  communityId: cid,
+                  eventId: eid,
+                  origin: window.location.origin,
+                }))
+              }}
+              className="text-lg"
+              style={{ color: 'var(--muted)' }}
+              aria-label="Compartir partido por WhatsApp"
+              title="Compartir por WhatsApp"
+            >
+              📲
+            </button>
+            {isAdmin && (
+              <button onClick={() => setEditOpen(true)} className="text-sm font-bold" style={{ color: 'var(--muted)' }}>✏️</button>
+            )}
+          </>
         }
       />
 

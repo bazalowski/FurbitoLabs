@@ -15,6 +15,7 @@ import { showToast } from '@/components/ui/Toast'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { getPreferences, updatePreferences } from '@/lib/notifications/push-manager'
+import { shareWhatsApp, buildCommunityInviteMessage } from '@/lib/share/whatsapp'
 
 const MAX_ADMINS = 3
 
@@ -263,6 +264,28 @@ export default function AjustesPage({ params }: AjustesPageProps) {
             >
               {community.pin}
             </p>
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  shareWhatsApp(buildCommunityInviteMessage({
+                    communityName: community.name,
+                    pin: community.pin,
+                    origin: window.location.origin,
+                  }))
+                }}
+                className="w-full mt-4 py-3 rounded-m font-barlow text-[11px] font-bold uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{
+                  background: 'rgba(37,211,102,0.12)',
+                  color: '#25D366',
+                  border: '1px solid rgba(37,211,102,0.35)',
+                  minHeight: '44px',
+                }}
+              >
+                <span aria-hidden="true">📱</span>
+                <span>Invitar por WhatsApp</span>
+              </button>
+            )}
           </div>
         )}
 

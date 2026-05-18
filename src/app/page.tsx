@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [gate, setGate] = useState<Gate>('auth')
   const [gateVisits, setGateVisits] = useState(0)
   const [newUserOpen, setNewUserOpen] = useState(false)
+  const [joinPin, setJoinPin] = useState<string | null>(null)
 
   const [tab, setTab] = useState<LoginTab>('join')
 
@@ -44,6 +45,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Deeplink ?join=<PIN> (invitación por WhatsApp) — fuerza el flujo "Usuario nuevo"
+    // con el PIN prerrellenado, sin importar si el chooser estaba descartado.
+    const search = new URLSearchParams(window.location.search)
+    const pinParam = search.get('join')
+    if (pinParam && /^[A-Za-z0-9]{1,20}$/.test(pinParam)) {
+      setJoinPin(pinParam)
+      setGate('chooser')
+      setNewUserOpen(true)
+      return
+    }
+
     const dismissed = localStorage.getItem(GATE_KEY) === '1'
     const visits = Number(localStorage.getItem(GATE_VISITS) ?? '0')
     setGateVisits(visits)
@@ -215,6 +228,7 @@ export default function LoginPage() {
           open={newUserOpen}
           onClose={() => setNewUserOpen(false)}
           triggerShake={triggerShake}
+          initialPin={joinPin}
         />
       </div>
     )
@@ -422,13 +436,19 @@ interface NewUserModalProps {
   open: boolean
   onClose: () => void
   triggerShake: () => void
+  initialPin?: string | null
 }
 
-function NewUserModal({ open, onClose, triggerShake }: NewUserModalProps) {
+function NewUserModal({ open, onClose, triggerShake, initialPin }: NewUserModalProps) {
   const router = useRouter()
   const login = useSession(s => s.login)
 
-  const [communityPin, setCommunityPin] = useState('')
+  const [communityPin, setCommunityPin] = useState(initialPin ?? '')
+
+  // Si el modal se abre vía deeplink (?join=<PIN>) después de montar, prerrellena.
+  useEffect(() => {
+    if (open && initialPin && !communityPin) setCommunityPin(initialPin)
+  }, [open, initialPin, communityPin])
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
