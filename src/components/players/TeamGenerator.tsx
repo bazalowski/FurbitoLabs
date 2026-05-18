@@ -55,7 +55,6 @@ export function TeamGenerator({
 
   const modes: { value: TeamMode; icon: string; label: string }[] = [
     { value: 'balanced', icon: '⚖️', label: 'Equilibrado' },
-    { value: 'random',   icon: '🎲', label: 'Aleatorio' },
   ]
 
   /* ── Step 2: Result view ─────────────────────────────── */
@@ -141,34 +140,35 @@ export function TeamGenerator({
     )
   }
 
-  /* ── Step 1: Mode + Selection + Generate ─────────────── */
+  /* ── Step 1: Selection + Generate ─────────────────────── */
   const allSelected = selectedIds.size === players.length
   return (
     <div className="space-y-3">
-      {/* Mode selector — horizontal pills */}
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>Modo</p>
-        <div className="flex gap-1.5">
-          {modes.map(m => {
-            const active = mode === m.value
-            return (
-              <button
-                key={m.value}
-                onClick={() => { setMode(m.value); setResult(null) }}
-                className="flex-1 px-3 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.97] select-none"
-                style={{
-                  background: active ? communityColor + '22' : 'var(--card)',
-                  border: `1.5px solid ${active ? communityColor : 'var(--border)'}`,
-                  color: active ? communityColor : 'var(--foreground)',
-                  boxShadow: active ? `0 0 0 3px ${communityColor}11` : undefined,
-                }}
-              >
-                {m.icon} {m.label}
-              </button>
-            )
-          })}
+      {modes.length > 1 && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--muted)' }}>Modo</p>
+          <div className="flex gap-1.5">
+            {modes.map(m => {
+              const active = mode === m.value
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => { setMode(m.value); setResult(null) }}
+                  className="flex-1 px-3 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.97] select-none"
+                  style={{
+                    background: active ? communityColor + '22' : 'var(--card)',
+                    border: `1.5px solid ${active ? communityColor : 'var(--border)'}`,
+                    color: active ? communityColor : 'var(--foreground)',
+                    boxShadow: active ? `0 0 0 3px ${communityColor}11` : undefined,
+                  }}
+                >
+                  {m.icon} {m.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Player selection — compact 3-col chip grid */}
       <div>

@@ -46,8 +46,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Deeplink ?join=<PIN> (invitación por WhatsApp) — fuerza el flujo "Usuario nuevo"
-    // con el PIN prerrellenado, sin importar si el chooser estaba descartado.
+    // Deeplink ?join=<PIN> — fuerza el flujo "Usuario nuevo" con el PIN
+    // prerrellenado, sin importar si el chooser estaba descartado.
     const search = new URLSearchParams(window.location.search)
     const pinParam = search.get('join')
     if (pinParam && /^[A-Za-z0-9]{1,20}$/.test(pinParam)) {
@@ -412,20 +412,15 @@ function LogoBlock() {
   )
 }
 
-/** Footer con links legales + versión — requerido por stores */
+/** Footer con links legales — requerido por stores */
 function Footer() {
   return (
-    <div className="text-center mt-6 space-y-2">
-      <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>
-        FURBITO v2.1 · Powered by Supabase
-      </p>
-      <div className="flex items-center justify-center gap-1 font-mono text-[10px]" style={{ color: 'var(--muted)' }}>
-        <a href="/privacidad" className="underline-offset-2 hover:underline">Privacidad</a>
-        <span className="divider-dot" aria-hidden="true" />
-        <a href="/terminos" className="underline-offset-2 hover:underline">Términos</a>
-        <span className="divider-dot" aria-hidden="true" />
-        <a href="/ayuda" className="underline-offset-2 hover:underline">Ayuda</a>
-      </div>
+    <div className="flex items-center justify-center gap-1 font-mono text-[10px] mt-6" style={{ color: 'var(--muted)' }}>
+      <a href="/privacidad" className="underline-offset-2 hover:underline">Privacidad</a>
+      <span className="divider-dot" aria-hidden="true" />
+      <a href="/terminos" className="underline-offset-2 hover:underline">Términos</a>
+      <span className="divider-dot" aria-hidden="true" />
+      <a href="/ayuda" className="underline-offset-2 hover:underline">Ayuda</a>
     </div>
   )
 }

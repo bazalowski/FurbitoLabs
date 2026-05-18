@@ -64,38 +64,48 @@ export default function HomePage({ params }: HomePageProps) {
         {/* Player Profile Summary — arena: portada del jugador (única por pantalla) */}
         {isLoggedIn && me && level && (
           <Link href={`/${cid}/jugadores/${session.playerId}`} className="block select-none">
-            <div className="surface-arena p-3 flex items-center gap-3 active:scale-[0.97] transition-transform">
-              <div className="relative flex-shrink-0">
-                <PlayerAvatar player={me} size={52} communityColor={communityColor} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bebas text-2xl leading-none tracking-display truncate">{me.name}</p>
-                <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-                  <span aria-hidden="true">{level.icon}</span>{' '}
-                  <span style={{ color: communityColor }}>Nv.{level.level}</span>
-                  <span className="divider-dot" aria-hidden="true" />
-                  <span>{level.name}</span>
-                </p>
-                <div className="xp-bar mt-2">
-                  <div
-                    className="xp-bar-fill transition-all"
-                    style={{ width: `${pct}%`, background: communityColor }}
-                  />
+            <div className="surface-arena p-4 active:scale-[0.98] transition-transform">
+              <div className="flex items-start gap-3">
+                <PlayerAvatar player={me} size={60} communityColor={communityColor} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bebas text-3xl leading-none tracking-display truncate">{me.name}</p>
+                  <p className="font-mono text-[11px] mt-1.5 uppercase tracking-widest" style={{ color: communityColor }}>
+                    <span aria-hidden="true">{level.icon}</span> {level.name}
+                  </p>
                 </div>
-                <p className="font-mono text-[10px] mt-1.5 tabular-nums" style={{ color: 'var(--muted)' }}>
-                  <span>{me.goles} goles</span>
-                  <span className="divider-dot" aria-hidden="true" />
-                  <span>{me.asistencias} asist</span>
-                  <span className="divider-dot" aria-hidden="true" />
-                  <span>{me.partidos} PJ</span>
-                  {rating && (
-                    <>
-                      <span className="divider-dot" aria-hidden="true" />
-                      <span style={{ color: communityColor }}>★ {rating.avg.toFixed(1)}</span>
-                    </>
-                  )}
-                </p>
+                <div className="text-right flex-shrink-0">
+                  <p
+                    className="font-bebas text-5xl leading-none tabular-nums tracking-display"
+                    style={{ color: communityColor }}
+                  >
+                    {level.level}
+                  </p>
+                  <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: 'var(--muted)' }}>
+                    Nivel
+                  </p>
+                </div>
               </div>
+
+              <div className="xp-bar mt-3">
+                <div
+                  className="xp-bar-fill transition-all"
+                  style={{ width: `${pct}%`, background: communityColor }}
+                />
+              </div>
+
+              <p className="font-mono text-[11px] mt-2.5 tabular-nums" style={{ color: 'var(--muted)' }}>
+                <span>{me.goles} <span className="uppercase tracking-widest">goles</span></span>
+                <span className="divider-dot" aria-hidden="true" />
+                <span>{me.asistencias} <span className="uppercase tracking-widest">asist</span></span>
+                <span className="divider-dot" aria-hidden="true" />
+                <span>{me.partidos} <span className="uppercase tracking-widest">PJ</span></span>
+                {rating && (
+                  <>
+                    <span className="divider-dot" aria-hidden="true" />
+                    <span style={{ color: communityColor }}>★ {rating.avg.toFixed(1)}</span>
+                  </>
+                )}
+              </p>
             </div>
           </Link>
         )}
@@ -140,17 +150,6 @@ export default function HomePage({ params }: HomePageProps) {
           />
         )}
 
-        {/* Quick action: Valorar compañeros */}
-        {isLoggedIn && (
-          <ShortcutCard
-            href={`/${cid}/valorar`}
-            icon="⭐"
-            title="Valorar compañeros"
-            hint="Puntúa habilidades para equilibrar equipos."
-            communityColor={communityColor}
-          />
-        )}
-
         {/* Tutorial onboarding — solo si el jugador aún no tiene la insignia */}
         {isLoggedIn && me && !me.badges.includes('tutorial') && (
           <ShortcutCard
@@ -175,41 +174,7 @@ export default function HomePage({ params }: HomePageProps) {
           />
         )}
 
-        {/* Shortcut: Generador de equipos (solo cuando no hay partido próximo) */}
-        {isLoggedIn && players.length >= 2 && !nextEvent && (
-          <button
-            type="button"
-            onClick={() => setShowTeams(prev => !prev)}
-            aria-expanded={showTeams}
-            className={`no-lift w-full text-left select-none p-3 flex items-center gap-3 rounded-m active:scale-[0.98] transition-transform ${showTeams ? 'hairline-top' : ''}`}
-            style={{
-              background: showTeams ? 'var(--card2)' : 'var(--card)',
-              border: `1px solid ${showTeams ? communityColor + '88' : 'var(--border)'}`,
-              boxShadow: showTeams ? 'var(--shadow-depth-2)' : 'var(--shadow-depth-1)',
-            }}
-          >
-            <span className="text-2xl leading-none" aria-hidden="true">⚖️</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">Generar equipos</p>
-              <p className="font-mono text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
-                Prueba combinaciones rápidas sin abrir un partido.
-              </p>
-            </div>
-            <span
-              className="flex items-center justify-center w-7 h-7 rounded-full text-lg transition-transform font-bold"
-              style={{
-                color: showTeams ? communityColor : 'var(--muted)',
-                background: showTeams ? `${communityColor}1a` : 'var(--card2)',
-                border: `1px solid ${showTeams ? communityColor + '44' : 'var(--border)'}`,
-                transform: showTeams ? 'rotate(90deg)' : 'none',
-              }}
-            >
-              ›
-            </span>
-          </button>
-        )}
-
-        {/* Team Generator — aparece SIEMPRE justo debajo de su trigger */}
+        {/* Team Generator — aparece SIEMPRE justo debajo de su trigger (NextMatchHero) */}
         {showTeams && (
           <div className="surface-calm p-4 relative animate-slide-up">
             <button
