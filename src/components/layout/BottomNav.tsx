@@ -26,11 +26,10 @@ function buildNav(cid: string, role?: Role, playerId?: string | null, playerName
       : 'Perfil'
 
   return [
-    { tab: 'home',      label: 'Inicio',      icon: '\u{1F3E0}', href: `/${cid}` },
+    { tab: 'home',      label: 'Inicio',       icon: '\u{1F3E0}', href: `/${cid}` },
     { tab: 'partidos',  label: 'Partidos',     icon: '\u26BD',    href: `/${cid}/partidos` },
-    { tab: 'jugadores', label: 'Jugadores',    icon: '\u{1F465}', href: `/${cid}/jugadores` },
-    { tab: 'ranking',   label: 'Ranking',      icon: '\u{1F3C6}', href: `/${cid}/ranking` },
-    { tab: 'perfil',    label: perfilLabel,     icon: '\u{1F464}', href: perfilHref },
+    { tab: 'jugadores', label: 'Jugadores',    icon: '\u{1F3C6}', href: `/${cid}/jugadores` },
+    { tab: 'perfil',    label: perfilLabel,    icon: '\u{1F464}', href: perfilHref },
   ]
 }
 

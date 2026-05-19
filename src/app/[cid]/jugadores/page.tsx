@@ -5,7 +5,7 @@ import { useSession } from '@/stores/session'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
-import { PlayerCard } from '@/components/players/PlayerCard'
+import { RankingTable } from '@/components/ranking/RankingTable'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { Header } from '@/components/layout/Header'
 import { Modal } from '@/components/ui/Modal'
@@ -31,10 +31,10 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
   const [addOpen, setAddOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [adding, setAdding] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
 
   const isAdmin = session.role === 'admin'
   const adminIds = community?.admin_ids ?? []
+  const communityColor = session.communityColor || '#a8ff3e'
 
   async function addPlayer() {
     if (!newName.trim()) return
@@ -49,38 +49,14 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
       position: null,
     })
     if (error) {
-      showToast('Error al anadir jugador')
+      showToast('Error al añadir jugador')
     } else {
-      showToast(`${newName} anadido - PIN: ${code}`)
+      showToast(`${newName} añadido — PIN: ${code}`)
       setNewName('')
       setAddOpen(false)
       reload()
     }
     setAdding(false)
-  }
-
-  async function deletePlayer(playerId: string, playerName: string) {
-    if (!confirm(`Eliminar a ${playerName}? Esta accion no se puede deshacer.`)) return
-    // Prevent deleting yourself
-    if (playerId === session.playerId) {
-      showToast('No puedes eliminarte a ti mismo')
-      return
-    }
-    // Prevent deleting other admins (only the primary admin can manage admins in settings)
-    if (adminIds.includes(playerId)) {
-      showToast('No puedes eliminar a un admin desde aqui. Usa Ajustes.')
-      return
-    }
-    setDeleting(playerId)
-    const supabase = createClient()
-    const { error } = await supabase.from('players').delete().eq('id', playerId)
-    if (error) {
-      showToast('Error al eliminar jugador')
-    } else {
-      showToast(`${playerName} eliminado`)
-      reload()
-    }
-    setDeleting(null)
   }
 
   return (
@@ -89,68 +65,52 @@ export default function JugadoresPage({ params }: JugadoresPageProps) {
         title={`Jugadores (${players.length})`}
         right={
           <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setTeamGenOpen(true)}>
-              {'\uD83C\uDFAF'}
-            </Button>
+            {players.length >= 2 && (
+              <Button size="sm" variant="ghost" onClick={() => setTeamGenOpen(true)} aria-label="Generar equipos">
+                ⚡
+              </Button>
+            )}
             {isAdmin && (
               <Button size="sm" onClick={() => setAddOpen(true)}>
-                + Anadir
+                + Añadir
               </Button>
             )}
           </div>
         }
       />
 
-      <div className="px-4 space-y-2 pt-2 pb-28">
+      <div className="px-4 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
         {loading ? (
-          Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : players.length === 0 ? (
           <div className="surface-calm text-center py-12">
-            <p className="text-3xl mb-3">{'\uD83D\uDC65'}</p>
+            <p className="text-3xl mb-3" aria-hidden="true">👥</p>
             <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>
               Sin jugadores
             </p>
             {isAdmin && (
               <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-                Añade el primer jugador
+                Añade el primer jugador para arrancar la comunidad.
               </p>
             )}
           </div>
         ) : (
-          players.map((p, i) => (
-            <div key={p.id} className="relative group">
-              <PlayerCard
-                player={p}
-                communityId={cid}
-                rank={i + 1}
-                communityColor={session.communityColor}
-                adminIds={adminIds}
-                votes={votes}
-              />
-              {/* Delete button for admins (shown on the right side) */}
-              {isAdmin && p.id !== session.playerId && !adminIds.includes(p.id) && (
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); deletePlayer(p.id, p.name) }}
-                  disabled={deleting === p.id}
-                  className="absolute top-1/2 -translate-y-1/2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity active:scale-95"
-                  style={{
-                    background: 'var(--red)',
-                    color: '#fff',
-                    opacity: deleting === p.id ? 0.5 : undefined,
-                  }}
-                  title={`Eliminar a ${p.name}`}
-                >
-                  {'\u2715'}
-                </button>
-              )}
-            </div>
-          ))
+          <RankingTable
+            players={players}
+            votes={votes}
+            communityId={cid}
+            communityColor={communityColor}
+            adminIds={adminIds}
+            currentPlayerId={session.playerId}
+          />
         )}
       </div>
 
       {/* Team Generator Modal */}
-      <Modal open={teamGenOpen} onClose={() => setTeamGenOpen(false)} title={'\u26A1 Generador de equipos'}>
-        <TeamGenerator players={players} votes={votes} communityColor={session.communityColor} />
+      <Modal open={teamGenOpen} onClose={() => setTeamGenOpen(false)} title="⚡ Generador de equipos">
+        <TeamGenerator players={players} votes={votes} communityColor={communityColor} />
       </Modal>
 
       {/* Add Player Modal — ventana interior a pantalla completa */}

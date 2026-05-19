@@ -8,7 +8,6 @@ import { useCommunity } from '@/hooks/useCommunity'
 import { useVotes } from '@/hooks/useVotes'
 import { usePendingMvpVotes } from '@/hooks/usePendingMvpVotes'
 import { NextMatchHero } from '@/components/events/NextMatchHero'
-import { WallPreview } from '@/components/wall/WallPreview'
 import { Header, Logo } from '@/components/layout/Header'
 import { TeamGenerator } from '@/components/players/TeamGenerator'
 import { PlayerAvatar } from '@/components/players/PlayerCard'
@@ -150,6 +149,17 @@ export default function HomePage({ params }: HomePageProps) {
           />
         )}
 
+        {/* Acceso directo: Valorar compañeros — siempre visible para jugadores */}
+        {isLoggedIn && players.length > 1 && (
+          <ShortcutCard
+            href={`/${cid}/valorar`}
+            icon="⭐"
+            title="Valorar compañeros"
+            hint="Puntúa habilidades para equilibrar equipos."
+            communityColor={communityColor}
+          />
+        )}
+
         {/* Tutorial onboarding — solo si el jugador aún no tiene la insignia */}
         {isLoggedIn && me && !me.badges.includes('tutorial') && (
           <ShortcutCard
@@ -191,15 +201,6 @@ export default function HomePage({ params }: HomePageProps) {
               communityColor={communityColor}
             />
           </div>
-        )}
-
-        {/* Muro de la comunidad — preview premium que enlaza a /muro */}
-        {isLoggedIn && (
-          <WallPreview
-            communityId={cid}
-            me={me ?? null}
-            communityColor={communityColor}
-          />
         )}
 
       </div>

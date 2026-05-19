@@ -143,6 +143,22 @@ Por sección funcional, decisión + acción inmediata. **Surface = pantalla**, *
 
 ---
 
+## 2.bis · Sprint Furbito 3.0 (2026-05-19)
+
+Segunda pasada de depuración hacia "Furbito 3.0" — orientada a lanzamiento.
+
+- ✅ **Muro hideado**: WallPreview fuera del Home. Ruta `/[cid]/muro` sigue accesible (no se borra DB ni componentes — reactivable cuando el muro tenga push + imágenes).
+- ✅ **Shortcut "Valorar compañeros" reincorporado** en el Home como acceso directo siempre visible (cuando hay ≥2 jugadores). Decisión del usuario: el voto entre jugadores es loop de retención crítico y debe estar a 1 tap.
+- ✅ **Fusión Jugadores + Ranking**: la pantalla `/[cid]/jugadores` ahora renderiza `<RankingTable />` como cuerpo (con podio top 3 + tabs métrica + ventana temporal + filtro de rol). La ruta `/[cid]/ranking` queda como redirect server-side a `/jugadores`.
+- ✅ **BottomNav de 5 → 4 tabs**: Inicio · Partidos · Jugadores · Perfil. Más espacio por tab, menos fricción cognitiva.
+- ✅ **Partidos pulido**: tab selector de "split bar plano" → "pills premium" con community-tint cuando activo y contadores `font-mono`. Botón "+ Nuevo" community-tinted. Empty state canónico (Bebas 3xl + Mono subtítulo + Button primary).
+
+Decisiones de scope:
+- **Delete inline de jugador (admin)** retirado del listado fusionado — la lista ahora es ranking, no es lugar para acciones destructivas. Reubicación pendiente: añadir "Eliminar jugador" como acción admin en el perfil del jugador. NO regresión funcional: admin sigue gestionando vía Supabase + panel admin.
+- **Perfil intacto**: ya usa `surface-arena` con aura-halo, Bebas 4xl, reliability chip, fade edges en stats fila. No tocado para no romper lo que funciona.
+
+---
+
 ## 2. Cambios inmediatos del sprint premium
 
 Acciones concretas para esta semana — orden de ejecución:
