@@ -107,45 +107,52 @@ export default function AyudaPage({ params }: AyudaPageProps) {
         }
       />
 
-      <div id="ayuda-top" className="px-4 pt-2 pb-28 space-y-4">
+      <div id="ayuda-top" className="px-4 pt-2 pb-28 space-y-5">
         {/* Intro */}
+        <div className="bezel-frame">
         <Card>
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }}>
-            Guía rápida
-          </p>
-          <h2 className="font-bebas text-3xl tracking-wider leading-none mt-1">
+          <span className="eyebrow" data-tone="community">Guía rápida</span>
+          <h2 className="font-bebas text-3xl tracking-display leading-none mt-2">
             Primeros pasos en <span style={{ color: communityColor }}>Furbito</span>
           </h2>
-          <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>
+          <p className="font-mono text-[11px] mt-2" style={{ color: 'var(--muted)' }}>
             Todo lo que necesitas saber para organizar tus partidos, confirmar asistencia, seguir las estadísticas y pelear por el ranking.
           </p>
         </Card>
+        </div>
 
         {/* TOC */}
+        <div className="bezel-frame">
         <Card>
-          <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--muted)' }}>
-            Índice
-          </p>
+          <div className="mb-3"><span className="eyebrow">Índice</span></div>
           <div className="space-y-1">
             {SECTIONS.map(s => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="flex items-center gap-3 py-2 px-2 rounded-m active:scale-[0.98] transition-transform select-none"
+                className="flex items-center gap-3 py-2 px-2 rounded-m active:scale-[0.98] select-none"
+                style={{ transition: 'transform 220ms var(--ease-spring)' }}
               >
                 <span
-                  className="font-bebas text-base tracking-wider w-8"
+                  className="font-bebas text-lg tracking-display tabular-nums w-8"
                   style={{ color: communityColor }}
                 >
                   {s.num}
                 </span>
                 <span className="text-lg" aria-hidden="true">{s.icon}</span>
                 <span className="text-sm font-bold flex-1 truncate">{s.title}</span>
-                <span className="text-lg" style={{ color: 'var(--muted)' }}>{'›'}</span>
+                <span
+                  aria-hidden="true"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0"
+                  style={{ background: 'var(--card2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
+                >
+                  →
+                </span>
               </a>
             ))}
           </div>
         </Card>
+        </div>
 
         {/* 01 — Qué es Furbito */}
         <Section id="bienvenida" num="01" icon="👋" title="Qué es Furbito" color={communityColor}>

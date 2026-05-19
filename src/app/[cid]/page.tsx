@@ -58,12 +58,16 @@ export default function HomePage({ params }: HomePageProps) {
         }
       />
 
-      <div className="px-4 space-y-4 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
+      <div className="px-4 space-y-6 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
 
-        {/* Player Profile Summary — arena: portada del jugador (única por pantalla) */}
+        {/* Player Profile Summary — arena con Double-Bezel premium */}
         {isLoggedIn && me && level && (
           <Link href={`/${cid}/jugadores/${session.playerId}`} className="block select-none">
-            <div className="surface-arena p-4 active:scale-[0.98] transition-transform">
+            <div className="bezel-frame">
+            <div
+              className="surface-arena p-5 active:scale-[0.985]"
+              style={{ transition: 'transform 320ms var(--ease-spring)' }}
+            >
               <div className="flex items-start gap-3">
                 <PlayerAvatar player={me} size={60} communityColor={communityColor} />
                 <div className="flex-1 min-w-0">
@@ -105,6 +109,7 @@ export default function HomePage({ params }: HomePageProps) {
                   </>
                 )}
               </p>
+            </div>
             </div>
           </Link>
         )}
@@ -230,29 +235,32 @@ function ShortcutCard({
   return (
     <Link
       href={href}
-      className="block select-none p-3 flex items-center gap-3 rounded-m active:scale-[0.98] transition-transform"
+      className="group block select-none p-4 flex items-center gap-3 rounded-m active:scale-[0.985]"
       style={{
         background: emphasis ? 'var(--card2)' : 'var(--card)',
         border: emphasis ? `1px solid ${communityColor}66` : '1px solid var(--border)',
         boxShadow: emphasis ? `0 0 0 1px ${communityColor}22, var(--shadow-depth-1)` : 'var(--shadow-depth-1)',
+        transition: 'transform 320ms var(--ease-spring), box-shadow 240ms var(--ease-out)',
       }}
     >
-      <span className="text-2xl leading-none" aria-hidden="true">{icon}</span>
+      <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{icon}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold">{title}</p>
-        <p className="font-mono text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>
+        <p className="text-sm font-bold leading-tight">{title}</p>
+        <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
           {hint}
         </p>
       </div>
       <span
-        className="flex items-center justify-center w-7 h-7 rounded-full text-lg font-bold"
+        aria-hidden="true"
+        className="flex items-center justify-center w-8 h-8 rounded-full text-base font-bold flex-shrink-0"
         style={{
           color: emphasis ? communityColor : 'var(--muted)',
           background: emphasis ? `${communityColor}1a` : 'var(--card2)',
           border: `1px solid ${emphasis ? communityColor + '44' : 'var(--border)'}`,
+          transition: 'transform 320ms var(--ease-spring)',
         }}
       >
-        ›
+        →
       </span>
     </Link>
   )

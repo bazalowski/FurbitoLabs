@@ -91,6 +91,7 @@ export function NextMatchHero({
 
   // Expanded: full hero card. The card itself is the toggle (no separate header dropdown)
   return (
+    <div className="bezel-frame">
     <div
       className="rounded-l overflow-hidden relative animate-slide-up"
       style={{
@@ -121,19 +122,9 @@ export function NextMatchHero({
         aria-expanded={true}
         className="w-full flex items-center justify-between px-4 pt-3 active:opacity-80 transition-opacity select-none"
       >
+        <span className="eyebrow" data-tone="community">Próximo partido</span>
         <span
-          className="uppercase"
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.14em',
-            color: 'var(--muted)',
-          }}
-        >
-          Próximo partido
-        </span>
-        <span
-          className="flex items-center gap-1.5"
+          className="flex items-center gap-1.5 font-mono uppercase"
           style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--muted)' }}
         >
           <span className="tabular-nums" style={{ color: communityColor }}>
@@ -141,7 +132,6 @@ export function NextMatchHero({
           </span>
           <span
             aria-hidden="true"
-            className="transition-transform"
             style={{ transform: 'rotate(180deg)', display: 'inline-block' }}
           >
             ▾
@@ -153,30 +143,17 @@ export function NextMatchHero({
         {/* Title + badge */}
         <div className="flex items-start justify-between gap-2">
           <h2
-            className="flex-1 min-w-0 hl-balance"
+            className="flex-1 min-w-0 hl-balance font-bebas tracking-display"
             style={{
-              fontSize: 19,
-              fontWeight: 700,
-              letterSpacing: '-0.015em',
-              lineHeight: 1.15,
+              fontSize: 26,
+              lineHeight: 1.05,
+              letterSpacing: '-0.01em',
               color: 'var(--text)',
             }}
           >
             {event.titulo}
           </h2>
-          <span
-            className="uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              background: communityColor + '22',
-              color: communityColor,
-              border: `1px solid ${communityColor}33`,
-            }}
-          >
-            Abierto
-          </span>
+          <span className="eyebrow flex-shrink-0" data-tone="community">Abierto</span>
         </div>
 
         {/* Date + location */}
@@ -198,17 +175,7 @@ export function NextMatchHero({
         {/* Confirmation bar */}
         <div className="mt-3.5 space-y-1.5">
           <div className="flex justify-between items-baseline">
-            <span
-              className="uppercase"
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                color: 'var(--muted)',
-              }}
-            >
-              Confirmados
-            </span>
+            <span className="eyebrow">Confirmados</span>
             <span
               className="font-bebas leading-none tabular-nums"
               style={{
@@ -345,6 +312,7 @@ export function NextMatchHero({
           {teamsOpen ? '⚖️ Equipos ▲' : '⚖️ Generar equipos ▼'}
         </button>
       </div>
+    </div>
     </div>
   )
 }

@@ -18,26 +18,23 @@ export function EventCard({ event, communityId, players }: EventCardProps) {
 
   return (
     <Link href={`/${communityId}/partidos/${event.id}`}>
+      <div className="bezel-frame">
       <Card highlighted={!past} className="space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm truncate">{event.titulo}</h3>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+            <h3 className="font-bebas text-2xl leading-none tracking-display truncate">{event.titulo}</h3>
+            <p className="font-mono text-[11px] mt-1.5" style={{ color: 'var(--muted)' }}>
               {fmtDateTime(event.fecha, event.hora)}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             {event.finalizado ? (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--card2)', color: 'var(--muted)' }}>
-                Finalizado
-              </span>
+              <span className="eyebrow">Finalizado</span>
             ) : (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-d)', color: 'var(--accent)' }}>
-                Abierto
-              </span>
+              <span className="eyebrow" data-tone="community">Abierto</span>
             )}
-            <span className="text-xs" style={{ color: 'var(--muted)' }}>
+            <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
               {event.tipo}
             </span>
           </div>
@@ -73,11 +70,15 @@ export function EventCard({ event, communityId, players }: EventCardProps) {
               <span>{confirmed.length}/{event.max_jugadores}</span>
             </div>
             <div className="xp-bar">
-              <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
+              <div
+                className="xp-bar-fill"
+                style={{ width: `${pct}%`, transition: 'width 600ms var(--ease-out)' }}
+              />
             </div>
           </div>
         )}
       </Card>
+      </div>
     </Link>
   )
 }

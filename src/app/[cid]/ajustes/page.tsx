@@ -113,15 +113,14 @@ export default function AjustesPage({ params }: AjustesPageProps) {
     <div className="view-enter">
       <Header title="Ajustes" />
 
-      <div className="px-4 space-y-4 pt-2 pb-28">
+      <div className="px-4 space-y-6 pt-2 pb-28">
         {/* ── Mi cuenta ──────────────────────────── */}
         <SectionLabel>Mi cuenta</SectionLabel>
 
         {/* Session info */}
-        <div className="surface-calm p-4">
-          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
-            Tu sesión
-          </p>
+        <div className="bezel-frame">
+        <div className="surface-calm p-5">
+          <div className="mb-3"><span className="eyebrow">Tu sesión</span></div>
           <div className="space-y-1.5 font-mono text-[12px]">
             <div className="flex justify-between">
               <span style={{ color: 'var(--muted)' }}>Rol</span>
@@ -141,22 +140,22 @@ export default function AjustesPage({ params }: AjustesPageProps) {
             )}
           </div>
         </div>
+        </div>
 
         {/* Theme */}
-        <div className="surface-calm p-4">
-          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
-            Apariencia
-          </p>
+        <div className="bezel-frame">
+        <div className="surface-calm p-5">
+          <div className="mb-3"><span className="eyebrow">Apariencia</span></div>
           <ThemeToggle />
+        </div>
         </div>
 
         {/* Notifications */}
         {session.playerId && (
-          <div className="surface-calm p-4">
+          <div className="bezel-frame">
+          <div className="surface-calm p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-                🔔 Notificaciones
-              </p>
+              <span className="eyebrow">🔔 Notificaciones</span>
               {push.supported && !push.subscribed && (
                 <button
                   onClick={push.subscribe}
@@ -234,6 +233,7 @@ export default function AjustesPage({ params }: AjustesPageProps) {
               </div>
             )}
           </div>
+          </div>
         )}
 
         {/* ── Esta comunidad ─────────────────────── */}
@@ -241,11 +241,10 @@ export default function AjustesPage({ params }: AjustesPageProps) {
 
         {/* Community info */}
         {community && (
-          <div className="surface-calm p-4">
-            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-              Comunidad
-            </p>
-            <div className="flex items-center gap-3 mb-3">
+          <div className="bezel-frame">
+          <div className="surface-calm p-5">
+            <div className="mb-3"><span className="eyebrow" data-tone="community">Comunidad</span></div>
+            <div className="flex items-center gap-3 mb-4">
               <div
                 className="w-10 h-10 rounded-full flex-shrink-0"
                 style={{ background: community.color, boxShadow: 'var(--shadow-depth-1)' }}
@@ -254,25 +253,25 @@ export default function AjustesPage({ params }: AjustesPageProps) {
                 {community.name}
               </p>
             </div>
-            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-              PIN de comunidad
-            </p>
+            <div className="mb-2"><span className="eyebrow">PIN de comunidad</span></div>
             <p
-              className="font-mono text-3xl font-bold tabular-nums mt-1"
+              className="font-mono text-3xl font-bold tabular-nums"
               style={{ color: community.color, letterSpacing: '0.3em' }}
             >
               {community.pin}
             </p>
           </div>
+          </div>
         )}
 
         {/* Admin Management Section — only visible to admins */}
         {isAdmin && (
-          <div className="surface-calm p-4">
+          <div className="bezel-frame">
+          <div className="surface-calm p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--gold)' }}>
-                👑 Admins <span className="font-mono" style={{ color: 'var(--muted)' }}>{adminPlayers.length}/{MAX_ADMINS}</span>
-              </p>
+              <span className="eyebrow" data-tone="gold">
+                👑 Admins <span className="font-mono" style={{ opacity: 0.7 }}>{adminPlayers.length}/{MAX_ADMINS}</span>
+              </span>
               {isPrimaryAdmin && adminIds.length < MAX_ADMINS && (
                 <button
                   onClick={() => setPromoteOpen(true)}
@@ -333,6 +332,7 @@ export default function AjustesPage({ params }: AjustesPageProps) {
               </div>
             )}
           </div>
+          </div>
         )}
 
         {/* Ayuda / tutorial */}
@@ -356,11 +356,6 @@ export default function AjustesPage({ params }: AjustesPageProps) {
           <span>Salir de la comunidad</span>
         </button>
 
-        {/* App info */}
-        <div className="text-center pt-4" style={{ color: 'var(--muted)' }}>
-          <p className="font-bebas text-xl tracking-widest">FURBITO</p>
-          <p className="font-mono text-[10px] mt-1">v2.0 · Next.js + Supabase + Vercel</p>
-        </div>
       </div>
 
       {/* Promote Player Modal */}
@@ -429,11 +424,8 @@ export default function AjustesPage({ params }: AjustesPageProps) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className="font-barlow text-[10px] font-bold uppercase tracking-widest pt-2 px-1"
-      style={{ color: 'var(--muted)' }}
-    >
-      {children}
-    </p>
+    <div className="pt-2 px-1">
+      <span className="eyebrow">{children}</span>
+    </div>
   )
 }

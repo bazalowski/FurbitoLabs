@@ -169,43 +169,76 @@ export default function LoginPage() {
             ¿Cómo quieres empezar?
           </p>
 
-          {/* Chooser cards */}
-          <div className="space-y-3">
-            <button
-              onClick={() => setNewUserOpen(true)}
-              className="surface-arena hairline-top w-full text-left p-5 transition-all active:scale-[0.98] select-none block"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-3xl leading-none" aria-hidden="true">🆕</span>
-                <div className="flex-1">
-                  <p className="font-bebas text-2xl leading-none tracking-display" style={{ color: 'var(--accent)' }}>
-                    Usuario nuevo
-                  </p>
-                  <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-                    Únete con el PIN de la comunidad. Te crea tu jugador y tu PIN personal.
-                  </p>
+          {/* Chooser cards — Double-Bezel premium */}
+          <div className="space-y-4">
+            <div className="bezel-frame">
+              <button
+                onClick={() => setNewUserOpen(true)}
+                className="group surface-arena w-full text-left p-5 select-none block"
+                style={{ transition: 'transform 320ms var(--ease-spring)' }}
+                onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.985)')}
+                onMouseUp={e => (e.currentTarget.style.transform = '')}
+                onMouseLeave={e => (e.currentTarget.style.transform = '')}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl leading-none" aria-hidden="true">🆕</span>
+                  <div className="flex-1">
+                    <p className="font-bebas text-2xl leading-none tracking-display" style={{ color: 'var(--accent)' }}>
+                      Usuario nuevo
+                    </p>
+                    <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
+                      Únete con el PIN de la comunidad. Te crea tu jugador y tu PIN personal.
+                    </p>
+                  </div>
+                  <span
+                    className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg leading-none"
+                    style={{
+                      background: 'rgba(168,255,62,0.14)',
+                      color: 'var(--accent)',
+                      border: '1px solid rgba(168,255,62,0.35)',
+                      transition: 'transform 320ms var(--ease-spring)',
+                    }}
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
                 </div>
-                <span className="text-lg" style={{ color: 'var(--accent)' }} aria-hidden="true">›</span>
-              </div>
-            </button>
+              </button>
+            </div>
 
-            <button
-              onClick={() => setGate('auth')}
-              className="surface-calm w-full text-left p-5 transition-all active:scale-[0.98] select-none block"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-3xl leading-none" aria-hidden="true">🔑</span>
-                <div className="flex-1">
-                  <p className="font-bebas text-2xl leading-none tracking-display">
-                    Ya tengo un PIN
-                  </p>
-                  <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
-                    Entra directamente con el PIN de tu comunidad.
-                  </p>
+            <div className="bezel-frame">
+              <button
+                onClick={() => setGate('auth')}
+                className="group surface-calm w-full text-left p-5 select-none block"
+                style={{ transition: 'transform 320ms var(--ease-spring)' }}
+                onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.985)')}
+                onMouseUp={e => (e.currentTarget.style.transform = '')}
+                onMouseLeave={e => (e.currentTarget.style.transform = '')}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl leading-none" aria-hidden="true">🔑</span>
+                  <div className="flex-1">
+                    <p className="font-bebas text-2xl leading-none tracking-display">
+                      Ya tengo un PIN
+                    </p>
+                    <p className="font-mono text-[11px] mt-1" style={{ color: 'var(--muted)' }}>
+                      Entra directamente con el PIN de tu comunidad.
+                    </p>
+                  </div>
+                  <span
+                    className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-lg leading-none"
+                    style={{
+                      background: 'var(--card2)',
+                      color: 'var(--muted)',
+                      border: '1px solid var(--border)',
+                    }}
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
                 </div>
-                <span className="text-lg" style={{ color: 'var(--muted)' }} aria-hidden="true">›</span>
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
 
           {canDismiss && (
@@ -244,33 +277,49 @@ export default function LoginPage() {
           Introduce el PIN de tu comunidad
         </p>
 
-        {/* Card */}
+        {/* Card — Double-Bezel premium */}
+        <div className="bezel-frame">
         <div className="surface-calm p-6">
-          {/* Tabs */}
-          <div className="flex rounded-m overflow-hidden mb-5" style={{ background: 'var(--card)' }}>
-            {(['join', 'create'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className="flex-1 py-2 font-barlow text-[10px] font-bold uppercase tracking-widest transition-all min-h-[44px] active:scale-[0.97]"
-                style={
-                  tab === t
-                    ? { background: 'var(--accent)', color: '#050d05' }
-                    : { color: 'var(--muted)' }
-                }
-              >
-                {t === 'join' ? 'Entrar' : 'Crear'}
-              </button>
-            ))}
+          {/* Tabs pills premium */}
+          <div className="flex gap-1.5 mb-5">
+            {(['join', 'create'] as const).map(t => {
+              const active = tab === t
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  role="tab"
+                  aria-selected={active}
+                  className="flex-1 px-3 min-h-[40px] rounded-full font-barlow text-[11px] font-bold uppercase tracking-widest flex items-center justify-center active:scale-95"
+                  style={
+                    active
+                      ? {
+                          background: 'var(--accent)',
+                          color: '#040807',
+                          boxShadow: 'var(--shadow-depth-1)',
+                          transition: 'transform 220ms var(--ease-spring)',
+                        }
+                      : {
+                          background: 'var(--card)',
+                          color: 'var(--muted)',
+                          border: '1px solid var(--border)',
+                          transition: 'transform 220ms var(--ease-spring)',
+                        }
+                  }
+                >
+                  {t === 'join' ? 'Entrar' : 'Crear'}
+                </button>
+              )
+            })}
           </div>
 
           {/* Join form */}
           {tab === 'join' && (
             <form id="join-form" onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
-                  PIN de comunidad
-                </label>
+                <div className="mb-2">
+                  <span className="eyebrow">PIN de comunidad</span>
+                </div>
                 <input
                   type="text"
                   value={pin}
@@ -336,9 +385,9 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <label className="block font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
-                  Color de la comunidad
-                </label>
+                <div className="mb-2">
+                  <span className="eyebrow">Color de la comunidad</span>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                   {COMMUNITY_COLORS.map(c => (
                     <button
@@ -366,6 +415,7 @@ export default function LoginPage() {
               </Button>
             </form>
           )}
+        </div>
         </div>
 
         <Footer />

@@ -204,6 +204,53 @@ Dos primitivas nuevas en [globals.css](../../src/app/globals.css), reutilizables
 
 ---
 
+## 2.quater · Sprint Premium Pass full-app con `high-end-visual-design` (2026-05-19)
+
+Tras validar el patrón en el perfil, **se barre TODA la app** aplicando las mismas primitivas (`bezel-frame`, `eyebrow`) con disciplina anti-AI-generic. Todos los cambios respetan la dualidad calm/arena, los tokens y las fonts custom (Bebas/Barlow/Mono).
+
+### Pantallas tocadas
+
+| Pantalla | Cambios |
+|----------|---------|
+| Login `/` | Las 2 cards del gate ("Usuario nuevo" / "Ya tengo PIN") ahora en `.bezel-frame`. Card del login clásico también. Tabs Entrar/Crear migrados de "split bar plano" → pills premium con accent active. Labels "PIN de comunidad" y "Color de la comunidad" → `.eyebrow`. Active scale via `var(--ease-spring)`. Trailing icon `→` en círculo nested. |
+| Home `/[cid]` | PlayerCard arena ahora en `.bezel-frame` (Doppelrand del header del jugador con Bebas 5xl). `space-y-4` → `space-y-6`. `ShortcutCard` rediseñado: padding p-3 → p-4, trailing icon › → → en círculo w-8, transition con `var(--ease-spring)`. |
+| Ajustes `/[cid]/ajustes` | TODAS las cards (Tu sesión, Apariencia, Notificaciones, Comunidad, Admins) ahora en `.bezel-frame` con `.eyebrow` para sus labels. Helper `SectionLabel` migrado a `.eyebrow`. Cortado el footer "FURBITO v2.0 · Next.js + Supabase + Vercel" (AI-generic). `space-y-4` → `space-y-6`. |
+| Detalle partido `/[cid]/partidos/[eid]` | Tabs Convocados/Equipos/Resultado migrados de "tint suave" → "active solid community" para consistencia con tabs de Partidos. Chip "Finalizado" → `.eyebrow`. Transitions con `var(--ease-spring)`. |
+| Valorar `/[cid]/valorar` | "Paso 1 de 2" / "Paso 2 de 2" como `.eyebrow` community. Header del jugador a valorar ahora en `.bezel-frame` + `surface-arena` (avatar 72px + Bebas 3xl). Chip "Valorado" → `.eyebrow` con tono success. Trailing arrow circular en lista de jugadores. |
+| Ayuda `/[cid]/ayuda` | Card intro + Card índice ahora en `.bezel-frame`. "Guía rápida" e "Índice" → `.eyebrow`. Trailing arrow circular en cada link del TOC. `font-bebas tracking-display` para los números de sección. |
+
+### Componentes hero tocados
+
+| Componente | Cambios |
+|------------|---------|
+| `NextMatchHero` (Home) | Expanded view ahora envuelta en `.bezel-frame`. Eyebrow "Próximo partido" community + "Abierto" community + "Confirmados" muted. Título del evento ahora `font-bebas text-2xl tracking-display` (más editorial vs el `font-bold text-sm` anterior). |
+| `EventCard` (lista Partidos) | Wrapping en `.bezel-frame`. Título h3 ahora `font-bebas text-2xl tracking-display`. Chips "Abierto" / "Finalizado" → `.eyebrow`. xp-bar con `transition: width 600ms var(--ease-out)`. |
+| `ShortcutCard` (Home) | Padding más generoso, trailing icon en círculo w-8 con transition spring, hover-ready aunque mobile no use hover. |
+
+### Lo NO tocado (consciente)
+
+- **Componentes internos complejos**: `PointsEvolutionChart`, `BadgeShowcase`, `BadgeVitrina`, `PlayerTimeline`, `RankingTable` (ya premium en su mayoría), `TeamGenerator`, `WallFeed`. Arquitectura propia — wrapping rompe sus layouts.
+- **Tokens, calm/arena duality, fonts**: intactos. Identidad de marca preservada.
+- **Animaciones globales reduced-motion**: no se introducen patrones que no respeten `prefers-reduced-motion` (existe override global en globals.css).
+- **CTA Resultado stepper, MVP voting, paso 3 reveal**: parte del clímax post-match — ya tienen su propia arena treatment v2. No se modifican.
+
+### Patrón recurrente que emergió
+
+Tras 6+ aplicaciones, queda claro el grammar:
+
+```jsx
+<div className="bezel-frame">
+  <div className="surface-calm p-5">  {/* o surface-arena */}
+    <div className="mb-3"><span className="eyebrow">Mi sección</span></div>
+    {/* …contenido… */}
+  </div>
+</div>
+```
+
+Este patrón ya es la convención de la app. Próximos PRs deberían usarlo sin pensarlo para nuevas cards.
+
+---
+
 ## 2. Cambios inmediatos del sprint premium
 
 Acciones concretas para esta semana — orden de ejecución:

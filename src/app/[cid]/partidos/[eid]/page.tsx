@@ -559,16 +559,11 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             </p>
           )}
           {event.finalizado && (
-            <span
-              className="inline-block font-mono text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full mt-1"
-              style={{ background: 'var(--card2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
-            >
-              Finalizado
-            </span>
+            <div className="mt-2"><span className="eyebrow">Finalizado</span></div>
           )}
         </div>
 
-        {/* Tab bar — calm, acento community en activo */}
+        {/* Tab bar — pills premium, acento community en activo */}
         <div
           className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1"
           role="tablist"
@@ -583,20 +578,21 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setActiveTab(t.key)}
-                className="flex-shrink-0 px-4 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all min-h-[36px] active:scale-95 select-none"
-                style={
-                  active
+                className="flex-shrink-0 px-4 rounded-full font-barlow text-[11px] font-bold uppercase tracking-widest min-h-[40px] active:scale-95 select-none"
+                style={{
+                  ...(active
                     ? {
-                        background: `${communityColor}1f`,
-                        color: communityColor,
-                        border: `1px solid ${communityColor}66`,
+                        background: communityColor,
+                        color: '#040807',
+                        boxShadow: 'var(--shadow-depth-1)',
                       }
                     : {
                         background: 'var(--card)',
                         color: 'var(--muted)',
                         border: '1px solid var(--border)',
-                      }
-                }
+                      }),
+                  transition: 'transform 220ms var(--ease-spring), box-shadow 220ms var(--ease-out)',
+                }}
               >
                 {t.label}
               </button>

@@ -141,9 +141,12 @@ export default function ValorarPage({ params }: ValorarPageProps) {
         {/* ── STEP 1: SELECT ── */}
         {step === 'select' && (
           <div className="space-y-3">
-            <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-              Selecciona un companero para valorar sus habilidades
-            </p>
+            <div className="mb-4">
+              <div className="mb-2"><span className="eyebrow" data-tone="community">Paso 1 de 2</span></div>
+              <p className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
+                Selecciona un compañero para valorar sus habilidades.
+              </p>
+            </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -172,13 +175,27 @@ export default function ValorarPage({ params }: ValorarPageProps) {
                   </div>
                   {ratedIds.has(player.id) && (
                     <span
-                      className="text-[10px] font-bold uppercase px-2 py-1 rounded-full select-none"
-                      style={{ background: '#22c55e22', color: '#22c55e' }}
+                      className="eyebrow select-none"
+                      style={{
+                        background: 'rgba(34,197,94,0.10)',
+                        color: '#22c55e',
+                        border: '1px solid rgba(34,197,94,0.40)',
+                      }}
                     >
-                      Valorado
+                      \u2713 Valorado
                     </span>
                   )}
-                  <span className="text-lg" style={{ color: 'var(--muted)' }}>{'\u203A'}</span>
+                  <span
+                    aria-hidden="true"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                    style={{
+                      background: 'var(--card2)',
+                      color: 'var(--muted)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    \u2192
+                  </span>
                 </Card>
               ))
             )}
@@ -189,12 +206,15 @@ export default function ValorarPage({ params }: ValorarPageProps) {
         {step === 'rate' && selectedPlayer && (
           <div className="space-y-5 view-enter">
             {/* Player header */}
-            <div className="flex flex-col items-center gap-3 py-4">
-              <PlayerAvatar player={selectedPlayer} size={64} communityColor={communityColor} />
-              <span className="font-bebas text-xl tracking-wider">{selectedPlayer.name}</span>
-              <span className="text-[10px] text-center" style={{ color: 'var(--muted)' }}>
-                Solo puedes valorar una vez. No podrás cambiarlo después.
-              </span>
+            <div className="bezel-frame">
+              <div className="surface-arena p-5 text-center flex flex-col items-center gap-3">
+                <span className="eyebrow" data-tone="community">Paso 2 de 2</span>
+                <PlayerAvatar player={selectedPlayer} size={72} communityColor={communityColor} />
+                <span className="font-bebas text-3xl tracking-display leading-none">{selectedPlayer.name}</span>
+                <span className="font-mono text-[11px] text-center" style={{ color: 'var(--muted)' }}>
+                  Solo puedes valorar una vez. No podrás cambiarlo después.
+                </span>
+              </div>
             </div>
 
             {/* Skill rows */}
