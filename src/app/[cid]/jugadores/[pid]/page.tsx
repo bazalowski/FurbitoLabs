@@ -193,10 +193,11 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
         }
       />
 
-      <div className="px-4 space-y-4 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
+      <div className="px-4 space-y-6 pt-2 pb-28" style={{ ['--comm-color' as string]: communityColor }}>
 
-        {/* ── Hero header — arena: portada deportiva ───── */}
-        <div className="surface-arena p-4">
+        {/* ── Hero header — arena con Double-Bezel premium ───── */}
+        <div className="bezel-frame">
+        <div className="surface-arena p-5">
           <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0" style={{ ['--aura-color' as string]: isProfileAdmin ? 'var(--gold)' : communityColor }}>
               <span aria-hidden="true" className="aura-halo" style={{ inset: '-14%' }} />
@@ -232,12 +233,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
                   {player.name}
                 </h1>
                 {isProfileAdmin && (
-                  <span
-                    className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--gold)', border: '1px solid rgba(255,215,0,0.35)' }}
-                  >
-                    Admin
-                  </span>
+                  <span className="eyebrow" data-tone="gold">Admin</span>
                 )}
               </div>
               {player.position && (
@@ -272,16 +268,17 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
             </div>
           </div>
 
-          <div className="xp-bar mt-3">
+          <div className="xp-bar mt-4">
             <div className="xp-bar-fill" style={{ width: `${pct}%`, background: communityColor }} />
           </div>
           {nextLevel && (
-            <p className="font-mono text-[10px] mt-1.5" style={{ color: 'var(--muted)' }}>
+            <p className="font-mono text-[10px] mt-2" style={{ color: 'var(--muted)' }}>
               Siguiente: <span style={{ color: 'var(--text)' }}>{nextLevel.name}</span>
               <span className="divider-dot" aria-hidden="true" />
               {nextLevel.min - player.xp} XP restantes
             </p>
           )}
+        </div>
         </div>
 
         {/* ── Expositor de insignias (5 slots editable by owner) ── */}
@@ -336,12 +333,11 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           />
         </div>
 
-        {/* ── Skill bars (siempre visibles) ─────────── */}
-        <div className="surface-calm p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-              Habilidades
-            </p>
+        {/* ── Skill bars (siempre visibles) — Double-Bezel ─────── */}
+        <div className="bezel-frame">
+        <div className="surface-calm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="eyebrow">Habilidades</span>
             {playerRating ? (
               <p className="font-bebas text-xl leading-none tracking-display tabular-nums" style={{ color: communityColor }}>
                 ★ {playerRating.avg.toFixed(1)}
@@ -353,7 +349,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
               <p className="font-mono text-[10px]" style={{ color: 'var(--muted)' }}>Sin valoraciones</p>
             )}
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {skillBars.map(sk => (
               <div key={sk.key} className="flex items-center gap-2">
                 <span className="text-sm w-5 flex-shrink-0" aria-hidden="true">{sk.icon}</span>
@@ -362,8 +358,13 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
                 </span>
                 <div className="flex-1 xp-bar">
                   <div
-                    className="xp-bar-fill transition-all"
-                    style={{ width: `${sk.pct}%`, background: communityColor, opacity: sk.pct === 0 ? 0.25 : 1 }}
+                    className="xp-bar-fill"
+                    style={{
+                      width: `${sk.pct}%`,
+                      background: communityColor,
+                      opacity: sk.pct === 0 ? 0.25 : 1,
+                      transition: 'width 600ms var(--ease-out), opacity 200ms var(--ease-out)',
+                    }}
                   />
                 </div>
                 <span
@@ -375,6 +376,7 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
               </div>
             ))}
           </div>
+        </div>
         </div>
 
         {/* ── Gráfica: evolución de puntos por partido ── */}
@@ -389,9 +391,9 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
 
         {/* ── Historial de partidos ─────────────────── */}
         <div>
-          <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-2 px-1" style={{ color: 'var(--muted)' }}>
-            Historial
-          </p>
+          <div className="mb-3 px-1">
+            <span className="eyebrow">Historial</span>
+          </div>
           <PlayerTimeline
             playerId={pid}
             communityId={cid}
@@ -399,39 +401,91 @@ export default function PlayerProfilePage({ params }: PlayerProfilePageProps) {
           />
         </div>
 
-        {/* ── CTA Valorar ───────────────────────────── */}
-        {!isOwnProfile && (
-          <Button
-            variant="primary"
-            className="w-full"
-            disabled={!!(canVote && existingVote)}
-            onClick={() => {
-              if (!canVote) { openPinModal(); return }
-              if (existingVote) { showToast('Ya has valorado a este jugador'); return }
-              setVoteOpen(true)
-            }}
-          >
-            {canVote
-              ? (existingVote ? '✓ Ya valorado' : '⭐ Valorar jugador')
-              : '🔑 Acceder para valorar'}
-          </Button>
-        )}
+        {/* ── CTA Valorar — premium button-in-button ─────── */}
+        {!isOwnProfile && (() => {
+          const voted = !!(canVote && existingVote)
+          const isPrimary = !!canVote && !voted
+          const label = canVote
+            ? (voted ? 'Ya valorado' : 'Valorar jugador')
+            : 'Acceder para valorar'
+          const icon = canVote ? (voted ? '✓' : '⭐') : '🔑'
+          const trailing = voted ? '✓' : '→'
+
+          return (
+            <button
+              type="button"
+              disabled={voted}
+              onClick={() => {
+                if (!canVote) { openPinModal(); return }
+                if (existingVote) { showToast('Ya has valorado a este jugador'); return }
+                setVoteOpen(true)
+              }}
+              className="group w-full flex items-center justify-between gap-3 px-5 rounded-full font-barlow font-bold text-sm uppercase tracking-widest select-none active:scale-[0.985]"
+              style={{
+                minHeight: 56,
+                background: isPrimary
+                  ? communityColor
+                  : voted
+                    ? 'var(--card2)'
+                    : 'var(--card)',
+                color: isPrimary ? '#040807' : voted ? 'var(--muted)' : 'var(--text)',
+                border: isPrimary
+                  ? 'none'
+                  : voted
+                    ? '1px solid var(--border)'
+                    : `1px solid ${communityColor}55`,
+                boxShadow: isPrimary
+                  ? 'var(--shadow-depth-2), inset 0 1px 0 rgba(255,255,255,0.25)'
+                  : 'var(--shadow-depth-1)',
+                transition: 'transform 320ms var(--ease-spring), box-shadow 240ms var(--ease-out), background 240ms var(--ease-out)',
+                cursor: voted ? 'default' : 'pointer',
+                opacity: voted ? 0.85 : 1,
+              }}
+            >
+              {/* Left spacer mirrors the trailing icon width for centered label */}
+              <span aria-hidden="true" className="w-8 h-8 flex-shrink-0 opacity-0" />
+
+              <span className="flex items-center gap-2 leading-none">
+                <span className="text-base" aria-hidden="true">{icon}</span>
+                <span>{label}</span>
+              </span>
+
+              <span
+                aria-hidden="true"
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-base leading-none transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-px group-active:scale-95"
+                style={{
+                  background: isPrimary
+                    ? 'rgba(0,0,0,0.14)'
+                    : voted
+                      ? 'transparent'
+                      : `${communityColor}1f`,
+                  color: isPrimary ? '#040807' : voted ? 'var(--muted)' : communityColor,
+                  border: voted ? '1px solid var(--border)' : 'none',
+                  transitionTimingFunction: 'var(--ease-spring)',
+                  transitionDuration: '320ms',
+                }}
+              >
+                {trailing}
+              </span>
+            </button>
+          )
+        })()}
 
         {/* ── Admin: PIN de jugador ─────────────────── */}
         {session.role === 'admin' && (
-          <div className="surface-calm p-4">
-            <p className="font-barlow text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
-              PIN de jugador
-            </p>
-            <p
-              className="font-mono text-3xl font-bold tabular-nums"
-              style={{ color: communityColor, letterSpacing: '0.3em' }}
-            >
-              {player.code}
-            </p>
-            <p className="font-mono text-[10px] mt-2" style={{ color: 'var(--muted)' }}>
-              Comparte este PIN con el jugador para que pueda identificarse
-            </p>
+          <div className="bezel-frame">
+            <div className="surface-calm p-5">
+              <span className="eyebrow">PIN de jugador</span>
+              <p
+                className="font-mono text-3xl font-bold tabular-nums mt-2"
+                style={{ color: communityColor, letterSpacing: '0.3em' }}
+              >
+                {player.code}
+              </p>
+              <p className="font-mono text-[10px] mt-2.5" style={{ color: 'var(--muted)' }}>
+                Comparte este PIN con el jugador para que pueda identificarse.
+              </p>
+            </div>
           </div>
         )}
 

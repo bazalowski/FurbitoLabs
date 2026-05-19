@@ -159,6 +159,51 @@ Decisiones de scope:
 
 ---
 
+## 2.ter · Sprint Perfil con skill `high-end-visual-design` (2026-05-19)
+
+Aplicación quirúrgica de la skill `high-end-visual-design` al perfil de jugador, **respetando** el DS Furbito v2 (calm/arena, Bebas/Barlow/Mono, tokens). NO se sustituye el sistema — se enriquece con técnicas premium que conviven con lo existente.
+
+### Extensiones al Design System
+
+Dos primitivas nuevas en [globals.css](../../src/app/globals.css), reutilizables en toda la app:
+
+| Utilidad | Qué hace | Dónde |
+|----------|----------|-------|
+| `.bezel-frame` | Outer shell tipo "machined frame" — ring 1px + bg 2% + padding 6px + inset highlight + halo `shadow 14px 36px`. Hijos directos heredan radius 16px → concentric curves vs outer radius 22px. | Cards hero que merecen el tratamiento "Apple-tier". Ejemplo: `<div class="bezel-frame"><div class="surface-arena p-5">…</div></div>`. |
+| `.eyebrow` / `.eyebrow[data-tone]` | Pill microscópica (rounded-full · px-2.5 py-1 · Barlow 10px uppercase tracking-0.2em). Tones: default (muted), `community` (tinted), `gold` (admin). | Reemplaza los `<p className="font-barlow text-[10px] font-bold uppercase tracking-widest">` que se repetían 30+ veces. |
+
+### Aplicación al Perfil (`/[cid]/jugadores/[pid]`)
+
+- **Hero header**: ahora dentro de `.bezel-frame`. Doppelrand (outer ring + inner surface-arena con aura-halo + Bebas 4xl). Padding subido p-4 → p-5. XP bar mt-3 → mt-4. Admin chip reemplazado por `<span class="eyebrow" data-tone="gold">Admin</span>`.
+- **Card de Habilidades**: ahora dentro de `.bezel-frame`. Label "Habilidades" reemplazado por `.eyebrow`. Padding p-4 → p-5. Spacing entre skill bars `space-y-2.5` → `space-y-3`. Transitions explícitas con `var(--ease-out)` 600ms — animación de barras al cargar feels physical.
+- **Card Admin PIN**: ahora dentro de `.bezel-frame` con `.eyebrow` para el label. PIN sigue siendo IBM Plex Mono 3xl con letter-spacing community-tinted.
+- **Sección Historial**: label reemplazado por `.eyebrow`.
+- **CTA "Valorar jugador"**: rediseñado completo como **button-in-button** premium siguiendo el patrón de la skill:
+  - Container `rounded-full` min-h-56 con community-tint cuando primary.
+  - Label centrado (`⭐ Valorar jugador`).
+  - Trailing icon `→` nested en círculo separado (`rgba(0,0,0,0.14)` sobre community color).
+  - Hover: el icon trailing se desplaza diagonalmente (`group-hover:translate-x-0.5 -translate-y-px`) usando `var(--ease-spring)` 320ms — kinetic tension.
+  - Estados: primary (community color) · voted (muted + ✓) · locked (border tintado + 🔑).
+- **Spacing macro**: contenedor principal `space-y-4` → `space-y-6` (más respiro entre secciones).
+
+### Lo que NO se tocó (y por qué)
+
+- **Fonts**: Bebas/Barlow/IBM Plex Mono ya son premium custom — no se sustituyen por Geist/Clash.
+- **Sistema calm/arena**: la dualidad es identidad del producto. La skill se aplica DENTRO de cada superficie, no en lugar de.
+- **Tokens de color, radios, shadows**: intactos.
+- **PointsEvolutionChart, BadgeShowcase, BadgeVitrina, PlayerTimeline**: componentes complejos con arquitectura propia — wrapping en bezel-frame rompe sus layouts internos. Si se quieren elevar, se hace dentro de cada componente.
+- **Banned patterns de la skill** (rotaciones `-2deg`, py-24 sin matizar, backdrop-blur en scroll, modal nav): no se aplican porque rompen identidad athletic-luxury o son mobile-hostiles.
+
+### Reusabilidad
+
+`.bezel-frame` y `.eyebrow` están disponibles globalmente. Próximas aplicaciones naturales (cuando se vuelva al pulido):
+- Header arena del Home (PlayerCard hero) → `.bezel-frame`
+- Card community PIN en Ajustes → `.bezel-frame` + `.eyebrow`
+- Stats 3-col del Home → cada tile dentro de `.bezel-frame` (opcional, puede ser overkill)
+- Tabs métrica del Ranking → labels con `.eyebrow`
+
+---
+
 ## 2. Cambios inmediatos del sprint premium
 
 Acciones concretas para esta semana — orden de ejecución:
